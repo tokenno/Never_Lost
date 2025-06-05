@@ -148,29 +148,31 @@
       font-family: monospace;
       font-size: 0.8em;
     }
+    .reached-message {
+      color: #0f0;
+      font-weight: bold;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
   </style>
 </head>
 <body>
   <h1>Never Lost</h1>
-  <p class="warning">TAP "TEST AUDIO" FIRST!</p>
+  <p class="warning">TAP "TEST AUDIO & LOCK" FIRST!</p>
 
   <div class="panel">
     <h2>Controls</h2>
     <div class="control-group">
-      <button id="testBtn">Test Audio</button>
-      <button id="lockBtn" disabled>Lock Position</button>
+      <button id="testBtn">Test Audio & Lock</button>
+      <button id="autoLockBtn" disabled>Auto-Lock Mode</button>
       <button id="stopBtn" disabled>Stop</button>
     </div>
-    <div class="checkbox-group">
-      <input type="checkbox" id="autoLockCheckbox">
-      <label for="autoLockCheckbox">Enable Auto-lock</label>
-    </div>
-    <div class="auto-lock-settings" id="autoLockSettings" style="display: none;">
+    <div id="autoLockSettings" style="display: none;">
       <div class="control-group">
-        <div class="control-item">
-          <label for="speedThreshold">Speed Threshold</label><br>
-          <input type="number" id="speedThreshold" value="20" min="1" max="100"> km/h
-        </div>
         <div class="control-item">
           <label for="lockDelay">Lock Delay</label><br>
           <input type="number" id="lockDelay" value="3" min="1" max="10"> sec
@@ -178,8 +180,10 @@
       </div>
     </div>
     <div id="speedIndicator" class="speed-indicator">Current speed: -- km/h</div>
+    <div id="lockStatus" class="status">Lock Status: Not locked</div>
     <div id="audioStatus" class="status">Audio: Not initialized</div>
     <div id="gpsStatus" class="status">GPS: Ready</div>
+    <div id="reachedMessage" class="reached-message" style="display: none;">You have reached GPS locked point!</div>
   </div>
 
   <div class="panel">
@@ -236,15 +240,15 @@
     <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
       <h1> Never Lost</h1>
       <h2>Purpose:</h2>
-      Helps you navigate back to a locked GPS position using audio bleeps (faster = closer) and a visual compass.
+      Helps you navigate back to a locked GPS position (like your parked vehicle) using audio bleeps (faster = closer) and a visual compass.
 
       <h2>Audio Setup</h2>
-      Tap "Test Audio" first to enable sound.<BR>
+      Tap "Test Audio & Lock" first to enable sound.<BR>
       Adjust Bleep Freq (Hz) to change tone pitch (800Hz = default).<BR>
 
       <h2>GPS Controls</h2>
-      Lock Position: Save your current location as the target.<BR>
-      Auto-Lock: Automatically locks when speed less than km/h for 3 sec (adjustable).<BR>
+      Test Audio & Lock: Save your current location as the target.<BR>
+      Auto-Lock Mode: Automatically locks when speed is below 0.5 km/h.<BR>
       Stop: Clears the locked position.<BR>
 
       <h2>Direction Indicator</h2>
@@ -264,8 +268,8 @@
       Accuracy: GPS precision (lower = better).
 
       <h2>Quick Start</h2>
-      Tap "Test Audio".<BR>
-      Enable Auto-Lock or tap "Lock Position" manually.<BR>
+      Tap "Test Audio & Lock" when you park your vehicle.<BR>
+      Or enable "Auto-Lock Mode" to automatically lock when stopped.<BR>
       Follow the arrow direction and listen to bleeps:<BR>
       Faster bleeps = Getting closer.<BR>
       Slower bleeps = Moving away.<BR>
@@ -329,6 +333,7 @@
       autoLockEnabled: false,
       autoLockDebounce: null,
       currentSpeed: 0,
+      reachedPointDisplayed: false,
 
       init: async function() {
         initMap(); // Initialize the map
@@ -346,28 +351,40 @@
         document.getElementById("testBtn").addEventListener("click", () => {
           this.initAudio();
           this.playTestSound();
+          if (this.isAudioAllowed) {
+            this.lockCurrentPosition();
+          }
         });
 
-        document.getElementById("lockBtn").addEventListener("click", () => {
-          this.lockCurrentPosition();
+        document.getElementById("autoLockBtn").addEventListener("click", () => {
+          this.toggleAutoLock();
         });
 
         document.getElementById("stopBtn").addEventListener("click", () => {
           this.stop();
         });
+      },
 
-        document.getElementById("autoLockCheckbox").addEventListener("change", (e) => {
-          this.autoLockEnabled = e.target.checked;
-          document.getElementById("autoLockSettings").style.display = this.autoLockEnabled ? "block" : "none";
-          if (this.autoLockEnabled) {
-            this.log("Auto-lock enabled");
-          } else {
-            clearTimeout(this.autoLockDebounce);
-            this.autoLockDebounce = null;
-            this.log("Auto-lock disabled");
-          }
-          this.updateUI();
-        });
+      toggleAutoLock: function() {
+        this.autoLockEnabled = !this.autoLockEnabled;
+        
+        if (this.autoLockEnabled) {
+          document.getElementById("autoLockBtn").textContent = "Auto-Lock: ON";
+          document.getElementById("autoLockBtn").style.backgroundColor = "#0f0";
+          document.getElementById("autoLockBtn").style.color = "#000";
+          document.getElementById("autoLockSettings").style.display = "block";
+          this.log("Auto-lock enabled - will lock when speed < 0.5 km/h");
+          this.updateGpsStatus("Auto-lock enabled - will lock when stopped");
+        } else {
+          document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
+          document.getElementById("autoLockBtn").style.backgroundColor = "";
+          document.getElementById("autoLockBtn").style.color = "";
+          document.getElementById("autoLockSettings").style.display = "none";
+          this.log("Auto-lock disabled");
+          this.updateGpsStatus("Auto-lock disabled");
+        }
+        
+        this.updateUI();
       },
 
       initAudio: function() {
@@ -385,7 +402,7 @@
           this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
           document.getElementById("audioStatus").textContent = "Audio: Initialized";
           document.getElementById("audioStatus").className = "status success";
-          document.getElementById("lockBtn").disabled = false;
+          document.getElementById("autoLockBtn").disabled = false;
           this.log("Audio system initialized");
         } catch (e) {
           document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
@@ -420,8 +437,7 @@
           this.isAudioAllowed = true;
           document.getElementById("audioStatus").textContent = "Audio: Working!";
           document.getElementById("audioStatus").className = "status success";
-          document.getElementById("lockBtn").disabled = false;
-          document.getElementById("autoLockCheckbox").disabled = false;
+          document.getElementById("autoLockBtn").disabled = false;
           this.log("Test sound played successfully - audio is enabled");
         } catch (e) {
           document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
@@ -470,6 +486,7 @@
               accuracy: pos.coords.accuracy
             };
             this.updateGpsStatus(`Position locked! (Accuracy: ${this.lockPosition.accuracy.toFixed(1)}m)`);
+            this.updateLockStatus(`Locked (Accuracy: ${this.lockPosition.accuracy.toFixed(1)}m)`);
             this.isActive = true;
             this.startPositionWatch();
             this.updateUI();
@@ -512,64 +529,82 @@
         );
       },
 
-handlePositionUpdate: function(pos) {
-  const now = Date.now();
-  this.lastUpdateTime = now;
-  
-  const { latitude, longitude, accuracy, speed } = pos.coords;
-  this.currentSpeed = speed || 0;
-  const speedKmh = (this.currentSpeed * 3.6).toFixed(1);
-  
-  document.getElementById("speedIndicator").textContent = `Current speed: ${speedKmh} km/h`;
-  
-  // Update map markers
-  if (map) {
-    const userPos = [latitude, longitude];
-    userMarker.setLatLng(userPos);
-    
-    if (this.lockPosition) {
-      const lockPos = [this.lockPosition.lat, this.lockPosition.lon];
-      lockMarker.setLatLng(lockPos);
-      line.setLatLngs([userPos, lockPos]);
-      map.fitBounds([userPos, lockPos], { padding: [20, 20] });
-    }
-  }
+      handlePositionUpdate: function(pos) {
+        const now = Date.now();
+        this.lastUpdateTime = now;
+        
+        const { latitude, longitude, accuracy, speed } = pos.coords;
+        this.currentSpeed = speed || 0;
+        const speedKmh = (this.currentSpeed * 3.6).toFixed(1);
+        
+        document.getElementById("speedIndicator").textContent = `Current speed: ${speedKmh} km/h`;
+        
+        // Update map markers
+        if (map) {
+          const userPos = [latitude, longitude];
+          userMarker.setLatLng(userPos);
+          
+          if (this.lockPosition) {
+            const lockPos = [this.lockPosition.lat, this.lockPosition.lon];
+            lockMarker.setLatLng(lockPos);
+            line.setLatLngs([userPos, lockPos]);
+            map.fitBounds([userPos, lockPos], { padding: [20, 20] });
+          }
+        }
 
-  // Auto-lock logic (20 km/h threshold)
-  const threshold = 20 * 1000 / 3600; // Convert 20 km/h to m/s
-  const delay = parseFloat(document.getElementById("lockDelay").value) * 1000; // Convert seconds to ms
-  
-  if (this.autoLockEnabled) {
-    if (this.currentSpeed > threshold && this.lockPosition) {
-      // Speed exceeds threshold: clear locked position
-      this.log(`Auto-unlocked: Speed exceeded 20 km/h (${speedKmh} km/h)`);
-      this.updateGpsStatus(`Auto-unlocked (Speed: ${speedKmh} km/h)`);
-      this.lockPosition = null;
-      this.isActive = false;
-      clearTimeout(this.autoLockDebounce);
-      this.autoLockDebounce = null;
-    } else if (this.currentSpeed <= threshold && !this.lockPosition && !this.autoLockDebounce) {
-      // Speed below threshold and no position locked: start timer to lock position
-      this.autoLockDebounce = setTimeout(() => {
-        this.lockPosition = { lat: latitude, lon: longitude, accuracy };
-        this.updateGpsStatus(`Auto-locked! (Speed: ${speedKmh} km/h, Accuracy: ${accuracy.toFixed(1)}m)`);
-        this.isActive = true;
-        this.log(`Auto-locked position at ${speedKmh} km/h`);
-        this.autoLockDebounce = null;
-      }, delay);
-    }
-  }
-  
-  if (!this.lockPosition || !this.isActive) return;
+        // Auto-lock logic (0.5 km/h threshold)
+        const threshold = 0.5 * 1000 / 3600; // Convert 0.5 km/h to m/s
+        const delay = parseFloat(document.getElementById("lockDelay").value) * 1000; // Convert seconds to ms
+        
+        if (this.autoLockEnabled) {
+          if (this.currentSpeed > threshold && this.lockPosition) {
+            // Speed exceeds threshold: clear locked position
+            this.log(`Auto-unlocked: Speed exceeded 0.5 km/h (${speedKmh} km/h)`);
+            this.updateGpsStatus(`Auto-unlocked (Speed: ${speedKmh} km/h)`);
+            this.updateLockStatus("Not locked (moving)");
+            this.lockPosition = null;
+            this.isActive = false;
+            this.reachedPointDisplayed = false;
+            document.getElementById("reachedMessage").style.display = "none";
+            clearTimeout(this.autoLockDebounce);
+            this.autoLockDebounce = null;
+          } else if (this.currentSpeed <= threshold && !this.lockPosition && !this.autoLockDebounce) {
+            // Speed below threshold and no position locked: start timer to lock position
+            this.autoLockDebounce = setTimeout(() => {
+              this.lockPosition = { lat: latitude, lon: longitude, accuracy };
+              this.updateGpsStatus(`Auto-locked! (Speed: ${speedKmh} km/h, Accuracy: ${accuracy.toFixed(1)}m)`);
+              this.updateLockStatus(`Auto-locked (Accuracy: ${accuracy.toFixed(1)}m)`);
+              this.isActive = true;
+              this.log(`Auto-locked position at ${speedKmh} km/h`);
+              this.autoLockDebounce = null;
+            }, delay);
+          }
+        }
+        
+        if (!this.lockPosition || !this.isActive) {
+          this.updateUI();
+          return;
+        }
 
-  const distance = this.calculateDistance(latitude, longitude, this.lockPosition.lat, this.lockPosition.lon);
-  this.movementHistory.push({ time: now, distance, speed: this.currentSpeed });
-  this.movementHistory = this.movementHistory.filter(item => now - item.time < 3000);
-  
-  this.updateDirection(latitude, longitude);
-  this.updateDisplay(distance, accuracy, this.currentSpeed);
-  this.updateAudio(distance);
-},
+        const distance = this.calculateDistance(latitude, longitude, this.lockPosition.lat, this.lockPosition.lon);
+        
+        // Check if we've reached the point (within 5 meters)
+        if (distance < 5 && !this.reachedPointDisplayed) {
+          document.getElementById("reachedMessage").style.display = "block";
+          this.reachedPointDisplayed = true;
+          this.log("You have reached the GPS locked point!");
+        } else if (distance >= 5 && this.reachedPointDisplayed) {
+          document.getElementById("reachedMessage").style.display = "none";
+          this.reachedPointDisplayed = false;
+        }
+        
+        this.movementHistory.push({ time: now, distance, speed: this.currentSpeed });
+        this.movementHistory = this.movementHistory.filter(item => now - item.time < 3000);
+        
+        this.updateDirection(latitude, longitude);
+        this.updateDisplay(distance, accuracy, this.currentSpeed);
+        this.updateAudio(distance);
+      },
 
       updateDirection: function(currentLat, currentLon) {
         if (!this.lockPosition) return;
@@ -644,20 +679,28 @@ handlePositionUpdate: function(pos) {
         }, dynamicTempo);
       },
 
-  stop: function() {
-  clearTimeout(this.bleepTimer);
-  clearTimeout(this.autoLockDebounce);
-  this.autoLockDebounce = null;
-  if (this.watchId) {
-    navigator.geolocation.clearWatch(this.watchId);
-    this.watchId = null;
-  }
-  this.isActive = false;
-  this.lockPosition = null;
-  this.updateGpsStatus("Stopped");
-  this.updateUI();
-  this.log("Position tracking stopped");
-},
+      stop: function() {
+        clearTimeout(this.bleepTimer);
+        clearTimeout(this.autoLockDebounce);
+        this.autoLockDebounce = null;
+        if (this.watchId) {
+          navigator.geolocation.clearWatch(this.watchId);
+          this.watchId = null;
+        }
+        this.isActive = false;
+        this.lockPosition = null;
+        this.autoLockEnabled = false;
+        document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
+        document.getElementById("autoLockBtn").style.backgroundColor = "";
+        document.getElementById("autoLockBtn").style.color = "";
+        document.getElementById("autoLockSettings").style.display = "none";
+        this.updateGpsStatus("Stopped");
+        this.updateLockStatus("Not locked");
+        this.updateUI();
+        this.reachedPointDisplayed = false;
+        document.getElementById("reachedMessage").style.display = "none";
+        this.log("Position tracking stopped");
+      },
 
       updateDisplay: function(distance, accuracy, speed) {
         document.getElementById("distance").textContent = distance.toFixed(1);
@@ -670,9 +713,13 @@ handlePositionUpdate: function(pos) {
         statusEl.className = isError ? "status error" : "status";
       },
 
+      updateLockStatus: function(message, isError = false) {
+        const statusEl = document.getElementById("lockStatus");
+        statusEl.textContent = `Lock Status: ${message}`;
+        statusEl.className = isError ? "status error" : "status";
+      },
+
       updateUI: function() {
-        const manualLockDisabled = (!this.isAudioAllowed || this.isActive) && this.autoLockEnabled;
-        document.getElementById("lockBtn").disabled = !this.isAudioAllowed || (this.isActive && !this.autoLockEnabled);
         document.getElementById("stopBtn").disabled = !this.isActive;
       },
 
@@ -703,7 +750,7 @@ handlePositionUpdate: function(pos) {
       SonarBleep.init();
       
       if (/Mobi|Android/i.test(navigator.userAgent)) {
-        SonarBleep.log("MOBILE DETECTED: Tap 'Test Audio' first to unlock sound", false);
+        SonarBleep.log("MOBILE DETECTED: Tap 'Test Audio & Lock' first to unlock sound", false);
       }
     });
   </script>

@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Never Lost - GPS Locator</title>
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #111;
+      color: #0f0;
+      text-align: center;
+      padding: 2em;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    input, button, select {
+      margin: 0.5em;
+      padding: 0.5em;
+      font-size: 1em;
+      background: #222;
+      color: #0f0;
+      border: 1px solid #0f0;
+      border-radius: 4px;
+    }
+    button {
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #debug {
+      text-align: left;
+      margin: 20px auto;
+      padding: 10px;
+      border: 1px dashed #0f0;
+      color: #0f0;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.9em;
+    }
+    .warning {
+      color: #ff0;
+      font-weight: bold;
+    }
+    .status {
+      margin: 10px 0;
+      padding: 8px;
+      border-radius: 4px;
+    }
+    .success {
+      background: rgba(0, 255, 0, 0.1);
+      border: 1px solid #0f0;
+    }
+    .error {
+      background: rgba(255, 0, 0, 0.1);
+      border: 1px solid #f00;
+    }
+    .panel {
+      border: 1px solid #0f0;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 10px 0;
+    }
+    .control-group {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    .control-item {
+      min-width: 120px;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px 0;
+    }
+    .checkbox-group label {
+      margin-left: 8px;
+    }
+    .speed-indicator {
+      font-size: 0.9em;
+      margin-top: 5px;
+      color: #0f0;
+    }
+    .auto-lock-settings {
+      margin-top: 10px;
+      padding: 10px;
+      border-top: 1px dashed #0f0;
+    }
+    /* Direction indicator */
+    .direction-container {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      margin: 10px auto;
+    }
+    #directionArrow {
+      width: 0; 
+      height: 0; 
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-bottom: 40px solid #0f0;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform-origin: 50% 0;
+      transform: translate(-50%, -50%) rotate(0deg);
+      transition: transform 0.3s ease;
+    }
+    .direction-circle {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 1px dashed #0f0;
+      border-radius: 50%;
+      top: 0;
+      left: 0;
+      box-sizing: border-box;
+    }
+    .direction-status {
+      font-size: 0.9em;
+      margin-top: 5px;
+    }
+    /* Map styling */
+    #map {
+      height: 200px;
+      width: 100%;
+      background: #222;
+      border: 1px solid #0f0;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+    .user-marker, .lock-marker {
+      font-size: 20px;
+      text-shadow: 0 0 3px #000;
+    }
+    .leaflet-control-attribution {
+      background: rgba(0, 0, 0, 0.7) !important;
+      color: #0f0 !important;
+      font-family: monospace;
+      font-size: 0.8em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Never Lost</h1>
+  <p class="warning">TAP "TEST AUDIO" FIRST!</p>
+
+  <div class="panel">
+    <h2>Controls</h2>
+    <div class="control-group">
+      <button id="testBtn">Test Audio</button>
+      <button id="lockBtn" disabled>Lock Position</button>
+      <button id="stopBtn" disabled>Stop</button>
+    </div>
+    <div class="checkbox-group">
+      <input type="checkbox" id="autoLockCheckbox">
+      <label for="autoLockCheckbox">Enable Auto-lock</label>
+    </div>
+    <div class="auto-lock-settings" id="autoLockSettings" style="display: none;">
+      <div class="control-group">
+        <div class="control-item">
+          <label for="speedThreshold">Speed Threshold</label><br>
+          <input type="number" id="speedThreshold" value="20" min="1" max="100"> km/h
+        </div>
+        <div class="control-item">
+          <label for="lockDelay">Lock Delay</label><br>
+          <input type="number" id="lockDelay" value="3" min="1" max="10"> sec
+        </div>
+      </div>
+    </div>
+    <div id="speedIndicator" class="speed-indicator">Current speed: -- km/h</div>
+    <div id="audioStatus" class="status">Audio: Not initialized</div>
+    <div id="gpsStatus" class="status">GPS: Ready</div>
+  </div>
+
+  <div class="panel">
+    <h2>Direction Indicator</h2>
+    <div class="direction-container">
+      <div id="directionArrow"></div>
+      <div class="direction-circle"></div>
+    </div>
+    <div id="directionStatus" class="direction-status">Direction: --</div>
+  </div>
+
+  <div class="panel">
+    <h2>Position Map</h2>
+    <div id="map"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Sonar Parameters</h2>
+    <div class="control-group">
+      <div class="control-item">
+        <label for="freqInput">Bleep Freq (Hz)</label><br>
+        <input type="number" id="freqInput" value="800" min="20" max="20000" />
+      </div>
+      <div class="control-item">
+        <label for="maxDistInput">Max Distance (m)</label><br>
+        <input type="range" id="maxDistInput" value="50" min="1" max="500" />
+        <span id="maxDistValue">50</span> m
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Data Output</h2>
+    <div class="control-group">
+      <div class="control-item">
+        <label>Distance</label><br>
+        <span id="distance">--</span> m
+      </div>
+      <div class="control-item">
+        <label>Accuracy</label><br>
+        <span id="accuracy">--</span> m
+      </div>
+      <div class="control-item">
+        <label>BPM</label><br>
+        <span id="bleepRate">--</span>
+      </div>
+    </div>
+  </div>
+    
+  <div class="panel">
+    <h2 onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+      Help Guide ▼
+    </h2>
+    <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
+      <h1> Never Lost</h1>
+      <h2>Purpose:</h2>
+      Helps you navigate back to a locked GPS position using audio bleeps (faster = closer) and a visual compass.
+
+      <h2>Audio Setup</h2>
+      Tap "Test Audio" first to enable sound.<BR>
+      Adjust Bleep Freq (Hz) to change tone pitch (800Hz = default).<BR>
+
+      <h2>GPS Controls</h2>
+      Lock Position: Save your current location as the target.<BR>
+      Auto-Lock: Automatically locks when speed less than km/h for 3 sec (adjustable).<BR>
+      Stop: Clears the locked position.<BR>
+
+      <h2>Direction Indicator</h2>
+      Arrow points to the locked position.<BR>
+      Text shows bearing (e.g., "45° NE").
+
+      <h2>Position Map</h2>
+      Shows your location (📍) and locked target (🔒).<BR>
+      Green line connects both points.
+
+      <h2>Parameters</h2>
+      Max Distance: Set to 500m (bleeps slowest at this range).<BR>
+      BPM: Tempo speeds up to 150 BPM as you approach the target.
+
+      <h2>Data Output</h2>
+      Distance: Meters to target.<BR>
+      Accuracy: GPS precision (lower = better).
+
+      <h2>Quick Start</h2>
+      Tap "Test Audio".<BR>
+      Enable Auto-Lock or tap "Lock Position" manually.<BR>
+      Follow the arrow direction and listen to bleeps:<BR>
+      Faster bleeps = Getting closer.<BR>
+      Slower bleeps = Moving away.<BR>
+        
+      <h2>Tips</h2><BR>
+      For best accuracy, wait for GPS accuracy less than 10m before locking.<BR>
+      On mobile, keep the app open (background GPS may be limited).
+    </div>
+  </div>
+
+  <div id="debug"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Map variables
+    let map = null;
+    let userMarker = null;
+    let lockMarker = null;
+    let line = null;
+
+    function initMap() {
+      // Create map centered on default location (e.g., London)
+      map = L.map('map').setView([51.505, -0.09], 15);
+      
+      // Add OpenStreetMap tiles
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(map);
+
+      // Custom markers
+      const userIcon = L.divIcon({
+        className: 'user-marker',
+        html: '📍',
+        iconSize: [24, 24]
+      });
+
+      const lockIcon = L.divIcon({
+        className: 'lock-marker',
+        html: '🔒',
+        iconSize: [24, 24]
+      });
+
+      // Initialize markers
+      userMarker = L.marker([0, 0], { icon: userIcon }).addTo(map);
+      lockMarker = L.marker([0, 0], { icon: lockIcon }).addTo(map);
+      line = L.polyline([], { color: '#0f0', weight: 2 }).addTo(map);
+    }
+
+    const SonarBleep = {
+      audioCtx: null,
+      watchId: null,
+      bleepTimer: null,
+      lockPosition: null,
+      lastUpdateTime: Date.now(),
+      lastBleedTime: 0,
+      isAudioAllowed: false,
+      isActive: false,
+      movementHistory: [],
+      currentTempo: 1000,
+      autoLockEnabled: false,
+      autoLockDebounce: null,
+      currentSpeed: 0,
+
+      init: async function() {
+        initMap(); // Initialize the map
+        this.setupEventListeners();
+        this.updateUI();
+        this.log("System initialized. Test audio to enable features.");
+        
+        // Setup max distance slider
+        document.getElementById("maxDistInput").addEventListener("input", (e) => {
+          document.getElementById("maxDistValue").textContent = e.target.value;
+        });
+      },
+
+      setupEventListeners: function() {
+        document.getElementById("testBtn").addEventListener("click", () => {
+          this.initAudio();
+          this.playTestSound();
+        });
+
+        document.getElementById("lockBtn").addEventListener("click", () => {
+          this.lockCurrentPosition();
+        });
+
+        document.getElementById("stopBtn").addEventListener("click", () => {
+          this.stop();
+        });
+
+        document.getElementById("autoLockCheckbox").addEventListener("change", (e) => {
+          this.autoLockEnabled = e.target.checked;
+          document.getElementById("autoLockSettings").style.display = this.autoLockEnabled ? "block" : "none";
+          if (this.autoLockEnabled) {
+            this.log("Auto-lock enabled");
+          } else {
+            clearTimeout(this.autoLockDebounce);
+            this.autoLockDebounce = null;
+            this.log("Auto-lock disabled");
+          }
+          this.updateUI();
+        });
+      },
+
+      initAudio: function() {
+        if (this.audioCtx) {
+          // Resume if suspended
+          if (this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume().then(() => {
+              this.log("Audio context resumed");
+            });
+          }
+          return;
+        }
+        
+        try {
+          this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          document.getElementById("audioStatus").textContent = "Audio: Initialized";
+          document.getElementById("audioStatus").className = "status success";
+          document.getElementById("lockBtn").disabled = false;
+          this.log("Audio system initialized");
+        } catch (e) {
+          document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
+          document.getElementById("audioStatus").className = "status error";
+          this.log(`Audio init error: ${e.message}`, true);
+        }
+      },
+
+      playTestSound: function() {
+        if (!this.audioCtx) {
+          this.log("Audio context not ready", true);
+          return;
+        }
+        
+        try {
+          const now = this.audioCtx.currentTime;
+          const osc = this.audioCtx.createOscillator();
+          const gain = this.audioCtx.createGain();
+          
+          osc.type = 'sine';
+          osc.frequency.value = 800;
+          osc.connect(gain);
+          gain.connect(this.audioCtx.destination);
+          
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(1, now + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          
+          osc.start(now);
+          osc.stop(now + 0.1);
+          
+          this.isAudioAllowed = true;
+          document.getElementById("audioStatus").textContent = "Audio: Working!";
+          document.getElementById("audioStatus").className = "status success";
+          document.getElementById("lockBtn").disabled = false;
+          document.getElementById("autoLockCheckbox").disabled = false;
+          this.log("Test sound played successfully - audio is enabled");
+        } catch (e) {
+          document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
+          document.getElementById("audioStatus").className = "status error";
+          this.log(`Test sound failed: ${e.message}`, true);
+        }
+      },
+
+      playBleep: function(freq) {
+        if (!this.audioCtx || !this.isAudioAllowed) return;
+        
+        try {
+          const now = this.audioCtx.currentTime;
+          const osc = this.audioCtx.createOscillator();
+          const gain = this.audioCtx.createGain();
+          
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          osc.connect(gain);
+          gain.connect(this.audioCtx.destination);
+          
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.3, now + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          
+          osc.start(now);
+          osc.stop(now + 0.1);
+        } catch (e) {
+          this.log(`Bleep error: ${e.message}`, true);
+        }
+      },
+
+      lockCurrentPosition: function() {
+        if (!navigator.geolocation) {
+          this.updateGpsStatus("Geolocation not supported", true);
+          return;
+        }
+
+        this.updateGpsStatus("Getting position...");
+        
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            this.lockPosition = {
+              lat: pos.coords.latitude,
+              lon: pos.coords.longitude,
+              accuracy: pos.coords.accuracy
+            };
+            this.updateGpsStatus(`Position locked! (Accuracy: ${this.lockPosition.accuracy.toFixed(1)}m)`);
+            this.isActive = true;
+            this.startPositionWatch();
+            this.updateUI();
+          },
+          err => {
+            let errorMsg = `Error: ${err.message}`;
+            if (err.code === err.PERMISSION_DENIED) {
+              errorMsg = "Permission denied. Enable location services.";
+            } else if (err.code === err.TIMEOUT) {
+              errorMsg = "Timeout. Ensure GPS is enabled.";
+            } else if (err.code === err.POSITION_UNAVAILABLE) {
+              errorMsg = "Position unavailable. Try moving to open area.";
+            }
+            this.updateGpsStatus(errorMsg, true);
+            this.log(`GPS error: ${err.code} - ${err.message}`, true);
+          },
+          { 
+            enableHighAccuracy: true, 
+            timeout: 10000,
+            maximumAge: 0
+          }
+        );
+      },
+
+      startPositionWatch: function() {
+        if (this.watchId) {
+          navigator.geolocation.clearWatch(this.watchId);
+        }
+        
+        this.watchId = navigator.geolocation.watchPosition(
+          pos => this.handlePositionUpdate(pos),
+          err => {
+            this.updateGpsStatus(`GPS error: ${err.message}`, true);
+          },
+          { 
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 15000
+          }
+        );
+      },
+
+      handlePositionUpdate: function(pos) {
+        const now = Date.now();
+        this.lastUpdateTime = now;
+        
+        const { latitude, longitude, accuracy, speed } = pos.coords;
+        this.currentSpeed = speed || 0;
+        const speedKmh = (this.currentSpeed * 3.6).toFixed(1);
+        
+        document.getElementById("speedIndicator").textContent = `Current speed: ${speedKmh} km/h`;
+        
+        // Update map markers
+        if (map) {
+          const userPos = [latitude, longitude];
+          userMarker.setLatLng(userPos);
+          
+          if (this.lockPosition) {
+            const lockPos = [this.lockPosition.lat, this.lockPosition.lon];
+            lockMarker.setLatLng(lockPos);
+            line.setLatLngs([userPos, lockPos]);
+            map.fitBounds([userPos, lockPos], { padding: [20, 20] });
+          }
+        }
+
+        // Auto-lock/unlock logic
+        const threshold = parseFloat(document.getElementById("speedThreshold").value) * 1000 / 3600; // Convert km/h to m/s
+        const delay = parseFloat(document.getElementById("lockDelay").value) * 1000; // Convert seconds to ms
+        
+        if (this.autoLockEnabled) {
+          if (this.currentSpeed >= threshold && this.lockPosition) {
+            // Speed exceeds threshold: clear locked position
+            this.stop();
+            this.log(`Auto-unlocked due to speed ${speedKmh} km/h exceeding threshold`);
+          } else if (this.currentSpeed < threshold && !this.lockPosition && !this.autoLockDebounce) {
+            // Speed below threshold and no position locked: start timer to lock position
+            this.autoLockDebounce = setTimeout(() => {
+              this.lockPosition = { lat: latitude, lon: longitude, accuracy };
+              this.updateGpsStatus(`Auto-locked! (Speed: ${speedKmh} km/h, Accuracy: ${accuracy.toFixed(1)}m)`);
+              this.isActive = true;
+              this.startPositionWatch();
+              this.updateUI();
+              this.log(`Auto-locked at ${speedKmh} km/h`);
+              this.autoLockDebounce = null;
+            }, delay);
+          }
+        }
+        
+        if (!this.lockPosition || !this.isActive) return;
+
+        const distance = this.calculateDistance(latitude, longitude, this.lockPosition.lat, this.lockPosition.lon);
+        this.movementHistory.push({ time: now, distance, speed: this.currentSpeed });
+        this.movementHistory = this.movementHistory.filter(item => now - item.time < 3000);
+        
+        this.updateDirection(latitude, longitude);
+        this.updateDisplay(distance, accuracy, this.currentSpeed);
+        this.updateAudio(distance);
+      },
+
+      updateDirection: function(currentLat, currentLon) {
+        if (!this.lockPosition) return;
+        
+        const currentLatRad = currentLat * Math.PI/180;
+        const currentLonRad = currentLon * Math.PI/180;
+        const lockLatRad = this.lockPosition.lat * Math.PI/180;
+        const lockLonRad = this.lockPosition.lon * Math.PI/180;
+        
+        const y = Math.sin(lockLonRad - currentLonRad) * Math.cos(lockLatRad);
+        const x = Math.cos(currentLatRad) * Math.sin(lockLatRad) - 
+                  Math.sin(currentLatRad) * Math.cos(lockLatRad) * Math.cos(lockLonRad - currentLonRad);
+        let bearing = Math.atan2(y, x) * (180 / Math.PI);
+        bearing = (bearing + 360) % 360;
+        
+        const arrow = document.getElementById("directionArrow");
+        arrow.style.transform = `translate(-50%, -50%) rotate(${bearing}deg)`;
+        
+        const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+        const index = Math.round(bearing / 45) % 8;
+        document.getElementById("directionStatus").textContent = 
+          `Direction: ${bearing.toFixed(1)}° (${directions[index]})`;
+      },
+
+      calculateDistance: function(lat1, lon1, lat2, lon2) {
+        const R = 6371e3;
+        const φ1 = lat1 * Math.PI/180;
+        const φ2 = lat2 * Math.PI/180;
+        const Δφ = (lat2-lat1) * Math.PI/180;
+        const Δλ = (lon2-lon1) * Math.PI/180;
+
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+        return R * c;
+      },
+
+      updateAudio: function(currentDistance) {
+        clearTimeout(this.bleepTimer);
+        
+        if (!this.isAudioAllowed || !this.audioCtx) {
+          this.bleepTimer = setTimeout(() => {
+            this.updateAudio(currentDistance);
+          }, 1000);
+          return;
+        }
+        
+        const maxDist = this.getValidMaxDistance();
+        const freq = this.getValidFrequency();
+        const normalizedDist = Math.min(currentDistance, maxDist);
+        
+        const avgSpeed = this.movementHistory.length > 0 ? 
+          this.movementHistory.reduce((sum, item) => sum + item.speed, 0) / this.movementHistory.length : 0;
+        
+        const speedFactor = Math.min(10, Math.max(1, 1 + (avgSpeed * 3)));
+        const distanceFactor = 1 - (normalizedDist / maxDist); // Inverted: 1 when close, 0 when far
+        
+        // Base tempo range: 50ms (fast, close) to 1050ms (slow, far)
+        const baseTempo = 1050 - (1000 * distanceFactor); // Inverted to make closer = faster
+        const dynamicTempo = baseTempo / speedFactor;
+        
+        this.currentTempo = dynamicTempo;
+        const bpm = Math.round(60000 / dynamicTempo);
+        document.getElementById("bleepRate").textContent = bpm;
+        
+        this.playBleep(freq);
+        
+        this.bleepTimer = setTimeout(() => {
+          this.updateAudio(currentDistance);
+        }, dynamicTempo);
+      },
+
+      stop: function() {
+        clearTimeout(this.bleepTimer);
+        clearTimeout(this.autoLockDebounce);
+        this.autoLockDebounce = null;
+        if (this.watchId) {
+          navigator.geolocation.clearWatch(this.watchId);
+          this.watchId = null;
+        }
+        this.isActive = false;
+        this.lockPosition = null;
+        this.updateGpsStatus("Stopped");
+        this.updateUI();
+      },
+
+      updateDisplay: function(distance, accuracy, speed) {
+        document.getElementById("distance").textContent = distance.toFixed(1);
+        document.getElementById("accuracy").textContent = accuracy ? accuracy.toFixed(1) : '--';
+      },
+
+      updateGpsStatus: function(message, isError = false) {
+        const statusEl = document.getElementById("gpsStatus");
+        statusEl.textContent = `GPS: ${message}`;
+        statusEl.className = isError ? "status error" : "status";
+      },
+
+      updateUI: function() {
+        const manualLockDisabled = (!this.isAudioAllowed || this.isActive) && this.autoLockEnabled;
+        document.getElementById("lockBtn").disabled = !this.isAudioAllowed || (this.isActive && !this.autoLockEnabled);
+        document.getElementById("stopBtn").disabled = !this.isActive;
+      },
+
+      getValidFrequency: function() {
+        const freq = parseFloat(document.getElementById("freqInput").value);
+        return Math.min(20000, Math.max(20, isNaN(freq) ? 800 : freq));
+      },
+
+      getValidMaxDistance: function() {
+        const dist = parseFloat(document.getElementById("maxDistInput").value);
+        return Math.max(1, isNaN(dist) ? 50 : dist);
+      },
+
+      log: function(message, isError = false) {
+        const debugEl = document.getElementById("debug");
+        const entry = document.createElement('div');
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        entry.style.color = isError ? '#f00' : '#0f0';
+        debugEl.prepend(entry);
+        
+        if (debugEl.children.length > 20) {
+          debugEl.removeChild(debugEl.lastChild);
+        }
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      SonarBleep.init();
+      
+      if (/Mobi|Android/i.test(navigator.userAgent)) {
+        SonarBleep.log("MOBILE DETECTED: Tap 'Test Audio' first to unlock sound", false);
+      }
+    });
+  </script>
+</body>
+</html>

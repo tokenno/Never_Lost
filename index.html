@@ -512,62 +512,64 @@
         );
       },
 
-      handlePositionUpdate: function(pos) {
-        const now = Date.now();
-        this.lastUpdateTime = now;
-        
-        const { latitude, longitude, accuracy, speed } = pos.coords;
-        this.currentSpeed = speed || 0;
-        const speedKmh = (this.currentSpeed * 3.6).toFixed(1);
-        
-        document.getElementById("speedIndicator").textContent = `Current speed: ${speedKmh} km/h`;
-        
-        // Update map markers
-        if (map) {
-          const userPos = [latitude, longitude];
-          userMarker.setLatLng(userPos);
-          
-          if (this.lockPosition) {
-            const lockPos = [this.lockPosition.lat, this.lockPosition.lon];
-            lockMarker.setLatLng(lockPos);
-            line.setLatLngs([userPos, lockPos]);
-            map.fitBounds([userPos, lockPos], { padding: [20, 20] });
-          }
-        }
+handlePositionUpdate: function(pos) {
+  const now = Date.now();
+  this.lastUpdateTime = now;
+  
+  const { latitude, longitude, accuracy, speed } = pos.coords;
+  this.currentSpeed = speed || 0;
+  const speedKmh = (this.currentSpeed * 3.6).toFixed(1);
+  
+  document.getElementById("speedIndicator").textContent = `Current speed: ${speedKmh} km/h`;
+  
+  // Update map markers
+  if (map) {
+    const userPos = [latitude, longitude];
+    userMarker.setLatLng(userPos);
+    
+    if (this.lockPosition) {
+      const lockPos = [this.lockPosition.lat, this.lockPosition.lon];
+      lockMarker.setLatLng(lockPos);
+      line.setLatLngs([userPos, lockPos]);
+      map.fitBounds([userPos, lockPos], { padding: [20, 20] });
+    }
+  }
 
-        // Auto-lock/unlock logic
-        const threshold = parseFloat(document.getElementById("speedThreshold").value) * 1000 / 3600; // Convert km/h to m/s
-        const delay = parseFloat(document.getElementById("lockDelay").value) * 1000; // Convert seconds to ms
-        
-        if (this.autoLockEnabled) {
-          if (this.currentSpeed >= threshold && this.lockPosition) {
-            // Speed exceeds threshold: clear locked position
-            this.stop();
-            this.log(`Auto-unlocked due to speed ${speedKmh} km/h exceeding threshold`);
-          } else if (this.currentSpeed < threshold && !this.lockPosition && !this.autoLockDebounce) {
-            // Speed below threshold and no position locked: start timer to lock position
-            this.autoLockDebounce = setTimeout(() => {
-              this.lockPosition = { lat: latitude, lon: longitude, accuracy };
-              this.updateGpsStatus(`Auto-locked! (Speed: ${speedKmh} km/h, Accuracy: ${accuracy.toFixed(1)}m)`);
-              this.isActive = true;
-              this.startPositionWatch();
-              this.updateUI();
-              this.log(`Auto-locked at ${speedKmh} km/h`);
-              this.autoLockDebounce = null;
-            }, delay);
-          }
-        }
-        
-        if (!this.lockPosition || !this.isActive) return;
+  // Auto-lock logic (20 km/h threshold)
+  const threshold = 20 * 1000 / 3600; // Convert 20 km/h to m/s
+  const delay = parseFloat(document.getElementById("lockDelay").value) * 1000; // Convert seconds to ms
+  
+  if (this.autoLockEnabled) {
+    if (this.currentSpeed > threshold && this.lockPosition) {
+      // Speed exceeds threshold: clear locked position
+      this.log(`Auto-unlocked: Speed exceeded 20 km/h (${speedKmh} km/h)`);
+      this.updateGpsStatus(`Auto-unlocked (Speed: ${speedKmh} km/h)`);
+      this.lockPosition = null;
+      this.isActive = false;
+      clearTimeout(this.autoLockDebounce);
+      this.autoLockDebounce = null;
+    } else if (this.currentSpeed <= threshold && !this.lockPosition && !this.autoLockDebounce) {
+      // Speed below threshold and no position locked: start timer to lock position
+      this.autoLockDebounce = setTimeout(() => {
+        this.lockPosition = { lat: latitude, lon: longitude, accuracy };
+        this.updateGpsStatus(`Auto-locked! (Speed: ${speedKmh} km/h, Accuracy: ${accuracy.toFixed(1)}m)`);
+        this.isActive = true;
+        this.log(`Auto-locked position at ${speedKmh} km/h`);
+        this.autoLockDebounce = null;
+      }, delay);
+    }
+  }
+  
+  if (!this.lockPosition || !this.isActive) return;
 
-        const distance = this.calculateDistance(latitude, longitude, this.lockPosition.lat, this.lockPosition.lon);
-        this.movementHistory.push({ time: now, distance, speed: this.currentSpeed });
-        this.movementHistory = this.movementHistory.filter(item => now - item.time < 3000);
-        
-        this.updateDirection(latitude, longitude);
-        this.updateDisplay(distance, accuracy, this.currentSpeed);
-        this.updateAudio(distance);
-      },
+  const distance = this.calculateDistance(latitude, longitude, this.lockPosition.lat, this.lockPosition.lon);
+  this.movementHistory.push({ time: now, distance, speed: this.currentSpeed });
+  this.movementHistory = this.movementHistory.filter(item => now - item.time < 3000);
+  
+  this.updateDirection(latitude, longitude);
+  this.updateDisplay(distance, accuracy, this.currentSpeed);
+  this.updateAudio(distance);
+},
 
       updateDirection: function(currentLat, currentLon) {
         if (!this.lockPosition) return;
@@ -642,19 +644,20 @@
         }, dynamicTempo);
       },
 
-      stop: function() {
-        clearTimeout(this.bleepTimer);
-        clearTimeout(this.autoLockDebounce);
-        this.autoLockDebounce = null;
-        if (this.watchId) {
-          navigator.geolocation.clearWatch(this.watchId);
-          this.watchId = null;
-        }
-        this.isActive = false;
-        this.lockPosition = null;
-        this.updateGpsStatus("Stopped");
-        this.updateUI();
-      },
+  stop: function() {
+  clearTimeout(this.bleepTimer);
+  clearTimeout(this.autoLockDebounce);
+  this.autoLockDebounce = null;
+  if (this.watchId) {
+    navigator.geolocation.clearWatch(this.watchId);
+    this.watchId = null;
+  }
+  this.isActive = false;
+  this.lockPosition = null;
+  this.updateGpsStatus("Stopped");
+  this.updateUI();
+  this.log("Position tracking stopped");
+},
 
       updateDisplay: function(distance, accuracy, speed) {
         document.getElementById("distance").textContent = distance.toFixed(1);

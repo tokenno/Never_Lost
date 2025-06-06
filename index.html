@@ -88,12 +88,19 @@
     .speed-indicator {
       font-size: 0.9em;
       margin-top: 5px;
-      color: #0f0;
+      color: #f00;
+      font-weight: bold;
     }
     .auto-lock-settings {
       margin-top: 10px;
       padding: 10px;
       border-top: 1px dashed #0f0;
+    }
+    .slider-label {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 5px;
+      color: #0f0;
     }
     /* Direction indicator */
     .direction-container {
@@ -162,6 +169,15 @@
       50% { opacity: 0.5; }
       100% { opacity: 1; }
     }
+    .help-header {
+      color: #fff;
+    }
+    #helpContent {
+      color: #fff;
+    }
+    #helpContent h1, #helpContent h2 {
+      color: #0f0;
+    }
   </style>
 </head>
 <body>
@@ -179,8 +195,18 @@
     <div id="autoLockSettings" style="display: none;">
       <div class="control-group">
         <div class="control-item">
-          <label for="lockDelay">Lock Delay</label><br>
-          <input type="number" id="lockDelay" value="3" min="1" max="10"> sec
+          <label for="stationaryTime">Stationary Confirmation Time</label>
+          <div>
+            <input type="range" id="stationaryTime" value="30" min="5" max="60" />
+            <span id="stationaryTimeValue" class="slider-label">30 sec</span>
+          </div>
+        </div>
+        <div class="control-item">
+          <label for="speedThreshold">Speed Threshold (km/h)</label>
+          <div>
+            <input type="range" id="speedThreshold" value="10" min="5" max="20" />
+            <span id="speedThresholdValue" class="slider-label">10 km/h</span>
+          </div>
         </div>
       </div>
     </div>
@@ -239,7 +265,7 @@
   </div>
     
   <div class="panel">
-    <h2 onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+    <h2 class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
       Help Guide ▼
     </h2>
     <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
@@ -305,7 +331,7 @@
       
       // Add OpenStreetMap tiles
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       }).addTo(map);
 
       // Custom markers
@@ -343,16 +369,31 @@
       currentSpeed: 0,
       reachedPointDisplayed: false,
       isMuted: false,
+      isStationary: false,
+      lastStationaryTime: null,
+      lastStationaryPosition: null,
+      speedThreshold: 10, // Default speed threshold in km/h
 
       init: async function() {
-        initMap(); // Initialize the map
+        initMap();
         this.setupEventListeners();
         this.updateUI();
         this.log("System initialized. Test audio to enable features.");
-        
+
         // Setup max distance slider
         document.getElementById("maxDistInput").addEventListener("input", (e) => {
           document.getElementById("maxDistValue").textContent = e.target.value;
+        });
+
+        // Setup stationary time slider
+        document.getElementById("stationaryTime").addEventListener("input", (e) => {
+          document.getElementById("stationaryTimeValue").textContent = e.target.value + ' sec';
+        });
+
+        // Setup speed threshold slider
+        document.getElementById("speedThreshold").addEventListener("input", (e) => {
+          this.speedThreshold = parseFloat(e.target.value);
+          document.getElementById("speedThresholdValue").textContent = e.target.value + ' km/h';
         });
       },
 
@@ -402,13 +443,21 @@
           document.getElementById("autoLockBtn").style.backgroundColor = "#0f0";
           document.getElementById("autoLockBtn").style.color = "#000";
           document.getElementById("autoLockSettings").style.display = "block";
-          this.log("Auto-lock enabled - will lock when speed < 10 km/h");
+          this.log("Auto-lock enabled - will lock when stopped for specified time");
           this.updateGpsStatus("Auto-lock enabled - will lock when stopped");
         } else {
           document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
           document.getElementById("autoLockBtn").style.backgroundColor = "";
           document.getElementById("autoLockBtn").style.color = "";
           document.getElementById("autoLockSettings").style.display = "none";
+          clearTimeout(this.autoLockDebounce);
+          this.autoLockDebounce = null;
+          this.isStationary = false;
+          this.lastStationaryTime = null;
+          this.lastStationaryPosition = null;
+          this.speedThreshold = 10; // Reset to default
+          document.getElementById("speedThreshold").value = 10;
+          document.getElementById("speedThresholdValue").textContent = "10 km/h";
           this.log("Auto-lock disabled");
           this.updateGpsStatus("Auto-lock disabled");
         }
@@ -418,7 +467,6 @@
 
       initAudio: function() {
         if (this.audioCtx) {
-          // Resume if suspended
           if (this.audioCtx.state === 'suspended') {
             this.audioCtx.resume().then(() => {
               this.log("Audio context resumed");
@@ -583,32 +631,43 @@
           }
         }
 
-        // Auto-lock logic (10 km/h threshold)
-        const threshold = 10 * 1000 / 3600; // Convert 10 km/h to m/s
-        const delay = parseFloat(document.getElementById("lockDelay").value) * 1000; // Convert seconds to ms
+        // Auto-lock logic with stationary confirmation time
+        const threshold = this.speedThreshold * 1000 / 3600; // Convert km/h to m/s
+        const stationaryTime = parseFloat(document.getElementById("stationaryTime").value) * 1000; // Convert seconds to ms
         
         if (this.autoLockEnabled) {
-          if (this.currentSpeed > threshold && this.lockPosition) {
-            // Speed exceeds threshold: clear locked position
-            this.log(`Auto-unlocked: Speed exceeded 10 km/h (${speedKmh} km/h)`);
-            this.updateGpsStatus(`Auto-unlocked (Speed: ${speedKmh} km/h)`);
-            this.updateLockStatus("Not locked (moving)");
-            this.lockPosition = null;
-            this.isActive = false;
-            this.reachedPointDisplayed = false;
-            document.getElementById("reachedMessage").style.display = "none";
+          if (this.currentSpeed <= threshold && !this.isStationary) {
+            // User is stationary, start timer
+            this.isStationary = true;
+            this.lastStationaryTime = now;
+            this.lastStationaryPosition = { lat: latitude, lon: longitude, accuracy };
+            this.log(`Stationary detected at ${speedKmh} km/h, waiting ${stationaryTime/1000}s to confirm lock`);
+            this.updateGpsStatus(`Stationary, waiting ${stationaryTime/1000}s to lock`);
+            clearTimeout(this.autoLockDebounce);
+            this.autoLockDebounce = setTimeout(() => {
+              if (this.isStationary && this.currentSpeed <= threshold) {
+                this.lockPosition = this.lastStationaryPosition;
+                this.updateGpsStatus(`Auto-locked! (Speed: ${speedKmh} km/h, Accuracy: ${accuracy.toFixed(1)}m)`);
+                this.updateLockStatus(`Auto-locked (Accuracy: ${this.lockPosition.accuracy.toFixed(1)}m)`);
+                this.isActive = true;
+                this.log(`Auto-locked position at ${speedKmh} km/h`);
+              }
+            }, stationaryTime);
+          } else if (this.currentSpeed > threshold && this.isStationary) {
+            // User started moving, reset stationary state
+            this.isStationary = false;
+            this.lastStationaryTime = null;
             clearTimeout(this.autoLockDebounce);
             this.autoLockDebounce = null;
-          } else if (this.currentSpeed <= threshold && !this.lockPosition && !this.autoLockDebounce) {
-            // Speed below threshold and no position locked: start timer to lock position
-            this.autoLockDebounce = setTimeout(() => {
-              this.lockPosition = { lat: latitude, lon: longitude, accuracy };
-              this.updateGpsStatus(`Auto-locked! (Speed: ${speedKmh} km/h, Accuracy: ${accuracy.toFixed(1)}m)`);
-              this.updateLockStatus(`Auto-locked (Accuracy: ${accuracy.toFixed(1)}m)`);
-              this.isActive = true;
-              this.log(`Auto-locked position at ${speedKmh} km/h`);
-              this.autoLockDebounce = null;
-            }, delay);
+            this.log(`Movement detected (${speedKmh} km/h), resetting stationary timer`);
+            this.updateGpsStatus(`Moving (${speedKmh} km/h), stationary timer reset`);
+            if (this.lockPosition) {
+              // Keep existing lock if already set
+              this.updateGpsStatus(`Keeping locked position (Speed: ${speedKmh} km/h)`);
+            }
+          } else if (this.currentSpeed > threshold && this.lockPosition) {
+            // Moving with a locked position, do nothing (keep lock)
+            this.log(`Moving with locked position (${speedKmh} km/h)`);
           }
         }
         
@@ -729,6 +788,12 @@
         this.lockPosition = null;
         this.autoLockEnabled = false;
         this.isMuted = false;
+        this.isStationary = false;
+        this.lastStationaryTime = null;
+        this.lastStationaryPosition = null;
+        this.speedThreshold = 10; // Reset to default
+        document.getElementById("speedThreshold").value = 10;
+        document.getElementById("speedThresholdValue").textContent = "10 km/h";
         document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
         document.getElementById("autoLockBtn").style.backgroundColor = "";
         document.getElementById("autoLockBtn").style.color = "";

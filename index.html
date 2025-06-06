@@ -553,7 +553,7 @@
         }
 
         // Auto-lock logic (0.5 km/h threshold)
-        const threshold = 0.5 * 1000 / 3600; // Convert 0.5 km/h to m/s
+        const threshold = 10 * 1000 / 3600; // Convert 0.5 km/h to m/s
         const delay = parseFloat(document.getElementById("lockDelay").value) * 1000; // Convert seconds to ms
         
         if (this.autoLockEnabled) {

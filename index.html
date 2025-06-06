@@ -178,6 +178,36 @@
     #helpContent h1, #helpContent h2 {
       color: #0f0;
     }
+    /* Collapsible panels */
+    .collapsible {
+      cursor: pointer;
+      padding: 10px;
+      border: none;
+      text-align: center;
+      outline: none;
+      font-size: 1em;
+      color: #0f0;
+      background: transparent;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .collapsible:after {
+      content: '▼';
+      font-size: 0.8em;
+      margin-left: 5px;
+      transition: transform 0.2s;
+    }
+    .collapsible.active:after {
+      transform: rotate(180deg);
+    }
+    .collapsible-content {
+      padding: 0 10px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s ease-out;
+    }
   </style>
 </head>
 <body>
@@ -218,48 +248,50 @@
   </div>
 
   <div class="panel">
-    <h2>Direction Indicator</h2>
-    <div class="direction-container">
-      <div id="directionArrow"></div>
-      <div class="direction-circle"></div>
-    </div>
-    <div id="directionStatus" class="direction-status">Direction: --</div>
-  </div>
-
-  <div class="panel">
     <h2>Position Map</h2>
     <div id="map"></div>
   </div>
 
   <div class="panel">
-    <h2>Sonar Parameters</h2>
-    <div class="control-group">
-      <div class="control-item">
-        <label for="freqInput">Bleep Freq (Hz)</label><br>
-        <input type="number" id="freqInput" value="800" min="20" max="20000" />
+    <button class="collapsible">Direction Indicator ▼</button>
+    <div class="collapsible-content">
+      <div class="direction-container">
+        <div id="directionArrow"></div>
+        <div class="direction-circle"></div>
       </div>
-      <div class="control-item">
-        <label for="maxDistInput">Max Distance (m)</label><br>
-        <input type="range" id="maxDistInput" value="50" min="1" max="500" />
-        <span id="maxDistValue">50</span> m
+      <div id="directionStatus" class="direction-status">Direction: --</div>
+    </div>
+
+    <button class="collapsible">Sonar Parameters ▼</button>
+    <div class="collapsible-content">
+      <div class="control-group">
+        <div class="control-item">
+          <label for="freqInput">Bleep Freq (Hz)</label><br>
+          <input type="number" id="freqInput" value="800" min="20" max="20000" />
+        </div>
+        <div class="control-item">
+          <label for="maxDistInput">Max Distance (m)</label><br>
+          <input type="range" id="maxDistInput" value="50" min="1" max="500" />
+          <span id="maxDistValue">50</span> m
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="panel">
-    <h2>Data Output</h2>
-    <div class="control-group">
-      <div class="control-item">
-        <label>Distance</label><br>
-        <span id="distance">--</span> m
-      </div>
-      <div class="control-item">
-        <label>Accuracy</label><br>
-        <span id="accuracy">--</span> m
-      </div>
-      <div class="control-item">
-        <label>BPM</label><br>
-        <span id="bleepRate">--</span>
+    <button class="collapsible">Data Output ▼</button>
+    <div class="collapsible-content">
+      <div class="control-group">
+        <div class="control-item">
+          <label>Distance</label><br>
+          <span id="distance">--</span> m
+        </div>
+        <div class="control-item">
+          <label>Accuracy</label><br>
+          <span id="accuracy">--</span> m
+        </div>
+        <div class="control-item">
+          <label>BPM</label><br>
+          <span id="bleepRate">--</span>
+        </div>
       </div>
     </div>
   </div>
@@ -378,6 +410,7 @@
         initMap();
         this.setupEventListeners();
         this.updateUI();
+        this.setupCollapsibles();
         this.log("System initialized. Test audio to enable features.");
 
         // Setup max distance slider
@@ -395,6 +428,21 @@
           this.speedThreshold = parseFloat(e.target.value);
           document.getElementById("speedThresholdValue").textContent = e.target.value + ' km/h';
         });
+      },
+
+      setupCollapsibles: function() {
+        const coll = document.getElementsByClassName("collapsible");
+        for (let i = 0; i < coll.length; i++) {
+          coll[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            const content = this.nextElementSibling;
+            if (content.style.maxHeight) {
+              content.style.maxHeight = null;
+            } else {
+              content.style.maxHeight = content.scrollHeight + "px";
+            }
+          });
+        }
       },
 
       setupEventListeners: function() {

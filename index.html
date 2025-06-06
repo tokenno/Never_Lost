@@ -153,6 +153,10 @@
       font-weight: bold;
       animation: pulse 1.5s infinite;
     }
+    button.muted {
+      background: #f00 !important;
+      color: #fff !important;
+    }
     @keyframes pulse {
       0% { opacity: 1; }
       50% { opacity: 0.5; }
@@ -169,6 +173,7 @@
     <div class="control-group">
       <button id="testBtn">Test Audio & Lock</button>
       <button id="autoLockBtn" disabled>Auto-Lock Mode</button>
+      <button id="muteBtn" disabled>Mute Sound</button>
       <button id="stopBtn" disabled>Stop</button>
     </div>
     <div id="autoLockSettings" style="display: none;">
@@ -245,10 +250,12 @@
       <h2>Audio Setup</h2>
       Tap "Test Audio & Lock" first to enable sound.<BR>
       Adjust Bleep Freq (Hz) to change tone pitch (800Hz = default).<BR>
+      Use "Mute Sound" to temporarily disable audio feedback.<BR>
 
       <h2>GPS Controls</h2>
       Test Audio & Lock: Save your current location as the target.<BR>
-      Auto-Lock Mode: Automatically locks when speed is below 0.5 km/h.<BR>
+      Auto-Lock Mode: Automatically locks when speed is below 10 km/h.<BR>
+      Mute Sound: Temporarily disable audio without affecting GPS.<BR>
       Stop: Clears the locked position.<BR>
 
       <h2>Direction Indicator</h2>
@@ -270,6 +277,7 @@
       <h2>Quick Start</h2>
       Tap "Test Audio & Lock" when you park your vehicle.<BR>
       Or enable "Auto-Lock Mode" to automatically lock when stopped.<BR>
+      Use "Mute Sound" if you need temporary silence.<BR>
       Follow the arrow direction and listen to bleeps:<BR>
       Faster bleeps = Getting closer.<BR>
       Slower bleeps = Moving away.<BR>
@@ -334,6 +342,7 @@
       autoLockDebounce: null,
       currentSpeed: 0,
       reachedPointDisplayed: false,
+      isMuted: false,
 
       init: async function() {
         initMap(); // Initialize the map
@@ -360,9 +369,29 @@
           this.toggleAutoLock();
         });
 
+        document.getElementById("muteBtn").addEventListener("click", () => {
+          this.toggleMute();
+        });
+
         document.getElementById("stopBtn").addEventListener("click", () => {
           this.stop();
         });
+      },
+
+      toggleMute: function() {
+        this.isMuted = !this.isMuted;
+        const muteBtn = document.getElementById("muteBtn");
+        
+        if (this.isMuted) {
+          muteBtn.textContent = "Sound Muted";
+          muteBtn.classList.add("muted");
+          clearTimeout(this.bleepTimer);
+          this.log("Audio muted");
+        } else {
+          muteBtn.textContent = "Mute Sound";
+          muteBtn.classList.remove("muted");
+          this.log("Audio unmuted");
+        }
       },
 
       toggleAutoLock: function() {
@@ -373,7 +402,7 @@
           document.getElementById("autoLockBtn").style.backgroundColor = "#0f0";
           document.getElementById("autoLockBtn").style.color = "#000";
           document.getElementById("autoLockSettings").style.display = "block";
-          this.log("Auto-lock enabled - will lock when speed < 0.5 km/h");
+          this.log("Auto-lock enabled - will lock when speed < 10 km/h");
           this.updateGpsStatus("Auto-lock enabled - will lock when stopped");
         } else {
           document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
@@ -438,6 +467,7 @@
           document.getElementById("audioStatus").textContent = "Audio: Working!";
           document.getElementById("audioStatus").className = "status success";
           document.getElementById("autoLockBtn").disabled = false;
+          document.getElementById("muteBtn").disabled = false;
           this.log("Test sound played successfully - audio is enabled");
         } catch (e) {
           document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
@@ -447,7 +477,7 @@
       },
 
       playBleep: function(freq) {
-        if (!this.audioCtx || !this.isAudioAllowed) return;
+        if (!this.audioCtx || !this.isAudioAllowed || this.isMuted) return;
         
         try {
           const now = this.audioCtx.currentTime;
@@ -537,7 +567,8 @@
         this.currentSpeed = speed || 0;
         const speedKmh = (this.currentSpeed * 3.6).toFixed(1);
         
-        document.getElementById("speedIndicator").textContent = `Current speed: ${speedKmh} km/h`;
+        const speedEl = document.getElementById("speedIndicator");
+        speedEl.textContent = `Current speed: ${speedKmh} km/h`;
         
         // Update map markers
         if (map) {
@@ -552,14 +583,14 @@
           }
         }
 
-        // Auto-lock logic (0.5 km/h threshold)
-        const threshold = 10 * 1000 / 3600; // Convert 0.5 km/h to m/s
+        // Auto-lock logic (10 km/h threshold)
+        const threshold = 10 * 1000 / 3600; // Convert 10 km/h to m/s
         const delay = parseFloat(document.getElementById("lockDelay").value) * 1000; // Convert seconds to ms
         
         if (this.autoLockEnabled) {
           if (this.currentSpeed > threshold && this.lockPosition) {
             // Speed exceeds threshold: clear locked position
-            this.log(`Auto-unlocked: Speed exceeded 0.5 km/h (${speedKmh} km/h)`);
+            this.log(`Auto-unlocked: Speed exceeded 10 km/h (${speedKmh} km/h)`);
             this.updateGpsStatus(`Auto-unlocked (Speed: ${speedKmh} km/h)`);
             this.updateLockStatus("Not locked (moving)");
             this.lockPosition = null;
@@ -599,7 +630,7 @@
         }
         
         this.movementHistory.push({ time: now, distance, speed: this.currentSpeed });
-        this.movementHistory = this.movementHistory.filter(item => now - item.time < 3000);
+        this.movementHistory = this.movementHistory.filter(item => now - item.time < 5000);
         
         this.updateDirection(latitude, longitude);
         this.updateDisplay(distance, accuracy, this.currentSpeed);
@@ -647,7 +678,7 @@
       updateAudio: function(currentDistance) {
         clearTimeout(this.bleepTimer);
         
-        if (!this.isAudioAllowed || !this.audioCtx) {
+        if (!this.isAudioAllowed || !this.audioCtx || this.isMuted) {
           this.bleepTimer = setTimeout(() => {
             this.updateAudio(currentDistance);
           }, 1000);
@@ -658,25 +689,32 @@
         const freq = this.getValidFrequency();
         const normalizedDist = Math.min(currentDistance, maxDist);
         
-        const avgSpeed = this.movementHistory.length > 0 ? 
-          this.movementHistory.reduce((sum, item) => sum + item.speed, 0) / this.movementHistory.length : 0;
+        // Calculate average speed over last 5 seconds (converted to km/h)
+        const avgSpeedKmh = this.movementHistory.length > 0 ? 
+            (this.movementHistory.reduce((sum, item) => sum + item.speed, 0) / this.movementHistory.length) * 3.6 : 0;
         
-        const speedFactor = Math.min(10, Math.max(1, 1 + (avgSpeed * 3)));
-        const distanceFactor = 1 - (normalizedDist / maxDist); // Inverted: 1 when close, 0 when far
+        // Speed factor (1 when stationary, up to 3 when moving fast)
+        const speedFactor = Math.min(3, Math.max(1, 1 + (avgSpeedKmh / 20))); // Caps at 3x tempo for speeds > 40 km/h
         
-        // Base tempo range: 50ms (fast, close) to 1050ms (slow, far)
-        const baseTempo = 1050 - (1000 * distanceFactor); // Inverted to make closer = faster
+        // Distance factor (0 when at max distance, 1 when at target)
+        const distanceFactor = 1 - (normalizedDist / maxDist);
+        
+        // Base tempo range: 150ms (fast) to 1500ms (slow)
+        const baseTempo = 1500 - (1350 * distanceFactor); // Closer = faster
+        
+        // Apply speed factor (faster movement = faster beeps)
         const dynamicTempo = baseTempo / speedFactor;
         
-        this.currentTempo = dynamicTempo;
-        const bpm = Math.round(60000 / dynamicTempo);
+        // Ensure tempo stays within reasonable bounds
+        this.currentTempo = Math.max(150, Math.min(1500, dynamicTempo));
+        const bpm = Math.round(60000 / this.currentTempo);
         document.getElementById("bleepRate").textContent = bpm;
         
         this.playBleep(freq);
         
         this.bleepTimer = setTimeout(() => {
           this.updateAudio(currentDistance);
-        }, dynamicTempo);
+        }, this.currentTempo);
       },
 
       stop: function() {
@@ -690,10 +728,13 @@
         this.isActive = false;
         this.lockPosition = null;
         this.autoLockEnabled = false;
+        this.isMuted = false;
         document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
         document.getElementById("autoLockBtn").style.backgroundColor = "";
         document.getElementById("autoLockBtn").style.color = "";
         document.getElementById("autoLockSettings").style.display = "none";
+        document.getElementById("muteBtn").textContent = "Mute Sound";
+        document.getElementById("muteBtn").classList.remove("muted");
         this.updateGpsStatus("Stopped");
         this.updateLockStatus("Not locked");
         this.updateUI();
@@ -721,6 +762,7 @@
 
       updateUI: function() {
         document.getElementById("stopBtn").disabled = !this.isActive;
+        document.getElementById("muteBtn").disabled = !this.isActive || !this.isAudioAllowed;
       },
 
       getValidFrequency: function() {

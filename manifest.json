@@ -1,15 +1,25 @@
 {
   "name": "Find Back - GPS Locator",
-  "short_name": "FindvBack",
+  "short_name": "FindBack",
   "description": "Helps you navigate back to a locked GPS position using audio bleeps and visual compass",
   "start_url": "https://tokenno.github.io/Never_Lost/",
-  "display": "fullscreen",
+  "display": "standalone",
   "orientation": "portrait",
   "background_color": "#111111",
   "theme_color": "#00ff00",
   "icons": [
     {
       "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+     {
+      "src": "/icon-512x512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+     {
+      "src": "/icon-192x192-maskable.png",
       "sizes": "192x192",
       "type": "image/png"
     },
@@ -23,4 +33,3 @@
   "related_applications": [],
   "prefer_related_applications": false
 }
-

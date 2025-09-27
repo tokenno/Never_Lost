@@ -49,6 +49,74 @@
       transform: rotate(0deg);
       transition: transform 0.5s ease;
     }
+
+
+    /* Spinning Wheel Animation */
+    .wheel-container {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .spinning-wheel {
+      width: 50px;
+      height: 50px;
+      position: relative;
+      animation: wheel-spin 3s linear infinite;
+    }
+    
+    .wheel-outer {
+      fill: none;
+      stroke: var(--primary-color);
+      stroke-width: 3;
+      stroke-dasharray: 5;
+      animation: wheel-dash 1s linear infinite;
+    }
+    
+    .wheel-inner {
+      fill: none;
+      stroke: var(--accent-color);
+      stroke-width: 2;
+    }
+    
+    .wheel-spoke {
+      stroke: var(--accent-color);
+      stroke-width: 2;
+      transform-origin: center;
+    }
+    
+    .spoke-1 { animation: spoke-spin 4s linear infinite; }
+    .spoke-2 { animation: spoke-spin 3s linear infinite reverse; }
+    .spoke-3 { animation: spoke-spin 5s linear infinite; }
+    
+    @keyframes wheel-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    @keyframes wheel-dash {
+      to {
+        stroke-dashoffset: -10;
+      }
+    }
+    
+    @keyframes spoke-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .wheel-pulse {
+      fill: var(--primary-color);
+      animation: wheel-pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes wheel-pulse {
+      0%, 100% { opacity: 0.7; transform: scale(0.95); }
+      50% { opacity: 1; transform: scale(1); }
+    }
     
     .dashboard {
       display: grid;
@@ -479,7 +547,16 @@
 <body>
   <div class="app-header">
     <h1 class="app-title">Spin</h1>
-    <div class="motorcycle-icon">🏍️</div>
+    <div class="wheel-container">
+      <svg class="spinning-wheel" viewBox="0 0 100 100">
+        <circle class="wheel-outer" cx="50" cy="50" r="40" />
+        <circle class="wheel-inner" cx="50" cy="50" r="25" />
+        <line class="wheel-spoke spoke-1" x1="50" y1="50" x2="75" y2="50" />
+        <line class="wheel-spoke spoke-2" x1="50" y1="50" x2="50" y2="25" />
+        <line class="wheel-spoke spoke-3" x1="50" y1="50" x2="30" y2="70" />
+        <circle class="wheel-pulse" cx="50" cy="50" r="8" />
+      </svg>
+    </div>
   </div>
 
   <div class="dashboard">

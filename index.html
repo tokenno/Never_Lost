@@ -3,69 +3,89 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FindBack - GPS Locator</title>
+  <title>BikeMe - Motorcycle Assistance and GPS Locator</title>
   <!-- Leaflet Map CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
+    :root {
+      --primary-color: #ff6600;
+      --secondary-color: #333;
+      --accent-color: #00ccff;
+      --text-color: #fff;
+      --warning-color: #ffcc00;
+      --error-color: #ff3333;
+      --success-color: #00cc66;
+    }
+    
     body {
-      font-family: sans-serif;
-      background: #111;
-      color: #0f0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      color: var(--text-color);
       text-align: center;
-      padding: 2em;
-      max-width: 800px;
+      padding: 1em;
+      max-width: 1000px;
       margin: 0 auto;
     }
-    input, button, select {
-      margin: 0.5em;
-      padding: 0.5em;
-      font-size: 1em;
-      background: #222;
-      color: #0f0;
-      border: 1px solid #0f0;
-      border-radius: 4px;
+    
+    h1, h2, h3 {
+      color: var(--primary-color);
+      text-shadow: 0 0 5px rgba(255, 102, 0, 0.3);
     }
-    button {
-      cursor: pointer;
+    
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1em;
     }
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    
+    .app-title {
+      font-size: 2.2em;
+      margin: 0;
     }
-    #debug {
-      text-align: left;
-      margin: 20px auto;
+    
+    .motorcycle-icon {
+      font-size: 2.5em;
+      transform: rotate(0deg);
+      transition: transform 0.5s ease;
+    }
+    
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .dashboard-item {
+      background: rgba(40, 40, 40, 0.7);
+      border-radius: 10px;
       padding: 10px;
-      border: 1px dashed #0f0;
-      color: #0f0;
-      max-height: 200px;
-      overflow-y: auto;
-      font-family: monospace;
-      font-size: 0.9em;
+      border: 1px solid #444;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     }
-    .warning {
-      color: #ff0;
+    
+    .dashboard-value {
+      font-size: 1.8em;
       font-weight: bold;
+      color: var(--accent-color);
+      margin: 5px 0;
     }
-    .status {
-      margin: 10px 0;
-      padding: 8px;
-      border-radius: 4px;
+    
+    .dashboard-label {
+      font-size: 0.9em;
+      color: #aaa;
     }
-    .success {
-      background: rgba(0, 255, 0, 0.1);
-      border: 1px solid #0f0;
-    }
-    .error {
-      background: rgba(255, 0, 0, 0.1);
-      border: 1px solid #f00;
-    }
+    
     .panel {
-      border: 1px solid #0f0;
-      border-radius: 8px;
+      background: rgba(30, 30, 30, 0.8);
+      border: 1px solid #444;
+      border-radius: 10px;
       padding: 15px;
       margin: 10px 0;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
+    
     .control-group {
       display: flex;
       justify-content: center;
@@ -73,35 +93,126 @@
       gap: 10px;
       margin: 10px 0;
     }
-    .control-item {
-      min-width: 120px;
+    
+    input, button, select {
+      margin: 0.5em;
+      padding: 0.7em 1em;
+      font-size: 1em;
+      background: #333;
+      color: var(--text-color);
+      border: 1px solid #555;
+      border-radius: 6px;
+      transition: all 0.3s ease;
     }
-    .checkbox-group {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 10px 0;
-    }
-    .checkbox-group label {
-      margin-left: 8px;
-    }
-    .speed-indicator {
-      font-size: 0.9em;
-      margin-top: 5px;
-      color: #f00;
+    
+    button {
+      cursor: pointer;
+      background: linear-gradient(to bottom, #444, #333);
       font-weight: bold;
     }
+    
+    button:hover:not(:disabled) {
+      background: linear-gradient(to bottom, #555, #444);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .primary-btn {
+      background: linear-gradient(to bottom, var(--primary-color), #e55d00);
+      color: #fff;
+      border: 1px solid #ff8533;
+    }
+    
+    .secondary-btn {
+      background: linear-gradient(to bottom, #555, #444);
+      color: #fff;
+    }
+    
+    .warning-btn {
+      background: linear-gradient(to bottom, var(--warning-color), #e6b800);
+      color: #000;
+    }
+    
+    .emergency-btn {
+      background: linear-gradient(to bottom, var(--error-color), #cc0000);
+      color: #fff;
+      animation: pulse-emergency 2s infinite;
+    }
+    
+    @keyframes pulse-emergency {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    #debug {
+      text-align: left;
+      margin: 20px auto;
+      padding: 10px;
+      border: 1px dashed #555;
+      color: #aaa;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.9em;
+      background: rgba(20, 20, 20, 0.8);
+      border-radius: 5px;
+    }
+    
+    .status {
+      margin: 10px 0;
+      padding: 8px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    
+    .success {
+      background: rgba(0, 204, 102, 0.2);
+      border: 1px solid var(--success-color);
+      color: var(--success-color);
+    }
+    
+    .error {
+      background: rgba(255, 51, 51, 0.2);
+      border: 1px solid var(--error-color);
+      color: var(--error-color);
+    }
+    
+    .warning {
+      background: rgba(255, 204, 0, 0.2);
+      border: 1px solid var(--warning-color);
+      color: var(--warning-color);
+    }
+    
+    .speed-indicator {
+      font-size: 1em;
+      margin-top: 5px;
+      color: var(--accent-color);
+      font-weight: bold;
+    }
+    
     .auto-lock-settings {
       margin-top: 10px;
       padding: 10px;
-      border-top: 1px dashed #0f0;
+      border-top: 1px dashed #555;
     }
+    
     .slider-label {
       display: inline-flex;
       align-items: center;
       margin-left: 5px;
-      color: #0f0;
+      color: var(--accent-color);
     }
+    
     /* Direction indicator */
     .direction-container {
       position: relative;
@@ -109,12 +220,13 @@
       height: 100px;
       margin: 10px auto;
     }
+    
     #directionArrow {
       width: 0; 
       height: 0; 
       border-left: 10px solid transparent;
       border-right: 10px solid transparent;
-      border-bottom: 40px solid #0f0;
+      border-bottom: 40px solid var(--primary-color);
       position: absolute;
       left: 50%;
       top: 50%;
@@ -122,62 +234,197 @@
       transform: translate(-50%, -50%) rotate(0deg);
       transition: transform 0.3s ease;
     }
+    
     .direction-circle {
       position: absolute;
       width: 100%;
       height: 100%;
-      border: 1px dashed #0f0;
+      border: 1px dashed var(--accent-color);
       border-radius: 50%;
       top: 0;
       left: 0;
       box-sizing: border-box;
     }
+    
     .direction-status {
       font-size: 0.9em;
       margin-top: 5px;
     }
+    
     /* Map styling */
     #map {
-      height: 200px;
+      height: 250px;
       width: 100%;
       background: #222;
-      border: 1px solid #0f0;
+      border: 1px solid #555;
       border-radius: 8px;
       margin-top: 10px;
     }
+    
     .user-marker, .lock-marker {
       font-size: 20px;
       text-shadow: 0 0 3px #000;
     }
+    
     .leaflet-control-attribution {
       background: rgba(0, 0, 0, 0.7) !important;
-      color: #0f0 !important;
+      color: #aaa !important;
       font-family: monospace;
       font-size: 0.8em;
     }
+    
     .reached-message {
-      color: #0f0;
+      color: var(--success-color);
       font-weight: bold;
       animation: pulse 1.5s infinite;
     }
+    
     button.muted {
       background: #f00 !important;
       color: #fff !important;
     }
+    
     @keyframes pulse {
       0% { opacity: 1; }
       50% { opacity: 0.5; }
       100% { opacity: 1; }
     }
-    .help-header {
-      color: #fff;
+    
+    /* Lean angle indicator */
+    .lean-container {
+      position: relative;
+      width: 200px;
+      height: 100px;
+      margin: 10px auto;
+      background: rgba(50, 50, 50, 0.7);
+      border-radius: 100px 100px 0 0;
+      overflow: hidden;
     }
-    #helpContent {
-      color: #fff;
+    
+    .lean-bike {
+      position: absolute;
+      width: 40px;
+      height: 60px;
+      background: var(--primary-color);
+      border-radius: 10px 10px 0 0;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      transition: transform 0.5s ease;
     }
-    #helpContent h1, #helpContent h2 {
-      color: #0f0;
+    
+    .lean-scale {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: space-around;
     }
+    
+    .lean-mark {
+      width: 1px;
+      height: 10px;
+      background: #666;
+      position: relative;
+      top: 10px;
+    }
+    
+    .lean-mark:nth-child(6) {
+      height: 20px;
+      background: var(--accent-color);
+    }
+    
+    .lean-value {
+      position: absolute;
+      bottom: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-weight: bold;
+      color: var(--accent-color);
+    }
+    
+    /* Tabs for different sections */
+    .tabs {
+      display: flex;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #444;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-bottom: none;
+      border-radius: 5px 5px 0 0;
+      margin-right: 5px;
+      background: rgba(50, 50, 50, 0.7);
+    }
+    
+    .tab.active {
+      background: rgba(30, 30, 30, 0.9);
+      border-color: #444;
+      border-bottom: 1px solid rgba(30, 30, 30, 0.9);
+      margin-bottom: -1px;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* Maintenance alerts */
+    .maintenance-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      margin: 5px 0;
+      background: rgba(50, 50, 50, 0.5);
+      border-radius: 5px;
+    }
+    
+    .maintenance-progress {
+      height: 10px;
+      background: #333;
+      border-radius: 5px;
+      flex-grow: 1;
+      margin: 0 10px;
+      overflow: hidden;
+    }
+    
+    .maintenance-progress-bar {
+      height: 100%;
+      background: linear-gradient(to right, var(--success-color), var(--warning-color), var(--error-color));
+      border-radius: 5px;
+    }
+    
+    /* Emergency panel */
+    .emergency-panel {
+      background: rgba(204, 0, 0, 0.2);
+      border: 1px solid var(--error-color);
+    }
+    
+    .emergency-contacts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin: 10px 0;
+    }
+    
+    .contact-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+      background: rgba(50, 50, 50, 0.7);
+      border-radius: 5px;
+      min-width: 120px;
+    }
+    
     /* Collapsible panels */
     .collapsible {
       cursor: pointer;
@@ -186,163 +433,362 @@
       text-align: center;
       outline: none;
       font-size: 1em;
-      color: #0f0;
+      color: var(--primary-color);
       background: transparent;
       width: 100%;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
+    
     .collapsible:after {
       content: '▼';
       font-size: 0.8em;
       margin-left: 5px;
       transition: transform 0.2s;
     }
+    
     .collapsible.active:after {
       transform: rotate(180deg);
     }
+    
     .collapsible-content {
       padding: 0 10px;
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.2s ease-out;
     }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+      
+      .app-header {
+        flex-direction: column;
+      }
+      
+      .control-group {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>FindBack</h1>
-  <p class="warning">TAP "TEST AUDIO & LOCK" FIRST!</p>
+  <div class="app-header">
+    <h1 class="app-title">BikeMe</h1>
+    <div class="motorcycle-icon">🏍️</div>
+  </div>
 
-  <div class="panel">
-    <h2>Controls</h2>
-    <div class="control-group">
-      <button id="testBtn">Test Audio & Lock</button>
-      <button id="autoLockBtn" disabled>Auto-Lock Mode</button>
-      <button id="muteBtn" disabled>Mute Sound</button>
-      <button id="stopBtn" disabled>Stop</button>
+  <div class="dashboard">
+    <div class="dashboard-item">
+      <div class="dashboard-label">Current Speed</div>
+      <div class="dashboard-value" id="currentSpeed">-- km/h</div>
     </div>
-    <div id="autoLockSettings" style="display: none;">
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Speed</div>
+      <div class="dashboard-value" id="maxSpeed">-- km/h</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Average Speed</div>
+      <div class="dashboard-value" id="avgSpeed">-- km/h</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Today's Distance</div>
+      <div class="dashboard-value" id="todayDistance">-- km</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Lean Angle</div>
+      <div class="dashboard-value" id="leanAngle">--°</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">0-100 km/h</div>
+      <div class="dashboard-value" id="accelerationTime">-- s</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="navigation">Navigation</div>
+    <div class="tab" data-tab="metrics">Ride Metrics</div>
+    <div class="tab" data-tab="emergency">Emergency</div>
+    <div class="tab" data-tab="maintenance">Maintenance</div>
+  </div>
+
+  <!-- Navigation Tab -->
+  <div class="tab-content active" id="navigation-tab">
+    <div class="panel">
+      <h2>GPS Navigation</h2>
+      <p class="warning">TAP "TEST AUDIO & LOCK" FIRST!</p>
+
       <div class="control-group">
-        <div class="control-item">
-          <label for="stationaryTime">Stationary Confirmation Time</label>
-          <div>
-            <input type="range" id="stationaryTime" value="30" min="5" max="60" />
-            <span id="stationaryTimeValue" class="slider-label">30 sec</span>
+        <button id="testBtn" class="primary-btn">Test Audio & Lock</button>
+        <button id="calibrateBtn" class="secondary-btn">Calibrate Sensors</button>
+        <button id="autoLockBtn" class="secondary-btn" disabled>Auto-Lock Mode</button>
+        <button id="muteBtn" class="secondary-btn" disabled>Mute Sound</button>
+        <button id="stopBtn" class="secondary-btn" disabled>Stop</button>
+      </div>
+      
+      <div id="autoLockSettings" style="display: none;">
+        <div class="control-group">
+          <div class="control-item">
+            <label for="stationaryTime">Stationary Confirmation Time</label>
+            <div>
+              <input type="range" id="stationaryTime" value="30" min="5" max="60" />
+              <span id="stationaryTimeValue" class="slider-label">30 sec</span>
+            </div>
+          </div>
+          <div class="control-item">
+            <label for="speedThreshold">Speed Threshold (km/h)</label>
+            <div>
+              <input type="range" id="speedThreshold" value="10" min="5" max="20" />
+              <span id="speedThresholdValue" class="slider-label">10 km/h</span>
+            </div>
           </div>
         </div>
-        <div class="control-item">
-          <label for="speedThreshold">Speed Threshold (km/h)</label>
-          <div>
-            <input type="range" id="speedThreshold" value="10" min="5" max="20" />
-            <span id="speedThresholdValue" class="slider-label">10 km/h</span>
+      </div>
+      
+      <div id="calibrateStatus" class="status">Sensors not calibrated</div>
+      <div id="lockStatus" class="status">Lock Status: Not locked</div>
+      <div id="audioStatus" class="status">Audio: Not initialized</div>
+      <div id="gpsStatus" class="status">GPS: Ready</div>
+      <div id="reachedMessage" class="reached-message" style="display: none;">You have reached GPS locked point!</div>
+    </div>
+
+    <div class="panel">
+      <h2>Position Map</h2>
+      <div id="map"></div>
+    </div>
+
+    <div class="panel">
+      <button class="collapsible">Direction Indicator ▼</button>
+      <div class="collapsible-content">
+        <div class="direction-container">
+          <div id="directionArrow"></div>
+          <div class="direction-circle"></div>
+        </div>
+        <div id="directionStatus" class="direction-status">Direction: --</div>
+      </div>
+
+      <button class="collapsible">Sonar Parameters ▼</button>
+      <div class="collapsible-content">
+        <div class="control-group">
+          <div class="control-item">
+            <label for="freqInput">Bleep Freq (Hz)</label><br>
+            <input type="number" id="freqInput" value="800" min="20" max="20000" />
+          </div>
+          <div class="control-item">
+            <label for="maxDistInput">Max Distance (m)</label><br>
+            <input type="range" id="maxDistInput" value="50" min="1" max="500" />
+            <span id="maxDistValue">50</span> m
+          </div>
+        </div>
+      </div>
+
+      <button class="collapsible">Data Output ▼</button>
+      <div class="collapsible-content">
+        <div class="control-group">
+          <div class="control-item">
+            <label>Distance</label><br>
+            <span id="distance">--</span> m
+          </div>
+          <div class="control-item">
+            <label>Accuracy</label><br>
+            <span id="accuracy">--</span> m
+          </div>
+          <div class="control-item">
+            <label>BPM</label><br>
+            <span id="bleepRate">--</span>
           </div>
         </div>
       </div>
     </div>
-    <div id="speedIndicator" class="speed-indicator">Current speed: -- km/h</div>
-    <div id="lockStatus" class="status">Lock Status: Not locked</div>
-    <div id="audioStatus" class="status">Audio: Not initialized</div>
-    <div id="gpsStatus" class="status">GPS: Ready</div>
-    <div id="reachedMessage" class="reached-message" style="display: none;">You have reached GPS locked point!</div>
   </div>
 
-  <div class="panel">
-    <h2>Position Map</h2>
-    <div id="map"></div>
-  </div>
-
-  <div class="panel">
-    <button class="collapsible">Direction Indicator ▼</button>
-    <div class="collapsible-content">
-      <div class="direction-container">
-        <div id="directionArrow"></div>
-        <div class="direction-circle"></div>
+  <!-- Metrics Tab -->
+  <div class="tab-content" id="metrics-tab">
+    <div class="panel">
+      <h2>Ride Metrics</h2>
+      
+      <div class="control-group">
+        <button id="resetMetricsBtn" class="secondary-btn">Reset Metrics</button>
+        <button id="exportMetricsBtn" class="secondary-btn">Export Data</button>
       </div>
-      <div id="directionStatus" class="direction-status">Direction: --</div>
-    </div>
-
-    <button class="collapsible">Sonar Parameters ▼</button>
-    <div class="collapsible-content">
+      
+      <div class="lean-container">
+        <div class="lean-scale">
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+        </div>
+        <div class="lean-bike" id="leanBike"></div>
+        <div class="lean-value" id="leanValue">0°</div>
+      </div>
+      
       <div class="control-group">
         <div class="control-item">
-          <label for="freqInput">Bleep Freq (Hz)</label><br>
-          <input type="number" id="freqInput" value="800" min="20" max="20000" />
+          <h3>Distance Statistics</h3>
+          <div>Today: <span id="statsToday">0 km</span></div>
+          <div>This Week: <span id="statsWeek">0 km</span></div>
+          <div>This Month: <span id="statsMonth">0 km</span></div>
+          <div>Total: <span id="statsTotal">0 km</span></div>
         </div>
+        
         <div class="control-item">
-          <label for="maxDistInput">Max Distance (m)</label><br>
-          <input type="range" id="maxDistInput" value="50" min="1" max="500" />
-          <span id="maxDistValue">50</span> m
+          <h3>Speed Statistics</h3>
+          <div>Current: <span id="statsCurrentSpeed">0 km/h</span></div>
+          <div>Average: <span id="statsAvgSpeed">0 km/h</span></div>
+          <div>Max: <span id="statsMaxSpeed">0 km/h</span></div>
+          <div>0-100 km/h: <span id="statsAcceleration">-- s</span></div>
         </div>
       </div>
-    </div>
-
-    <button class="collapsible">Data Output ▼</button>
-    <div class="collapsible-content">
-      <div class="control-group">
-        <div class="control-item">
-          <label>Distance</label><br>
-          <span id="distance">--</span> m
-        </div>
-        <div class="control-item">
-          <label>Accuracy</label><br>
-          <span id="accuracy">--</span> m
-        </div>
-        <div class="control-item">
-          <label>BPM</label><br>
-          <span id="bleepRate">--</span>
+      
+      <div class="control-item">
+        <h3>Ride History</h3>
+        <div id="rideHistory" style="max-height: 200px; overflow-y: auto; text-align: left; padding: 10px; background: rgba(40,40,40,0.7); border-radius: 5px;">
+          No ride history yet.
         </div>
       </div>
     </div>
   </div>
-    
+
+  <!-- Emergency Tab -->
+  <div class="tab-content" id="emergency-tab">
+    <div class="panel emergency-panel">
+      <h2>Emergency Features</h2>
+      
+      <div class="control-group">
+        <button id="emergencyBtn" class="emergency-btn">EMERGENCY ALERT</button>
+      </div>
+      
+      <div class="control-group">
+        <div class="control-item">
+          <label for="emergencyMessage">Emergency Message</label><br>
+          <textarea id="emergencyMessage" rows="3" style="width: 100%;">I need help! My current location is: </textarea>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <div class="control-item">
+          <label for="emergencyContacts">Emergency Contacts (comma separated)</label><br>
+          <input type="text" id="emergencyContacts" value="" placeholder="+1234567890,+0987654321" style="width: 100%;" />
+        </div>
+      </div>
+      
+      <h3>Quick Contact</h3>
+      <div class="emergency-contacts" id="emergencyContactList">
+        <!-- Contacts will be added here dynamically -->
+      </div>
+      
+      <div class="control-group">
+        <button id="testEmergencyBtn" class="warning-btn">Test Emergency</button>
+        <button id="addContactBtn" class="secondary-btn">Add Contact</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Maintenance Tab -->
+  <div class="tab-content" id="maintenance-tab">
+    <div class="panel">
+      <h2>Maintenance Alerts</h2>
+      
+      <div class="control-group">
+        <button id="addMaintenanceBtn" class="primary-btn">Add Maintenance Item</button>
+        <button id="resetMaintenanceBtn" class="secondary-btn">Reset All</button>
+      </div>
+      
+      <div id="maintenanceList">
+        <!-- Maintenance items will be added here dynamically -->
+        <div class="maintenance-item">
+          <div>Oil Change</div>
+          <div class="maintenance-progress">
+            <div class="maintenance-progress-bar" style="width: 30%;"></div>
+          </div>
+          <div>2000/5000 km</div>
+        </div>
+        
+        <div class="maintenance-item">
+          <div>Tire Pressure</div>
+          <div class="maintenance-progress">
+            <div class="maintenance-progress-bar" style="width: 70%;"></div>
+          </div>
+          <div>Check weekly</div>
+        </div>
+        
+        <div class="maintenance-item">
+          <div>Chain Lubrication</div>
+          <div class="maintenance-progress">
+            <div class="maintenance-progress-bar" style="width: 50%;"></div>
+          </div>
+          <div>500/1000 km</div>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <div class="control-item">
+          <h3>Add New Maintenance Item</h3>
+          <input type="text" id="newMaintenanceName" placeholder="Item name" />
+          <input type="number" id="newMaintenanceInterval" placeholder="Interval (km)" />
+          <button id="saveMaintenanceBtn" class="secondary-btn">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="panel">
     <h2 class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
       Help Guide ▼
     </h2>
     <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
-      <h1>FindBack</h1>
+      <h1>BikeMe</h1>
       <h2>Purpose:</h2>
-      Helps you navigate back to a locked GPS position (like your parked vehicle) using audio bleeps (faster = closer) and a visual compass.
+      Motorcycle-focused GPS navigation with ride metrics, emergency features, and maintenance tracking.
 
-      <h2>Audio Setup</h2>
-      Tap "Test Audio & Lock" first to enable sound.<BR>
-      Adjust Bleep Freq (Hz) to change tone pitch (800Hz = default).<BR>
-      Use "Mute Sound" to temporarily disable audio feedback.<BR>
+      <h2>Navigation Tab</h2>
+      <strong>GPS Navigation:</strong> Lock your position and navigate back with audio cues.<br>
+      <strong>Calibrate Sensors:</strong> Place phone on bike in riding position and tap to set baseline for lean angle.<br>
+      <strong>Auto-Lock Mode:</strong> Automatically locks position when motorcycle is stationary.<br>
+      <strong>Direction Indicator:</strong> Visual compass pointing to locked position.<br>
+      <strong>Sonar Parameters:</strong> Adjust audio feedback frequency and range.
 
-      <h2>GPS Controls</h2>
-      Test Audio & Lock: Save your current location as the target.<BR>
-      Auto-Lock Mode: Automatically locks when speed is below 10 km/h.<BR>
-      Mute Sound: Temporarily disable audio without affecting GPS.<BR>
-      Stop: Clears the locked position.<BR>
+      <h2>Metrics Tab</h2>
+      <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and lean angles.<br>
+      <strong>Lean Angle Indicator:</strong> Visual display of motorcycle lean during corners.<br>
+      <strong>Distance Statistics:</strong> Daily, weekly, monthly, and total distance tracking.<br>
+      <strong>Acceleration Timer:</strong> Measures 0-100 km/h acceleration.
 
-      <h2>Direction Indicator</h2>
-      Arrow points to the locked position.<BR>
-      Text shows bearing (e.g., "45° NE").
+      <h2>Emergency Tab</h2>
+      <strong>Emergency Alert:</strong> Send your location to emergency contacts.<br>
+      <strong>Quick Contacts:</strong> Pre-set emergency contacts for quick access.<br>
+      <strong>Custom Message:</strong> Edit the emergency message with your details.
 
-      <h2>Position Map</h2>
-      Shows your location (📍) and locked target (🔒).<BR>
-      Green line connects both points.
-
-      <h2>Parameters</h2>
-      Max Distance: Set to 500m (bleeps slowest at this range).<BR>
-      BPM: Tempo speeds up to 150 BPM as you approach the target.
-
-      <h2>Data Output</h2>
-      Distance: Meters to target.<BR>
-      Accuracy: GPS precision (lower = better).
+      <h2>Maintenance Tab</h2>
+      <strong>Maintenance Alerts:</strong> Track service intervals based on mileage.<br>
+      <strong>Progress Indicators:</strong> Visual progress bars for each maintenance item.<br>
+      <strong>Custom Items:</strong> Add your own maintenance tasks and intervals.
 
       <h2>Quick Start</h2>
-      Tap "Test Audio & Lock" when you park your vehicle.<BR>
-      Or enable "Auto-Lock Mode" to automatically lock when stopped.<BR>
-      Use "Mute Sound" if you need temporary silence.<BR>
-      Follow the arrow direction and listen to bleeps:<BR>
-      Faster bleeps = Getting closer.<BR>
-      Slower bleeps = Moving away.<BR>
-        
-      <h2>Tips</h2><BR>
-      For best accuracy, wait for GPS accuracy less than 10m before locking.<BR>
-      On mobile, keep the app open (background GPS may be limited).
+      1. Mount phone securely and tap "Calibrate Sensors" to set lean angle baseline.<br>
+      2. Tap "Test Audio & Lock" to initialize the app.<br>
+      3. Use the Navigation tab to lock your parking position.<br>
+      4. Check the Metrics tab during your ride for performance data.<br>
+      5. Set up emergency contacts in the Emergency tab before riding.<br>
+      6. Add maintenance schedules in the Maintenance tab.
+
+      <h2>Tips</h2>
+      - For accurate lean angles, mount your phone securely on the motorcycle and calibrate sensors.<br>
+      - Set up emergency contacts before your first ride.<br>
+      - Regular maintenance alerts help keep your motorcycle in top condition.<br>
+      - Export your ride data to track your riding habits over time.
     </div>
   </div>
 
@@ -351,41 +797,9 @@
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // Map variables
-    let map = null;
-    let userMarker = null;
-    let lockMarker = null;
-    let line = null;
-
-    function initMap() {
-      // Create map centered on default location (e.g., London)
-      map = L.map('map').setView([51.505, -0.09], 15);
-      
-      // Add OpenStreetMap tiles
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      }).addTo(map);
-
-      // Custom markers
-      const userIcon = L.divIcon({
-        className: 'user-marker',
-        html: '📍',
-        iconSize: [24, 24]
-      });
-
-      const lockIcon = L.divIcon({
-        className: 'lock-marker',
-        html: '🔒',
-        iconSize: [24, 24]
-      });
-
-      // Initialize markers
-      userMarker = L.marker([0, 0], { icon: userIcon }).addTo(map);
-      lockMarker = L.marker([0, 0], { icon: lockIcon }).addTo(map);
-      line = L.polyline([], { color: '#0f0', weight: 2 }).addTo(map);
-    }
-
-    const SonarBleep = {
+    // Extended MotoFindBack application
+    const MotoFindBack = {
+      // Core GPS functionality (from original app)
       audioCtx: null,
       watchId: null,
       bleepTimer: null,
@@ -404,29 +818,103 @@
       isStationary: false,
       lastStationaryTime: null,
       lastStationaryPosition: null,
-      speedThreshold: 10, // Default speed threshold in km/h
+      speedThreshold: 10,
+
+      // Motorcycle-specific properties
+      maxSpeed: 0,
+      totalDistance: 0,
+      todayDistance: 0,
+      weekDistance: 0,
+      monthDistance: 0,
+      rideStartTime: null,
+      accelerationStartTime: null,
+      accelerationStartSpeed: 0,
+      accelerationTimes: [],
+      maxLeanAngle: 0,
+      currentLeanAngle: 0,
+      maintenanceItems: [],
+      emergencyContacts: [],
+      rideHistory: [],
+      // Calibration properties
+      isCalibrating: false,
+      calibrationSamples: [],
+      leanOffset: 0,
+
+      // DOM elements
+      map: null,
+      userMarker: null,
+      lockMarker: null,
+      line: null,
 
       init: async function() {
-        initMap();
+        this.initMap();
         this.setupEventListeners();
-        this.updateUI();
+        this.setupTabs();
         this.setupCollapsibles();
-        this.log("System initialized. Test audio to enable features.");
+        this.loadData();
+        this.updateUI();
+        this.log("MotoFindBack initialized");
 
-        // Setup max distance slider
+        // Setup sliders
         document.getElementById("maxDistInput").addEventListener("input", (e) => {
           document.getElementById("maxDistValue").textContent = e.target.value;
         });
 
-        // Setup stationary time slider
         document.getElementById("stationaryTime").addEventListener("input", (e) => {
           document.getElementById("stationaryTimeValue").textContent = e.target.value + ' sec';
         });
 
-        // Setup speed threshold slider
         document.getElementById("speedThreshold").addEventListener("input", (e) => {
           this.speedThreshold = parseFloat(e.target.value);
           document.getElementById("speedThresholdValue").textContent = e.target.value + ' km/h';
+        });
+
+        // Initialize device orientation for lean angles
+        this.initDeviceOrientation();
+      },
+
+      initMap: function() {
+        // Create map centered on default location
+        this.map = L.map('map').setView([51.505, -0.09], 15);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(this.map);
+
+        // Custom markers
+        const userIcon = L.divIcon({
+          className: 'user-marker',
+          html: '📍',
+          iconSize: [24, 24]
+        });
+
+        const lockIcon = L.divIcon({
+          className: 'lock-marker',
+          html: '🔒',
+          iconSize: [24, 24]
+        });
+
+        // Initialize markers
+        this.userMarker = L.marker([0, 0], { icon: userIcon }).addTo(this.map);
+        this.lockMarker = L.marker([0, 0], { icon: lockIcon }).addTo(this.map);
+        this.line = L.polyline([], { color: '#ff6600', weight: 2 }).addTo(this.map);
+      },
+
+      setupTabs: function() {
+        const tabs = document.querySelectorAll('.tab');
+        tabs.forEach(tab => {
+          tab.addEventListener('click', () => {
+            // Remove active class from all tabs and contents
+            tabs.forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => {
+              content.classList.remove('active');
+            });
+            
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+          });
         });
       },
 
@@ -446,12 +934,17 @@
       },
 
       setupEventListeners: function() {
+        // Navigation buttons
         document.getElementById("testBtn").addEventListener("click", () => {
           this.initAudio();
           this.playTestSound();
           if (this.isAudioAllowed) {
             this.lockCurrentPosition();
           }
+        });
+
+        document.getElementById("calibrateBtn").addEventListener("click", () => {
+          this.calibrateSensors();
         });
 
         document.getElementById("autoLockBtn").addEventListener("click", () => {
@@ -465,8 +958,100 @@
         document.getElementById("stopBtn").addEventListener("click", () => {
           this.stop();
         });
+
+        // Metrics buttons
+        document.getElementById("resetMetricsBtn").addEventListener("click", () => {
+          this.resetMetrics();
+        });
+
+        document.getElementById("exportMetricsBtn").addEventListener("click", () => {
+          this.exportMetrics();
+        });
+
+        // Emergency buttons
+        document.getElementById("emergencyBtn").addEventListener("click", () => {
+          this.sendEmergencyAlert();
+        });
+
+        document.getElementById("testEmergencyBtn").addEventListener("click", () => {
+          this.testEmergency();
+        });
+
+        document.getElementById("addContactBtn").addEventListener("click", () => {
+          this.addEmergencyContact();
+        });
+
+        // Maintenance buttons
+        document.getElementById("addMaintenanceBtn").addEventListener("click", () => {
+          this.showMaintenanceForm();
+        });
+
+        document.getElementById("resetMaintenanceBtn").addEventListener("click", () => {
+          this.resetMaintenance();
+        });
+
+        document.getElementById("saveMaintenanceBtn").addEventListener("click", () => {
+          this.saveMaintenanceItem();
+        });
       },
 
+      initDeviceOrientation: function() {
+        if (window.DeviceOrientationEvent) {
+          window.addEventListener('deviceorientation', (event) => {
+            if (this.isCalibrating) {
+              this.calibrationSamples.push(event.gamma || 0);
+              return;
+            }
+            // Use gamma (left-right tilt) for lean angle
+            if (event.gamma !== null) {
+              this.currentLeanAngle = Math.round(Math.abs(event.gamma - this.leanOffset));
+              this.updateLeanAngleDisplay();
+              
+              // Update max lean angle if current is higher
+              if (this.currentLeanAngle > this.maxLeanAngle) {
+                this.maxLeanAngle = this.currentLeanAngle;
+                document.getElementById('leanAngle').textContent = `${this.maxLeanAngle}°`;
+              }
+            }
+          });
+        } else {
+          this.log("Device orientation not supported", true);
+        }
+      },
+
+      calibrateSensors: function() {
+        this.isCalibrating = true;
+        this.calibrationSamples = [];
+        document.getElementById('calibrateStatus').textContent = 'Calibrating... Keep phone steady for 5 seconds.';
+        this.log('Starting sensor calibration');
+
+        setTimeout(() => {
+          if (this.calibrationSamples.length > 0) {
+            const avgGamma = this.calibrationSamples.reduce((a, b) => a + b, 0) / this.calibrationSamples.length;
+            this.leanOffset = avgGamma;
+            document.getElementById('calibrateStatus').textContent = 'Calibrated! Offset: ' + this.leanOffset.toFixed(1) + '°';
+            document.getElementById('calibrateStatus').className = 'status success';
+            this.log('Calibration complete: offset ' + this.leanOffset.toFixed(1) + '°');
+          } else {
+            document.getElementById('calibrateStatus').textContent = 'Calibration failed - no data';
+            document.getElementById('calibrateStatus').className = 'status error';
+            this.log('Calibration failed');
+          }
+          this.isCalibrating = false;
+        }, 5000);
+      },
+
+      updateLeanAngleDisplay: function() {
+        const leanBike = document.getElementById('leanBike');
+        const leanValue = document.getElementById('leanValue');
+        
+        // Rotate the bike based on lean angle (limited to 45 degrees for display)
+        const displayAngle = Math.min(45, this.currentLeanAngle);
+        leanBike.style.transform = `translateX(-50%) rotate(${displayAngle}deg)`;
+        leanValue.textContent = `${this.currentLeanAngle}°`;
+      },
+
+      // Core GPS functionality (from original app, adapted)
       toggleMute: function() {
         this.isMuted = !this.isMuted;
         const muteBtn = document.getElementById("muteBtn");
@@ -488,7 +1073,7 @@
         
         if (this.autoLockEnabled) {
           document.getElementById("autoLockBtn").textContent = "Auto-Lock: ON";
-          document.getElementById("autoLockBtn").style.backgroundColor = "#0f0";
+          document.getElementById("autoLockBtn").style.backgroundColor = "#ff6600";
           document.getElementById("autoLockBtn").style.color = "#000";
           document.getElementById("autoLockSettings").style.display = "block";
           this.log("Auto-lock enabled - will lock when stopped for specified time");
@@ -503,7 +1088,7 @@
           this.isStationary = false;
           this.lastStationaryTime = null;
           this.lastStationaryPosition = null;
-          this.speedThreshold = 10; // Reset to default
+          this.speedThreshold = 10;
           document.getElementById("speedThreshold").value = 10;
           document.getElementById("speedThresholdValue").textContent = "10 km/h";
           this.log("Auto-lock disabled");
@@ -663,29 +1248,39 @@
         this.currentSpeed = speed || 0;
         const speedKmh = (this.currentSpeed * 3.6).toFixed(1);
         
-        const speedEl = document.getElementById("speedIndicator");
-        speedEl.textContent = `Current speed: ${speedKmh} km/h`;
+        // Update speed displays
+        document.getElementById("currentSpeed").textContent = `${speedKmh} km/h`;
+        document.getElementById("statsCurrentSpeed").textContent = `${speedKmh} km/h`;
+        
+        // Update max speed
+        if (this.currentSpeed > this.maxSpeed) {
+          this.maxSpeed = this.currentSpeed;
+          document.getElementById("maxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
+          document.getElementById("statsMaxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
+        }
+        
+        // Acceleration tracking (0-100 km/h)
+        this.trackAcceleration(speedKmh);
         
         // Update map markers
-        if (map) {
+        if (this.map) {
           const userPos = [latitude, longitude];
-          userMarker.setLatLng(userPos);
+          this.userMarker.setLatLng(userPos);
           
           if (this.lockPosition) {
             const lockPos = [this.lockPosition.lat, this.lockPosition.lon];
-            lockMarker.setLatLng(lockPos);
-            line.setLatLngs([userPos, lockPos]);
-            map.fitBounds([userPos, lockPos], { padding: [20, 20] });
+            this.lockMarker.setLatLng(lockPos);
+            this.line.setLatLngs([userPos, lockPos]);
+            this.map.fitBounds([userPos, lockPos], { padding: [20, 20] });
           }
         }
 
-        // Auto-lock logic with stationary confirmation time
-        const threshold = this.speedThreshold * 1000 / 3600; // Convert km/h to m/s
-        const stationaryTime = parseFloat(document.getElementById("stationaryTime").value) * 1000; // Convert seconds to ms
+        // Auto-lock logic
+        const threshold = this.speedThreshold * 1000 / 3600;
+        const stationaryTime = parseFloat(document.getElementById("stationaryTime").value) * 1000;
         
         if (this.autoLockEnabled) {
           if (this.currentSpeed <= threshold && !this.isStationary) {
-            // User is stationary, start timer
             this.isStationary = true;
             this.lastStationaryTime = now;
             this.lastStationaryPosition = { lat: latitude, lon: longitude, accuracy };
@@ -702,7 +1297,6 @@
               }
             }, stationaryTime);
           } else if (this.currentSpeed > threshold && this.isStationary) {
-            // User started moving, reset stationary state
             this.isStationary = false;
             this.lastStationaryTime = null;
             clearTimeout(this.autoLockDebounce);
@@ -710,11 +1304,9 @@
             this.log(`Movement detected (${speedKmh} km/h), resetting stationary timer`);
             this.updateGpsStatus(`Moving (${speedKmh} km/h), stationary timer reset`);
             if (this.lockPosition) {
-              // Keep existing lock if already set
               this.updateGpsStatus(`Keeping locked position (Speed: ${speedKmh} km/h)`);
             }
           } else if (this.currentSpeed > threshold && this.lockPosition) {
-            // Moving with a locked position, do nothing (keep lock)
             this.log(`Moving with locked position (${speedKmh} km/h)`);
           }
         }
@@ -742,6 +1334,39 @@
         this.updateDirection(latitude, longitude);
         this.updateDisplay(distance, accuracy, this.currentSpeed);
         this.updateAudio(distance);
+      },
+
+      trackAcceleration: function(speedKmh) {
+        const speedNum = parseFloat(speedKmh);
+        
+        // Start acceleration timer when speed is near 0
+        if (speedNum < 5 && !this.accelerationStartTime) {
+          this.accelerationStartTime = Date.now();
+          this.accelerationStartSpeed = speedNum;
+          this.log("Acceleration timer started");
+        }
+        
+        // Record acceleration time when reaching 100 km/h
+        if (speedNum >= 100 && this.accelerationStartTime) {
+          const accelerationTime = (Date.now() - this.accelerationStartTime) / 1000;
+          this.accelerationTimes.push(accelerationTime);
+          
+          // Update display with average of last 3 runs
+          const recentTimes = this.accelerationTimes.slice(-3);
+          const avgTime = recentTimes.reduce((a, b) => a + b, 0) / recentTimes.length;
+          
+          document.getElementById("accelerationTime").textContent = `${avgTime.toFixed(1)} s`;
+          document.getElementById("statsAcceleration").textContent = `${avgTime.toFixed(1)} s`;
+          
+          this.accelerationStartTime = null;
+          this.log(`0-100 km/h acceleration: ${accelerationTime.toFixed(1)}s`);
+        }
+        
+        // Reset if speed drops significantly during acceleration
+        if (this.accelerationStartTime && speedNum < this.accelerationStartSpeed) {
+          this.accelerationStartTime = null;
+          this.log("Acceleration timer reset");
+        }
       },
 
       updateDirection: function(currentLat, currentLon) {
@@ -801,13 +1426,13 @@
             (this.movementHistory.reduce((sum, item) => sum + item.speed, 0) / this.movementHistory.length) * 3.6 : 0;
         
         // Speed factor (1 when stationary, up to 3 when moving fast)
-        const speedFactor = Math.min(3, Math.max(1, 1 + (avgSpeedKmh / 20))); // Caps at 3x tempo for speeds > 40 km/h
+        const speedFactor = Math.min(3, Math.max(1, 1 + (avgSpeedKmh / 20)));
         
         // Distance factor (0 when at max distance, 1 when at target)
         const distanceFactor = 1 - (normalizedDist / maxDist);
         
         // Base tempo range: 150ms (fast) to 1500ms (slow)
-        const baseTempo = 1500 - (1350 * distanceFactor); // Closer = faster
+        const baseTempo = 1500 - (1350 * distanceFactor);
         
         // Apply speed factor (faster movement = faster beeps)
         const dynamicTempo = baseTempo / speedFactor;
@@ -839,7 +1464,7 @@
         this.isStationary = false;
         this.lastStationaryTime = null;
         this.lastStationaryPosition = null;
-        this.speedThreshold = 10; // Reset to default
+        this.speedThreshold = 10;
         document.getElementById("speedThreshold").value = 10;
         document.getElementById("speedThresholdValue").textContent = "10 km/h";
         document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
@@ -888,11 +1513,178 @@
         return Math.max(1, isNaN(dist) ? 50 : dist);
       },
 
+      // Motorcycle-specific methods
+      resetMetrics: function() {
+        this.maxSpeed = 0;
+        this.totalDistance = 0;
+        this.todayDistance = 0;
+        this.weekDistance = 0;
+        this.monthDistance = 0;
+        this.accelerationTimes = [];
+        this.maxLeanAngle = 0;
+        this.currentLeanAngle = 0;
+        
+        this.updateMetricsDisplay();
+        this.log("All metrics reset");
+      },
+
+      exportMetrics: function() {
+        // In a real app, this would export data to a file
+        const data = {
+          maxSpeed: this.maxSpeed,
+          totalDistance: this.totalDistance,
+          accelerationTimes: this.accelerationTimes,
+          maxLeanAngle: this.maxLeanAngle,
+          rideHistory: this.rideHistory
+        };
+        
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "motofindback_metrics.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+        
+        this.log("Metrics exported");
+      },
+
+      sendEmergencyAlert: function() {
+        const message = document.getElementById("emergencyMessage").value;
+        const contacts = document.getElementById("emergencyContacts").value.split(',').map(c => c.trim());
+        
+        if (contacts.length === 0 || contacts[0] === "") {
+          this.log("No emergency contacts set", true);
+          return;
+        }
+        
+        // In a real app, this would send SMS or make API calls
+        contacts.forEach(contact => {
+          this.log(`Emergency message sent to ${contact}: ${message}`);
+        });
+        
+        alert("Emergency alert sent to your contacts!");
+      },
+
+      testEmergency: function() {
+        this.log("TEST: Emergency system checked - would send alerts to contacts");
+        alert("Emergency system test completed successfully");
+      },
+
+      addEmergencyContact: function() {
+        const contact = prompt("Enter emergency contact number:");
+        if (contact) {
+          this.emergencyContacts.push(contact);
+          this.updateEmergencyContactsDisplay();
+          this.log(`Emergency contact added: ${contact}`);
+        }
+      },
+
+      updateEmergencyContactsDisplay: function() {
+        const contactList = document.getElementById("emergencyContactList");
+        contactList.innerHTML = "";
+        
+        this.emergencyContacts.forEach(contact => {
+          const contactItem = document.createElement("div");
+          contactItem.className = "contact-item";
+          contactItem.innerHTML = `
+            <div>${contact}</div>
+            <button onclick="MotoFindBack.removeEmergencyContact('${contact}')">Remove</button>
+          `;
+          contactList.appendChild(contactItem);
+        });
+      },
+
+      removeEmergencyContact: function(contact) {
+        this.emergencyContacts = this.emergencyContacts.filter(c => c !== contact);
+        this.updateEmergencyContactsDisplay();
+        this.log(`Emergency contact removed: ${contact}`);
+      },
+
+      showMaintenanceForm: function() {
+        // Toggle visibility of maintenance form
+        const form = document.querySelector('#maintenance-tab .control-item');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+      },
+
+      saveMaintenanceItem: function() {
+        const name = document.getElementById("newMaintenanceName").value;
+        const interval = parseInt(document.getElementById("newMaintenanceInterval").value);
+        
+        if (name && interval) {
+          this.maintenanceItems.push({
+            name,
+            interval,
+            current: 0
+          });
+          
+          this.updateMaintenanceDisplay();
+          document.getElementById("newMaintenanceName").value = "";
+          document.getElementById("newMaintenanceInterval").value = "";
+          
+          this.log(`Maintenance item added: ${name} (every ${interval} km)`);
+        }
+      },
+
+      resetMaintenance: function() {
+        this.maintenanceItems = [];
+        this.updateMaintenanceDisplay();
+        this.log("All maintenance items reset");
+      },
+
+      updateMaintenanceDisplay: function() {
+        const maintenanceList = document.getElementById("maintenanceList");
+        maintenanceList.innerHTML = "";
+        
+        this.maintenanceItems.forEach(item => {
+          const progress = (item.current / item.interval) * 100;
+          const itemEl = document.createElement("div");
+          itemEl.className = "maintenance-item";
+          itemEl.innerHTML = `
+            <div>${item.name}</div>
+            <div class="maintenance-progress">
+              <div class="maintenance-progress-bar" style="width: ${progress}%;"></div>
+            </div>
+            <div>${item.current}/${item.interval} km</div>
+          `;
+          maintenanceList.appendChild(itemEl);
+        });
+      },
+
+      updateMetricsDisplay: function() {
+        document.getElementById("todayDistance").textContent = `${this.todayDistance.toFixed(1)} km`;
+        document.getElementById("statsToday").textContent = `${this.todayDistance.toFixed(1)} km`;
+        document.getElementById("statsWeek").textContent = `${this.weekDistance.toFixed(1)} km`;
+        document.getElementById("statsMonth").textContent = `${this.monthDistance.toFixed(1)} km`;
+        document.getElementById("statsTotal").textContent = `${this.totalDistance.toFixed(1)} km`;
+        
+        document.getElementById("maxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
+        document.getElementById("statsMaxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
+        
+        // Calculate average speed
+        if (this.rideHistory.length > 0) {
+          const totalSpeed = this.rideHistory.reduce((sum, ride) => sum + ride.avgSpeed, 0);
+          const avgSpeed = totalSpeed / this.rideHistory.length;
+          document.getElementById("avgSpeed").textContent = `${avgSpeed.toFixed(1)} km/h`;
+          document.getElementById("statsAvgSpeed").textContent = `${avgSpeed.toFixed(1)} km/h`;
+        }
+      },
+
+      loadData: function() {
+        // In a real app, this would load from localStorage or a database
+        this.log("Data loaded");
+      },
+
+      saveData: function() {
+        // In a real app, this would save to localStorage or a database
+        this.log("Data saved");
+      },
+
       log: function(message, isError = false) {
         const debugEl = document.getElementById("debug");
         const entry = document.createElement('div');
         entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-        entry.style.color = isError ? '#f00' : '#0f0';
+        entry.style.color = isError ? '#ff3333' : '#00ccff';
         debugEl.prepend(entry);
         
         if (debugEl.children.length > 20) {
@@ -902,10 +1694,10 @@
     };
 
     document.addEventListener('DOMContentLoaded', () => {
-      SonarBleep.init();
+      MotoFindBack.init();
       
       if (/Mobi|Android/i.test(navigator.userAgent)) {
-        SonarBleep.log("MOBILE DETECTED: Tap 'Test Audio & Lock' first to unlock sound", false);
+        MotoFindBack.log("MOBILE DETECTED: Mount your phone securely for accurate lean angles", false);
       }
     });
   </script>

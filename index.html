@@ -27,27 +27,85 @@
       margin: 0 auto;
     }
     
-    h1, h2, h3 {
-      color: var(--primary-color);
-      text-shadow: 0 0 5px rgba(255, 102, 0, 0.3);
-    }
-    
     .app-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 1em;
+      position: relative;
     }
     
     .app-title {
       font-size: 2.2em;
       margin: 0;
+      color: var(--primary-color);
+      text-shadow: 0 0 5px rgba(255, 102, 0, 0.3);
     }
     
-    .motorcycle-icon {
-      font-size: 2.5em;
-      transform: rotate(0deg);
-      transition: transform 0.5s ease;
+    .wheel-container {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .spinning-wheel {
+      width: 50px;
+      height: 50px;
+      position: relative;
+      animation: wheel-spin 3s linear infinite;
+    }
+    
+    .wheel-outer {
+      fill: none;
+      stroke: var(--primary-color);
+      stroke-width: 3;
+      stroke-dasharray: 5;
+      animation: wheel-dash 1s linear infinite;
+    }
+    
+    .wheel-inner {
+      fill: none;
+      stroke: var(--accent-color);
+      stroke-width: 2;
+    }
+    
+    .wheel-spoke {
+      stroke: var(--accent-color);
+      stroke-width: 2;
+      transform-origin: center;
+    }
+    
+    .spoke-1 { animation: spoke-spin 4s linear infinite; }
+    .spoke-2 { animation: spoke-spin 3s linear infinite reverse; }
+    .spoke-3 { animation: spoke-spin 5s linear infinite; }
+    
+    @keyframes wheel-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    @keyframes wheel-dash {
+      to {
+        stroke-dashoffset: -10;
+      }
+    }
+    
+    @keyframes spoke-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .wheel-pulse {
+      fill: var(--primary-color);
+      animation: wheel-pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes wheel-pulse {
+      0%, 100% { opacity: 0.7; transform: scale(0.95); }
+      50% { opacity: 1; transform: scale(1); }
     }
     
     .dashboard {
@@ -213,7 +271,6 @@
       color: var(--accent-color);
     }
     
-    /* Direction indicator */
     .direction-container {
       position: relative;
       width: 100px;
@@ -251,7 +308,6 @@
       margin-top: 5px;
     }
     
-    /* Map styling */
     #map {
       height: 250px;
       width: 100%;
@@ -290,7 +346,6 @@
       100% { opacity: 1; }
     }
     
-    /* Lean angle indicator */
     .lean-container {
       position: relative;
       width: 200px;
@@ -310,7 +365,7 @@
       bottom: 0;
       left: 50%;
       transform: translateX(-50%);
-      transition: transform 0.5s ease;
+      transition: transform 0.1s ease; /* Faster transition for lean angle */
     }
     
     .lean-scale {
@@ -343,7 +398,6 @@
       color: var(--accent-color);
     }
     
-    /* Tabs for different sections */
     .tabs {
       display: flex;
       margin-bottom: 10px;
@@ -375,7 +429,6 @@
       display: block;
     }
     
-    /* Maintenance alerts */
     .maintenance-item {
       display: flex;
       justify-content: space-between;
@@ -401,7 +454,6 @@
       border-radius: 5px;
     }
     
-    /* Emergency panel */
     .emergency-panel {
       background: rgba(204, 0, 0, 0.2);
       border: 1px solid var(--error-color);
@@ -425,7 +477,6 @@
       min-width: 120px;
     }
     
-    /* Collapsible panels */
     .collapsible {
       cursor: pointer;
       padding: 10px;
@@ -459,7 +510,6 @@
       transition: max-height 0.2s ease-out;
     }
     
-    /* Responsive adjustments */
     @media (max-width: 768px) {
       .dashboard {
         grid-template-columns: 1fr;
@@ -473,13 +523,26 @@
         flex-direction: column;
         align-items: center;
       }
+      
+      .wheel-container {
+        margin-top: 10px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="app-header">
     <h1 class="app-title">Spin</h1>
-    <div class="motorcycle-icon">🏍️</div>
+    <div class="wheel-container">
+      <svg class="spinning-wheel" viewBox="0 0 100 100">
+        <circle class="wheel-outer" cx="50" cy="50" r="40" />
+        <circle class="wheel-inner" cx="50" cy="50" r="25" />
+        <line class="wheel-spoke spoke-1" x1="50" y1="50" x2="75" y2="50" />
+        <line class="wheel-spoke spoke-2" x1="50" y1="50" x2="50" y2="25" />
+        <line class="wheel-spoke spoke-3" x1="50" y1="50" x2="30" y2="70" />
+        <circle class="wheel-pulse" cx="50" cy="50" r="8" />
+      </svg>
+    </div>
   </div>
 
   <div class="dashboard">
@@ -516,7 +579,6 @@
     <div class="tab" data-tab="maintenance">Maintenance</div>
   </div>
 
-  <!-- Navigation Tab -->
   <div class="tab-content active" id="navigation-tab">
     <div class="panel">
       <h2>GPS Navigation</h2>
@@ -606,7 +668,6 @@
     </div>
   </div>
 
-  <!-- Metrics Tab -->
   <div class="tab-content" id="metrics-tab">
     <div class="panel">
       <h2>Ride Metrics</h2>
@@ -661,7 +722,6 @@
     </div>
   </div>
 
-  <!-- Emergency Tab -->
   <div class="tab-content" id="emergency-tab">
     <div class="panel emergency-panel">
       <h2>Emergency Features</h2>
@@ -688,7 +748,6 @@
       
       <h3>Quick Contact</h3>
       <div class="emergency-contacts" id="emergencyContactList">
-        <!-- Contacts will be added here dynamically -->
       </div>
       
       <div class="control-group">
@@ -698,7 +757,6 @@
     </div>
   </div>
 
-  <!-- Maintenance Tab -->
   <div class="tab-content" id="maintenance-tab">
     <div class="panel">
       <h2>Maintenance Alerts</h2>
@@ -709,7 +767,6 @@
       </div>
       
       <div id="maintenanceList">
-        <!-- Maintenance items will be added here dynamically -->
         <div class="maintenance-item">
           <div>Oil Change</div>
           <div class="maintenance-progress">
@@ -753,7 +810,7 @@
     <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
       <h1>Spin</h1>
       <h2>Purpose:</h2>
-      Motorcycle-focused GPS navigation with ride metrics, emergency features, and maintenance tracking.
+      Motorcycle-focused GPS navigation with ride metrics, emergency features, and maintenance tracking. The spinning wheel in the header rotates to reflect your current speed, spinning faster as you ride faster.
 
       <h2>Navigation Tab</h2>
       <strong>GPS Navigation:</strong> Lock your position and navigate back with audio cues.<br>
@@ -763,8 +820,8 @@
       <strong>Sonar Parameters:</strong> Adjust audio feedback frequency and range.
 
       <h2>Metrics Tab</h2>
-      <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and lean angles.<br>
-      <strong>Lean Angle Indicator:</strong> Visual display of motorcycle lean during corners.<br>
+      <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and lean angles with real-time updates.<br>
+      <strong>Lean Angle Indicator:</strong> Visual display of motorcycle lean during corners, updated rapidly for responsiveness.<br>
       <strong>Distance Statistics:</strong> Daily, weekly, monthly, and total distance tracking.<br>
       <strong>Acceleration Timer:</strong> Measures 0-100 km/h acceleration.
 
@@ -784,7 +841,7 @@
       2. Set emergency contacts in the Emergency tab.<br>
       3. Tap "Test Audio & Lock" to initialize the app.<br>
       4. Use the Navigation tab to lock your parking position.<br>
-      5. Check the Metrics tab during your ride for performance data.<br>
+      5. Check the Metrics tab during your ride for performance data; watch the header wheel spin with your speed.<br>
       6. Add maintenance schedules in the Maintenance tab.
 
       <h2>Tips</h2>
@@ -800,9 +857,7 @@
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // Extended MotoFindBack application
     const MotoFindBack = {
-      // Core GPS functionality
       audioCtx: null,
       watchId: null,
       bleepTimer: null,
@@ -822,8 +877,6 @@
       lastStationaryTime: null,
       lastStationaryPosition: null,
       speedThreshold: 10,
-
-      // Motorcycle-specific properties
       maxSpeed: 0,
       totalDistance: 0,
       todayDistance: 0,
@@ -838,18 +891,13 @@
       maintenanceItems: [],
       emergencyContacts: [],
       rideHistory: [],
-      
-      // Calibration properties
       isCalibrating: false,
       calibrationSamples: [],
       leanOffset: 0,
-      
-      // Crash detection properties
       crashDetected: false,
       crashStartTime: null,
       lastPosition: null,
-
-      // DOM elements
+      rotationSpeed: 0, // Duration in seconds for wheel rotation
       map: null,
       userMarker: null,
       lockMarker: null,
@@ -864,7 +912,6 @@
         this.updateUI();
         this.log("MotoFindBack initialized");
 
-        // Setup sliders
         document.getElementById("maxDistInput").addEventListener("input", (e) => {
           document.getElementById("maxDistValue").textContent = e.target.value;
         });
@@ -878,20 +925,15 @@
           document.getElementById("speedThresholdValue").textContent = e.target.value + ' km/h';
         });
 
-        // Initialize device orientation for lean angles and crash detection
         this.initDeviceOrientation();
       },
 
       initMap: function() {
-        // Create map centered on default location
         this.map = L.map('map').setView([51.505, -0.09], 15);
-        
-        // Add OpenStreetMap tiles
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(this.map);
 
-        // Custom markers
         const userIcon = L.divIcon({
           className: 'user-marker',
           html: '📍',
@@ -904,7 +946,6 @@
           iconSize: [24, 24]
         });
 
-        // Initialize markers
         this.userMarker = L.marker([0, 0], { icon: userIcon }).addTo(this.map);
         this.lockMarker = L.marker([0, 0], { icon: lockIcon }).addTo(this.map);
         this.line = L.polyline([], { color: '#ff6600', weight: 2 }).addTo(this.map);
@@ -914,13 +955,10 @@
         const tabs = document.querySelectorAll('.tab');
         tabs.forEach(tab => {
           tab.addEventListener('click', () => {
-            // Remove active class from all tabs and contents
             tabs.forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => {
               content.classList.remove('active');
             });
-            
-            // Add active class to clicked tab and corresponding content
             tab.classList.add('active');
             document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
           });
@@ -943,7 +981,6 @@
       },
 
       setupEventListeners: function() {
-        // Navigation buttons
         document.getElementById("testBtn").addEventListener("click", () => {
           this.initAudio();
           this.playTestSound();
@@ -968,7 +1005,6 @@
           this.stop();
         });
 
-        // Metrics buttons
         document.getElementById("resetMetricsBtn").addEventListener("click", () => {
           this.resetMetrics();
         });
@@ -977,7 +1013,6 @@
           this.exportMetrics();
         });
 
-        // Emergency buttons
         document.getElementById("emergencyBtn").addEventListener("click", () => {
           this.sendEmergencyAlert();
         });
@@ -990,7 +1025,6 @@
           this.addEmergencyContact();
         });
 
-        // Maintenance buttons
         document.getElementById("addMaintenanceBtn").addEventListener("click", () => {
           this.showMaintenanceForm();
         });
@@ -1011,21 +1045,17 @@
               this.calibrationSamples.push(event.gamma || 0);
               return;
             }
-            // Use gamma (left-right tilt) for lean angle
             if (event.gamma !== null) {
               this.currentLeanAngle = Math.round(Math.abs(event.gamma - this.leanOffset));
               this.updateLeanAngleDisplay();
-              
-              // Update max lean angle if current is higher
               if (this.currentLeanAngle > this.maxLeanAngle) {
                 this.maxLeanAngle = this.currentLeanAngle;
                 document.getElementById('leanAngle').textContent = `${this.maxLeanAngle}°`;
               }
             }
-            // Check for crash (bike lying flat) using beta (front-back tilt)
             if (event.beta !== null && !this.crashDetected) {
               const betaAbs = Math.abs(event.beta);
-              if (betaAbs > 70) { // Bike is nearly horizontal
+              if (betaAbs > 70) {
                 if (!this.crashStartTime) {
                   this.crashStartTime = Date.now();
                   document.getElementById('crashStatus').textContent = 'Possible crash detected... Confirming';
@@ -1080,7 +1110,6 @@
         document.getElementById('crashStatus').className = 'status error';
         this.log('Crash confirmed, triggering emergency alert');
         
-        // Send emergency alert with current position
         if (this.lastPosition) {
           const message = `CRASH DETECTED! ${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition.lat.toFixed(6)}, Lon: ${this.lastPosition.lon.toFixed(6)}`;
           this.sendEmergencyAlert(message);
@@ -1093,17 +1122,34 @@
       updateLeanAngleDisplay: function() {
         const leanBike = document.getElementById('leanBike');
         const leanValue = document.getElementById('leanValue');
-        
-        // Rotate the bike based on lean angle (limited to 45 degrees for display)
         const displayAngle = Math.min(45, this.currentLeanAngle);
         leanBike.style.transform = `translateX(-50%) rotate(${displayAngle}deg)`;
         leanValue.textContent = `${this.currentLeanAngle}°`;
+        this.log(`Lean angle updated: ${this.currentLeanAngle}°`);
+      },
+
+      updateWheelAnimation: function() {
+        const wheel = document.querySelector('.spinning-wheel');
+        const spokes = document.querySelectorAll('.wheel-spoke');
+        if (this.currentSpeed <= 0.1) {
+          wheel.style.animation = 'none';
+          spokes.forEach(spoke => spoke.style.animation = 'none');
+          this.log('Wheel animation stopped (speed <= 0.1 m/s)');
+        } else {
+          const speedKmh = this.currentSpeed * 3.6;
+          this.rotationSpeed = Math.max(0.2, 2 / (speedKmh / 10));
+          wheel.style.animation = `wheel-spin ${this.rotationSpeed}s linear infinite`;
+          spokes.forEach((spoke, index) => {
+            const spokeSpeed = this.rotationSpeed * (1 + index * 0.5);
+            spoke.style.animation = `spoke-spin ${spokeSpeed}s linear infinite ${index % 2 === 0 ? '' : 'reverse'}`;
+          });
+          this.log(`Wheel animation updated: ${this.rotationSpeed.toFixed(2)}s per rotation at ${speedKmh.toFixed(1)} km/h`);
+        }
       },
 
       toggleMute: function() {
         this.isMuted = !this.isMuted;
         const muteBtn = document.getElementById("muteBtn");
-        
         if (this.isMuted) {
           muteBtn.textContent = "Sound Muted";
           muteBtn.classList.add("muted");
@@ -1118,7 +1164,6 @@
 
       toggleAutoLock: function() {
         this.autoLockEnabled = !this.autoLockEnabled;
-        
         if (this.autoLockEnabled) {
           document.getElementById("autoLockBtn").textContent = "Auto-Lock: ON";
           document.getElementById("autoLockBtn").style.backgroundColor = "#ff6600";
@@ -1142,7 +1187,6 @@
           this.log("Auto-lock disabled");
           this.updateGpsStatus("Auto-lock disabled");
         }
-        
         this.updateUI();
       },
 
@@ -1155,7 +1199,6 @@
           }
           return;
         }
-        
         try {
           this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
           document.getElementById("audioStatus").textContent = "Audio: Initialized";
@@ -1174,24 +1217,19 @@
           this.log("Audio context not ready", true);
           return;
         }
-        
         try {
           const now = this.audioCtx.currentTime;
           const osc = this.audioCtx.createOscillator();
           const gain = this.audioCtx.createGain();
-          
           osc.type = 'sine';
           osc.frequency.value = 800;
           osc.connect(gain);
           gain.connect(this.audioCtx.destination);
-          
           gain.gain.setValueAtTime(0, now);
           gain.gain.linearRampToValueAtTime(1, now + 0.01);
           gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-          
           osc.start(now);
           osc.stop(now + 0.1);
-          
           this.isAudioAllowed = true;
           document.getElementById("audioStatus").textContent = "Audio: Working!";
           document.getElementById("audioStatus").className = "status success";
@@ -1207,21 +1245,17 @@
 
       playBleep: function(freq) {
         if (!this.audioCtx || !this.isAudioAllowed || this.isMuted) return;
-        
         try {
           const now = this.audioCtx.currentTime;
           const osc = this.audioCtx.createOscillator();
           const gain = this.audioCtx.createGain();
-          
           osc.type = 'sine';
           osc.frequency.value = freq;
           osc.connect(gain);
           gain.connect(this.audioCtx.destination);
-          
           gain.gain.setValueAtTime(0, now);
           gain.gain.linearRampToValueAtTime(0.3, now + 0.01);
           gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-          
           osc.start(now);
           osc.stop(now + 0.1);
         } catch (e) {
@@ -1234,9 +1268,7 @@
           this.updateGpsStatus("Geolocation not supported", true);
           return;
         }
-
         this.updateGpsStatus("Getting position...");
-        
         navigator.geolocation.getCurrentPosition(
           pos => {
             this.lockPosition = {
@@ -1274,7 +1306,6 @@
         if (this.watchId) {
           navigator.geolocation.clearWatch(this.watchId);
         }
-        
         this.watchId = navigator.geolocation.watchPosition(
           pos => this.handlePositionUpdate(pos),
           err => {
@@ -1291,33 +1322,22 @@
       handlePositionUpdate: function(pos) {
         const now = Date.now();
         this.lastUpdateTime = now;
-        
         const { latitude, longitude, accuracy, speed } = pos.coords;
         this.currentSpeed = speed || 0;
         const speedKmh = (this.currentSpeed * 3.6).toFixed(1);
-        
-        // Store last position for crash detection
         this.lastPosition = { lat: latitude, lon: longitude, accuracy };
-        
-        // Update speed displays
         document.getElementById("currentSpeed").textContent = `${speedKmh} km/h`;
         document.getElementById("statsCurrentSpeed").textContent = `${speedKmh} km/h`;
-        
-        // Update max speed
         if (this.currentSpeed > this.maxSpeed) {
           this.maxSpeed = this.currentSpeed;
           document.getElementById("maxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
           document.getElementById("statsMaxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
         }
-        
-        // Acceleration tracking (0-100 km/h)
         this.trackAcceleration(speedKmh);
-        
-        // Update map markers
+        this.updateWheelAnimation();
         if (this.map) {
           const userPos = [latitude, longitude];
           this.userMarker.setLatLng(userPos);
-          
           if (this.lockPosition) {
             const lockPos = [this.lockPosition.lat, this.lockPosition.lon];
             this.lockMarker.setLatLng(lockPos);
@@ -1325,11 +1345,8 @@
             this.map.fitBounds([userPos, lockPos], { padding: [20, 20] });
           }
         }
-
-        // Auto-lock logic
         const threshold = this.speedThreshold * 1000 / 3600;
         const stationaryTime = parseFloat(document.getElementById("stationaryTime").value) * 1000;
-        
         if (this.autoLockEnabled) {
           if (this.currentSpeed <= threshold && !this.isStationary) {
             this.isStationary = true;
@@ -1361,15 +1378,11 @@
             this.log(`Moving with locked position (${speedKmh} km/h)`);
           }
         }
-        
         if (!this.lockPosition || !this.isActive) {
           this.updateUI();
           return;
         }
-
         const distance = this.calculateDistance(latitude, longitude, this.lockPosition.lat, this.lockPosition.lon);
-        
-        // Check if we've reached the point (within 5 meters)
         if (distance < 5 && !this.reachedPointDisplayed) {
           document.getElementById("reachedMessage").style.display = "block";
           this.reachedPointDisplayed = true;
@@ -1378,10 +1391,8 @@
           document.getElementById("reachedMessage").style.display = "none";
           this.reachedPointDisplayed = false;
         }
-        
         this.movementHistory.push({ time: now, distance, speed: this.currentSpeed });
         this.movementHistory = this.movementHistory.filter(item => now - item.time < 5000);
-        
         this.updateDirection(latitude, longitude);
         this.updateDisplay(distance, accuracy, this.currentSpeed);
         this.updateAudio(distance);
@@ -1389,31 +1400,21 @@
 
       trackAcceleration: function(speedKmh) {
         const speedNum = parseFloat(speedKmh);
-        
-        // Start acceleration timer when speed is near 0
         if (speedNum < 5 && !this.accelerationStartTime) {
           this.accelerationStartTime = Date.now();
           this.accelerationStartSpeed = speedNum;
           this.log("Acceleration timer started");
         }
-        
-        // Record acceleration time when reaching 100 km/h
         if (speedNum >= 100 && this.accelerationStartTime) {
           const accelerationTime = (Date.now() - this.accelerationStartTime) / 1000;
           this.accelerationTimes.push(accelerationTime);
-          
-          // Update display with average of last 3 runs
           const recentTimes = this.accelerationTimes.slice(-3);
           const avgTime = recentTimes.reduce((a, b) => a + b, 0) / recentTimes.length;
-          
           document.getElementById("accelerationTime").textContent = `${avgTime.toFixed(1)} s`;
           document.getElementById("statsAcceleration").textContent = `${avgTime.toFixed(1)} s`;
-          
           this.accelerationStartTime = null;
           this.log(`0-100 km/h acceleration: ${accelerationTime.toFixed(1)}s`);
         }
-        
-        // Reset if speed drops significantly during acceleration
         if (this.accelerationStartTime && speedNum < this.accelerationStartSpeed) {
           this.accelerationStartTime = null;
           this.log("Acceleration timer reset");
@@ -1422,21 +1423,17 @@
 
       updateDirection: function(currentLat, currentLon) {
         if (!this.lockPosition) return;
-        
         const currentLatRad = currentLat * Math.PI/180;
         const currentLonRad = currentLon * Math.PI/180;
         const lockLatRad = this.lockPosition.lat * Math.PI/180;
         const lockLonRad = this.lockPosition.lon * Math.PI/180;
-        
         const y = Math.sin(lockLonRad - currentLonRad) * Math.cos(lockLatRad);
         const x = Math.cos(currentLatRad) * Math.sin(lockLatRad) - 
                   Math.sin(currentLatRad) * Math.cos(lockLatRad) * Math.cos(lockLonRad - currentLonRad);
         let bearing = Math.atan2(y, x) * (180 / Math.PI);
         bearing = (bearing + 360) % 360;
-        
         const arrow = document.getElementById("directionArrow");
         arrow.style.transform = `translate(-50%, -50%) rotate(${bearing}deg)`;
-        
         const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
         const index = Math.round(bearing / 45) % 8;
         document.getElementById("directionStatus").textContent = 
@@ -1449,52 +1446,34 @@
         const φ2 = lat2 * Math.PI/180;
         const Δφ = (lat2-lat1) * Math.PI/180;
         const Δλ = (lon2-lon1) * Math.PI/180;
-
         const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
                   Math.cos(φ1) * Math.cos(φ2) *
                   Math.sin(Δλ/2) * Math.sin(Δλ/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
         return R * c;
       },
 
       updateAudio: function(currentDistance) {
         clearTimeout(this.bleepTimer);
-        
         if (!this.isAudioAllowed || !this.audioCtx || this.isMuted) {
           this.bleepTimer = setTimeout(() => {
             this.updateAudio(currentDistance);
           }, 1000);
           return;
         }
-        
         const maxDist = this.getValidMaxDistance();
         const freq = this.getValidFrequency();
         const normalizedDist = Math.min(currentDistance, maxDist);
-        
-        // Calculate average speed over last 5 seconds (converted to km/h)
         const avgSpeedKmh = this.movementHistory.length > 0 ? 
             (this.movementHistory.reduce((sum, item) => sum + item.speed, 0) / this.movementHistory.length) * 3.6 : 0;
-        
-        // Speed factor (1 when stationary, up to 3 when moving fast)
         const speedFactor = Math.min(3, Math.max(1, 1 + (avgSpeedKmh / 20)));
-        
-        // Distance factor (0 when at max distance, 1 when at target)
         const distanceFactor = 1 - (normalizedDist / maxDist);
-        
-        // Base tempo range: 150ms (fast) to 1500ms (slow)
         const baseTempo = 1500 - (1350 * distanceFactor);
-        
-        // Apply speed factor (faster movement = faster beeps)
         const dynamicTempo = baseTempo / speedFactor;
-        
-        // Ensure tempo stays within reasonable bounds
         this.currentTempo = Math.max(150, Math.min(1500, dynamicTempo));
         const bpm = Math.round(60000 / this.currentTempo);
         document.getElementById("bleepRate").textContent = bpm;
-        
         this.playBleep(freq);
-        
         this.bleepTimer = setTimeout(() => {
           this.updateAudio(currentDistance);
         }, this.currentTempo);
@@ -1533,6 +1512,7 @@
         this.updateUI();
         this.reachedPointDisplayed = false;
         document.getElementById("reachedMessage").style.display = "none";
+        this.updateWheelAnimation();
         this.log("Position tracking stopped");
       },
 
@@ -1577,7 +1557,6 @@
         this.accelerationTimes = [];
         this.maxLeanAngle = 0;
         this.currentLeanAngle = 0;
-        
         this.updateMetricsDisplay();
         this.log("All metrics reset");
       },
@@ -1590,7 +1569,6 @@
           maxLeanAngle: this.maxLeanAngle,
           rideHistory: this.rideHistory
         };
-        
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
@@ -1598,7 +1576,6 @@
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
-        
         this.log("Metrics exported");
       },
 
@@ -1606,19 +1583,15 @@
         const defaultMessage = document.getElementById("emergencyMessage").value;
         const message = customMessage || defaultMessage;
         const contacts = document.getElementById("emergencyContacts").value.split(',').map(c => c.trim());
-        
         if (contacts.length === 0 || contacts[0] === "") {
           this.log("No emergency contacts set", true);
           document.getElementById('crashStatus').textContent = 'Crash Detection: No contacts set';
           document.getElementById('crashStatus').className = 'status error';
           return;
         }
-        
-        // In a real app, this would send SMS or make API calls
         contacts.forEach(contact => {
           this.log(`Emergency message sent to ${contact}: ${message}`);
         });
-        
         alert("Emergency alert sent to your contacts!");
         if (this.crashDetected) {
           document.getElementById('crashStatus').textContent = 'Crash alert sent';
@@ -1643,7 +1616,6 @@
       updateEmergencyContactsDisplay: function() {
         const contactList = document.getElementById("emergencyContactList");
         contactList.innerHTML = "";
-        
         this.emergencyContacts.forEach(contact => {
           const contactItem = document.createElement("div");
           contactItem.className = "contact-item";
@@ -1669,18 +1641,15 @@
       saveMaintenanceItem: function() {
         const name = document.getElementById("newMaintenanceName").value;
         const interval = parseInt(document.getElementById("newMaintenanceInterval").value);
-        
         if (name && interval) {
           this.maintenanceItems.push({
             name,
             interval,
             current: 0
           });
-          
           this.updateMaintenanceDisplay();
           document.getElementById("newMaintenanceName").value = "";
           document.getElementById("newMaintenanceInterval").value = "";
-          
           this.log(`Maintenance item added: ${name} (every ${interval} km)`);
         }
       },
@@ -1694,7 +1663,6 @@
       updateMaintenanceDisplay: function() {
         const maintenanceList = document.getElementById("maintenanceList");
         maintenanceList.innerHTML = "";
-        
         this.maintenanceItems.forEach(item => {
           const progress = (item.current / item.interval) * 100;
           const itemEl = document.createElement("div");
@@ -1716,10 +1684,8 @@
         document.getElementById("statsWeek").textContent = `${this.weekDistance.toFixed(1)} km`;
         document.getElementById("statsMonth").textContent = `${this.monthDistance.toFixed(1)} km`;
         document.getElementById("statsTotal").textContent = `${this.totalDistance.toFixed(1)} km`;
-        
         document.getElementById("maxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
         document.getElementById("statsMaxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
-        
         if (this.rideHistory.length > 0) {
           const totalSpeed = this.rideHistory.reduce((sum, ride) => sum + ride.avgSpeed, 0);
           const avgSpeed = totalSpeed / this.rideHistory.length;
@@ -1742,7 +1708,6 @@
         entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
         entry.style.color = isError ? '#ff3333' : '#00ccff';
         debugEl.prepend(entry);
-        
         if (debugEl.children.length > 20) {
           debugEl.removeChild(debugEl.lastChild);
         }
@@ -1751,7 +1716,6 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       MotoFindBack.init();
-      
       if (/Mobi|Android/i.test(navigator.userAgent)) {
         MotoFindBack.log("MOBILE DETECTED: Mount your phone securely for accurate lean angles and crash detection", false);
       }

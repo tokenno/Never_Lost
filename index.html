@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Spin - Motorcycle Assistance and GPS Locator</title>
+  <title>Spin - Motorcycle GPS Locator</title>
   <!-- Leaflet Map CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
@@ -48,74 +48,6 @@
       font-size: 2.5em;
       transform: rotate(0deg);
       transition: transform 0.5s ease;
-    }
-
-
-    /* Spinning Wheel Animation */
-    .wheel-container {
-      position: relative;
-      width: 60px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .spinning-wheel {
-      width: 50px;
-      height: 50px;
-      position: relative;
-      animation: wheel-spin 3s linear infinite;
-    }
-    
-    .wheel-outer {
-      fill: none;
-      stroke: var(--primary-color);
-      stroke-width: 3;
-      stroke-dasharray: 5;
-      animation: wheel-dash 1s linear infinite;
-    }
-    
-    .wheel-inner {
-      fill: none;
-      stroke: var(--accent-color);
-      stroke-width: 2;
-    }
-    
-    .wheel-spoke {
-      stroke: var(--accent-color);
-      stroke-width: 2;
-      transform-origin: center;
-    }
-    
-    .spoke-1 { animation: spoke-spin 4s linear infinite; }
-    .spoke-2 { animation: spoke-spin 3s linear infinite reverse; }
-    .spoke-3 { animation: spoke-spin 5s linear infinite; }
-    
-    @keyframes wheel-spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    
-    @keyframes wheel-dash {
-      to {
-        stroke-dashoffset: -10;
-      }
-    }
-    
-    @keyframes spoke-spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    
-    .wheel-pulse {
-      fill: var(--primary-color);
-      animation: wheel-pulse 2s ease-in-out infinite;
-    }
-    
-    @keyframes wheel-pulse {
-      0%, 100% { opacity: 0.7; transform: scale(0.95); }
-      50% { opacity: 1; transform: scale(1); }
     }
     
     .dashboard {
@@ -547,16 +479,7 @@
 <body>
   <div class="app-header">
     <h1 class="app-title">Spin</h1>
-    <div class="wheel-container">
-      <svg class="spinning-wheel" viewBox="0 0 100 100">
-        <circle class="wheel-outer" cx="50" cy="50" r="40" />
-        <circle class="wheel-inner" cx="50" cy="50" r="25" />
-        <line class="wheel-spoke spoke-1" x1="50" y1="50" x2="75" y2="50" />
-        <line class="wheel-spoke spoke-2" x1="50" y1="50" x2="50" y2="25" />
-        <line class="wheel-spoke spoke-3" x1="50" y1="50" x2="30" y2="70" />
-        <circle class="wheel-pulse" cx="50" cy="50" r="8" />
-      </svg>
-    </div>
+    <div class="motorcycle-icon">🏍️</div>
   </div>
 
   <div class="dashboard">
@@ -747,6 +670,8 @@
         <button id="emergencyBtn" class="emergency-btn">EMERGENCY ALERT</button>
       </div>
       
+      <div id="crashStatus" class="status">Crash Detection: Inactive</div>
+      
       <div class="control-group">
         <div class="control-item">
           <label for="emergencyMessage">Emergency Message</label><br>
@@ -832,7 +757,7 @@
 
       <h2>Navigation Tab</h2>
       <strong>GPS Navigation:</strong> Lock your position and navigate back with audio cues.<br>
-      <strong>Calibrate Sensors:</strong> Place phone on bike in riding position and tap to set baseline for lean angle.<br>
+      <strong>Calibrate Sensors:</strong> Place phone on bike in riding position and tap to set baseline for lean angle and crash detection.<br>
       <strong>Auto-Lock Mode:</strong> Automatically locks position when motorcycle is stationary.<br>
       <strong>Direction Indicator:</strong> Visual compass pointing to locked position.<br>
       <strong>Sonar Parameters:</strong> Adjust audio feedback frequency and range.
@@ -844,7 +769,8 @@
       <strong>Acceleration Timer:</strong> Measures 0-100 km/h acceleration.
 
       <h2>Emergency Tab</h2>
-      <strong>Emergency Alert:</strong> Send your location to emergency contacts.<br>
+      <strong>Emergency Alert:</strong> Send your location to emergency contacts manually.<br>
+      <strong>Crash Detection:</strong> Automatically sends location to contacts if bike is detected lying flat for 5 seconds.<br>
       <strong>Quick Contacts:</strong> Pre-set emergency contacts for quick access.<br>
       <strong>Custom Message:</strong> Edit the emergency message with your details.
 
@@ -854,16 +780,16 @@
       <strong>Custom Items:</strong> Add your own maintenance tasks and intervals.
 
       <h2>Quick Start</h2>
-      1. Mount phone securely and tap "Calibrate Sensors" to set lean angle baseline.<br>
-      2. Tap "Test Audio & Lock" to initialize the app.<br>
-      3. Use the Navigation tab to lock your parking position.<br>
-      4. Check the Metrics tab during your ride for performance data.<br>
-      5. Set up emergency contacts in the Emergency tab before riding.<br>
+      1. Mount phone securely and tap "Calibrate Sensors" to set lean angle and crash detection baseline.<br>
+      2. Set emergency contacts in the Emergency tab.<br>
+      3. Tap "Test Audio & Lock" to initialize the app.<br>
+      4. Use the Navigation tab to lock your parking position.<br>
+      5. Check the Metrics tab during your ride for performance data.<br>
       6. Add maintenance schedules in the Maintenance tab.
 
       <h2>Tips</h2>
-      - For accurate lean angles, mount your phone securely on the motorcycle and calibrate sensors.<br>
-      - Set up emergency contacts before your first ride.<br>
+      - For accurate lean angles and crash detection, mount your phone securely on the motorcycle and calibrate sensors.<br>
+      - Set up emergency contacts before your first ride to enable crash detection alerts.<br>
       - Regular maintenance alerts help keep your motorcycle in top condition.<br>
       - Export your ride data to track your riding habits over time.
     </div>
@@ -876,7 +802,7 @@
   <script>
     // Extended MotoFindBack application
     const MotoFindBack = {
-      // Core GPS functionality (from original app)
+      // Core GPS functionality
       audioCtx: null,
       watchId: null,
       bleepTimer: null,
@@ -912,10 +838,16 @@
       maintenanceItems: [],
       emergencyContacts: [],
       rideHistory: [],
+      
       // Calibration properties
       isCalibrating: false,
       calibrationSamples: [],
       leanOffset: 0,
+      
+      // Crash detection properties
+      crashDetected: false,
+      crashStartTime: null,
+      lastPosition: null,
 
       // DOM elements
       map: null,
@@ -946,7 +878,7 @@
           document.getElementById("speedThresholdValue").textContent = e.target.value + ' km/h';
         });
 
-        // Initialize device orientation for lean angles
+        // Initialize device orientation for lean angles and crash detection
         this.initDeviceOrientation();
       },
 
@@ -1090,9 +1022,34 @@
                 document.getElementById('leanAngle').textContent = `${this.maxLeanAngle}°`;
               }
             }
+            // Check for crash (bike lying flat) using beta (front-back tilt)
+            if (event.beta !== null && !this.crashDetected) {
+              const betaAbs = Math.abs(event.beta);
+              if (betaAbs > 70) { // Bike is nearly horizontal
+                if (!this.crashStartTime) {
+                  this.crashStartTime = Date.now();
+                  document.getElementById('crashStatus').textContent = 'Possible crash detected... Confirming';
+                  document.getElementById('crashStatus').className = 'status warning';
+                  this.log('Possible crash detected, confirming for 5 seconds');
+                }
+                if (Date.now() - this.crashStartTime > 5000) {
+                  this.crashDetected = true;
+                  this.triggerCrashAlert();
+                }
+              } else {
+                if (this.crashStartTime) {
+                  this.crashStartTime = null;
+                  document.getElementById('crashStatus').textContent = 'Crash Detection: Inactive';
+                  document.getElementById('crashStatus').className = 'status';
+                  this.log('Crash condition cleared');
+                }
+              }
+            }
           });
         } else {
           this.log("Device orientation not supported", true);
+          document.getElementById('crashStatus').textContent = 'Crash Detection: Not supported';
+          document.getElementById('crashStatus').className = 'status error';
         }
       },
 
@@ -1118,6 +1075,21 @@
         }, 5000);
       },
 
+      triggerCrashAlert: function() {
+        document.getElementById('crashStatus').textContent = 'Crash detected! Sending alert...';
+        document.getElementById('crashStatus').className = 'status error';
+        this.log('Crash confirmed, triggering emergency alert');
+        
+        // Send emergency alert with current position
+        if (this.lastPosition) {
+          const message = `CRASH DETECTED! ${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition.lat.toFixed(6)}, Lon: ${this.lastPosition.lon.toFixed(6)}`;
+          this.sendEmergencyAlert(message);
+        } else {
+          this.log('No recent position available for crash alert', true);
+          document.getElementById('crashStatus').textContent = 'Crash detected, but no position available';
+        }
+      },
+
       updateLeanAngleDisplay: function() {
         const leanBike = document.getElementById('leanBike');
         const leanValue = document.getElementById('leanValue');
@@ -1128,7 +1100,6 @@
         leanValue.textContent = `${this.currentLeanAngle}°`;
       },
 
-      // Core GPS functionality (from original app, adapted)
       toggleMute: function() {
         this.isMuted = !this.isMuted;
         const muteBtn = document.getElementById("muteBtn");
@@ -1324,6 +1295,9 @@
         const { latitude, longitude, accuracy, speed } = pos.coords;
         this.currentSpeed = speed || 0;
         const speedKmh = (this.currentSpeed * 3.6).toFixed(1);
+        
+        // Store last position for crash detection
+        this.lastPosition = { lat: latitude, lon: longitude, accuracy };
         
         // Update speed displays
         document.getElementById("currentSpeed").textContent = `${speedKmh} km/h`;
@@ -1541,6 +1515,8 @@
         this.isStationary = false;
         this.lastStationaryTime = null;
         this.lastStationaryPosition = null;
+        this.crashDetected = false;
+        this.crashStartTime = null;
         this.speedThreshold = 10;
         document.getElementById("speedThreshold").value = 10;
         document.getElementById("speedThresholdValue").textContent = "10 km/h";
@@ -1550,6 +1526,8 @@
         document.getElementById("autoLockSettings").style.display = "none";
         document.getElementById("muteBtn").textContent = "Mute Sound";
         document.getElementById("muteBtn").classList.remove("muted");
+        document.getElementById("crashStatus").textContent = "Crash Detection: Inactive";
+        document.getElementById("crashStatus").className = "status";
         this.updateGpsStatus("Stopped");
         this.updateLockStatus("Not locked");
         this.updateUI();
@@ -1590,7 +1568,6 @@
         return Math.max(1, isNaN(dist) ? 50 : dist);
       },
 
-      // Motorcycle-specific methods
       resetMetrics: function() {
         this.maxSpeed = 0;
         this.totalDistance = 0;
@@ -1606,7 +1583,6 @@
       },
 
       exportMetrics: function() {
-        // In a real app, this would export data to a file
         const data = {
           maxSpeed: this.maxSpeed,
           totalDistance: this.totalDistance,
@@ -1626,12 +1602,15 @@
         this.log("Metrics exported");
       },
 
-      sendEmergencyAlert: function() {
-        const message = document.getElementById("emergencyMessage").value;
+      sendEmergencyAlert: function(customMessage = null) {
+        const defaultMessage = document.getElementById("emergencyMessage").value;
+        const message = customMessage || defaultMessage;
         const contacts = document.getElementById("emergencyContacts").value.split(',').map(c => c.trim());
         
         if (contacts.length === 0 || contacts[0] === "") {
           this.log("No emergency contacts set", true);
+          document.getElementById('crashStatus').textContent = 'Crash Detection: No contacts set';
+          document.getElementById('crashStatus').className = 'status error';
           return;
         }
         
@@ -1641,6 +1620,10 @@
         });
         
         alert("Emergency alert sent to your contacts!");
+        if (this.crashDetected) {
+          document.getElementById('crashStatus').textContent = 'Crash alert sent';
+          document.getElementById('crashStatus').className = 'status success';
+        }
       },
 
       testEmergency: function() {
@@ -1679,7 +1662,6 @@
       },
 
       showMaintenanceForm: function() {
-        // Toggle visibility of maintenance form
         const form = document.querySelector('#maintenance-tab .control-item');
         form.style.display = form.style.display === 'none' ? 'block' : 'none';
       },
@@ -1738,7 +1720,6 @@
         document.getElementById("maxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
         document.getElementById("statsMaxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
         
-        // Calculate average speed
         if (this.rideHistory.length > 0) {
           const totalSpeed = this.rideHistory.reduce((sum, ride) => sum + ride.avgSpeed, 0);
           const avgSpeed = totalSpeed / this.rideHistory.length;
@@ -1748,12 +1729,10 @@
       },
 
       loadData: function() {
-        // In a real app, this would load from localStorage or a database
         this.log("Data loaded");
       },
 
       saveData: function() {
-        // In a real app, this would save to localStorage or a database
         this.log("Data saved");
       },
 
@@ -1774,7 +1753,7 @@
       MotoFindBack.init();
       
       if (/Mobi|Android/i.test(navigator.userAgent)) {
-        MotoFindBack.log("MOBILE DETECTED: Mount your phone securely for accurate lean angles", false);
+        MotoFindBack.log("MOBILE DETECTED: Mount your phone securely for accurate lean angles and crash detection", false);
       }
     });
   </script>

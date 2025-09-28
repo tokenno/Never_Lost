@@ -754,14 +754,14 @@
         <textarea id="emergencyMessage" rows="3" style="width: 100%;">I need help! My current location is: </textarea>
       </div>
     </div>
-    <div class="control-group">
-      <div class="control-item"> <label for="emergencyContacts">Emergency
-          Contacts (Facebook usernames, comma separated)</label><br>
-        <input id="emergencyContacts" value="" placeholder="username1,username2,username3"
-          style="width: 100%;"
-          type="text">
-      </div>
-    </div>
+ <div class="control-group">
+  <div class="control-item"> <label for="emergencyContacts">Emergency
+      Contacts (Phone numbers, comma separated)</label><br>
+    <input id="emergencyContacts" value="" placeholder="+1234567890,+0987654321"
+      style="width: 100%;"
+      type="text">
+  </div>
+</div>
     <h3>Quick Contact</h3>
     <div class="emergency-contacts" id="emergencyContactList"> </div>
     <div class="control-group"> <button id="testEmergencyBtn" class="warning-btn">Test
@@ -1720,20 +1720,12 @@ stopRide: function() {
 sendEmergencyAlert: function(message = null) {
   const msg = message || `${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition?.lat.toFixed(6)}, Lon: ${this.lastPosition?.lon.toFixed(6)}`;
   this.emergencyContacts.forEach(contact => {
-    // Just open the chat - user will need to paste/copy the message
-    const webUrl = `https://www.facebook.com/messages/t/${contact}`;
-    window.open(webUrl, '_blank');
-    
-    // Copy message to clipboard so user can easily paste it
-    navigator.clipboard.writeText(msg).then(() => {
-      this.log(`Message copied to clipboard for ${contact}`);
-    }).catch(err => {
-      this.log(`Could not copy to clipboard: ${err}`, true);
-    });
-    
-    this.log(`Opening Facebook chat with ${contact}. Message copied to clipboard.`);
+    // Use SMS - much more reliable
+    const smsUrl = `sms:${contact}?body=${encodeURIComponent(msg)}`;
+    window.location.href = smsUrl;
+    this.log(`Opening SMS to ${contact}: ${msg}`);
   });
-  this.log("Emergency Facebook chats opened - message copied to clipboard");
+  this.log("Emergency SMS messages opened");
 },
 
 testEmergency: function() {
@@ -1755,7 +1747,7 @@ updateEmergencyContacts: function() {
   list.innerHTML = this.emergencyContacts.map(contact => `
     <div class="contact-item">
       <span>${contact}</span>
-      <button onclick="MotoFindBack.sendEmergencyAlert('Emergency to ${contact}: ${document.getElementById('emergencyMessage').value}')">Message</button>
+      <button onclick="MotoFindBack.sendEmergencyAlert('Emergency to ${contact}: ${document.getElementById('emergencyMessage').value}')">SMS</button>
     </div>
   `).join('');
 },

@@ -969,12 +969,18 @@ const MotoFindBack = {
   line: null,
   accelTarget: 100,
   elevationHistory: [],
-  canvas: null, // Will store the canvas element
+  canvas: null,
   cornerChart: null,
+
+  log: function(message, isError = false) {
+    const debug = document.getElementById("debug");
+    debug.innerHTML += `<div style="color: ${isError ? '#ff3333' : '#aaa'}">${new Date().toLocaleTimeString()}: ${message}</div>`;
+    debug.scrollTop = debug.scrollHeight;
+  },
 
   init: async function() {
     this.initMap();
-    this.canvas = document.getElementById('elevationCanvas'); // Store the canvas element
+    this.canvas = document.getElementById('elevationCanvas');
     if (!this.canvas) {
       this.log("Error: elevationCanvas element not found", true);
       return;
@@ -1043,12 +1049,12 @@ const MotoFindBack = {
       this.log("Error: canvas not initialized", true);
       return;
     }
-    const ctx = this.canvas.getContext('2d'); // Get context here
+    const ctx = this.canvas.getContext('2d');
     if (!ctx) {
       this.log("Error: Unable to get 2D context for elevationCanvas", true);
       return;
     }
-    this.canvas.width = this.canvas.parentElement.offsetWidth; // Reset width to handle resizing
+    this.canvas.width = this.canvas.parentElement.offsetWidth;
     const w = this.canvas.width;
     const h = this.canvas.height;
     ctx.clearRect(0, 0, w, h);
@@ -1088,7 +1094,6 @@ const MotoFindBack = {
     document.getElementById('minElevation').textContent = minElev.toFixed(0) + ' m';
   },
 
-  // Remaining methods (unchanged from previous response)
   initMap: function() {
     this.map = L.map('map').setView([51.505, -0.09], 15);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1612,7 +1617,7 @@ const MotoFindBack = {
     this.updateWheelAnimation();
     this.log("Tracking stopped");
     if (this.rideStartTime) {
-      this.rideHistory.push({
+      const ride = {
         startTime: this.rideStartTime,
         distance: this.todayDistance,
         maxSpeed: this.maxSpeed,
@@ -1620,7 +1625,9 @@ const MotoFindBack = {
         acceleration: this.calculateAccelerationTime(),
         corners: this.corners.length,
         elevationGain: this.elevationGain
-      });
+      };
+      this.rideHistory.push(ride);
+      this.saveData();
       this.rideStartTime = null;
     }
     this.updateRideHistory();
@@ -1640,8 +1647,10 @@ const MotoFindBack = {
     this.maxCornerSpeed = 0;
     this.accelerationTimes = [];
     this.elevationHistory = [];
+    this.rideHistory = [];
+    this.saveData();
     this.updateUI();
-    this.log("Metrics reset");
+    this.log("Metrics and ride history reset");
   },
 
   exportMetrics: function() {
@@ -1761,30 +1770,32 @@ const MotoFindBack = {
   },
 
   loadData: function() {
-    this.log("Loading saved data (placeholder)");
+    try {
+      const savedHistory = localStorage.getItem('MotoFindBackRideHistory');
+      if (savedHistory) {
+        this.rideHistory = JSON.parse(savedHistory);
+        this.updateRideHistory();
+        this.log("Ride history loaded from localStorage");
+      } else {
+        this.log("No saved ride history found");
+      }
+    } catch (e) {
+      this.log(`Error loading ride history: ${e.message}`, true);
+    }
   },
 
-  log: function(message, isError = false) {
-    const debug = document.getElementById("debug");
-    debug.innerHTML += `<div style="color: ${isError ? '#ff3333' : '#aaa'}">${new Date().toLocaleTimeString()}: ${message}</div>`;
-    debug.scrollTop = debug.scrollHeight;
+  saveData: function() {
+    try {
+      localStorage.setItem('MotoFindBackRideHistory', JSON.stringify(this.rideHistory));
+      this.log("Ride history saved to localStorage");
+    } catch (e) {
+      this.log(`Error saving ride history: ${e.message}`, true);
+    }
   }
 };
 
 MotoFindBack.init();
-  </script>
-  <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then(registration => {
-          console.log('ServiceWorker registration successful');
-        })
-        .catch(err => {
-          console.log('ServiceWorker registration failed: ', err);
-        });
-    });
-  }
 </script>
+
 </body>
 </html>

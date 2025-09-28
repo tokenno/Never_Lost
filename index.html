@@ -905,60 +905,61 @@
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    const MotoFindBack = {
-      audioCtx: null,
-      watchId: null,
-      bleepTimer: null,
-      lockPosition: null,
-      lastUpdateTime: Date.now(),
-      lastBleedTime: 0,
-      isAudioAllowed: false,
-      isActive: false,
-      movementHistory: [],
-      currentTempo: 1000,
-      autoLockEnabled: false,
-      autoLockDebounce: null,
-      currentSpeed: 0,
-      reachedPointDisplayed: false,
-      isMuted: false,
-      isStationary: false,
-      lastStationaryTime: null,
-      lastStationaryPosition: null,
-      speedThreshold: 10,
-      maxSpeed: 0,
-      totalDistance: 0,
-      todayDistance: 0,
-      weekDistance: 0,
-      monthDistance: 0,
-      rideStartTime: null,
-      accelerationStartTime: null,
-      accelerationStartSpeed: 0,
-      accelerationTimes: [],
-      maxLeanAngle: 0,
-      currentLeanAngle: 0,
-      maintenanceItems: [],
-      emergencyContacts: [],
-      rideHistory: [],
-      isCalibrating: false,
-      calibrationSamples: [],
-      leanOffset: 0,
-      crashDetected: false,
-      crashStartTime: null,
-      lastPosition: null,
-      rotationSpeed: 0, // Duration in seconds for wheel rotation
-      map: null,
-      userMarker: null,
-      lockMarker: null,
-      line: null,
-      sessionActive: false,
-sessionStartTime: null,
-sessionDistance: 0,
-sessionSpeeds: [],
-accelerationTarget: 100, // Default to 0-100 km/h
-sessionHistory: [],
+    <script>
+ const MotoFindBack = {
+    audioCtx: null,
+    watchId: null,
+    bleepTimer: null,
+    lockPosition: null,
+    lastUpdateTime: Date.now(),
+    lastBleedTime: 0,
+    isAudioAllowed: false,
+    isActive: false,
+    movementHistory: [],
+    currentTempo: 1000,
+    autoLockEnabled: false,
+    autoLockDebounce: null,
+    currentSpeed: 0,
+    reachedPointDisplayed: false,
+    isMuted: false,
+    isStationary: false,
+    lastStationaryTime: null,
+    lastStationaryPosition: null,
+    speedThreshold: 10,
+    maxSpeed: 0,
+    totalDistance: 0,
+    todayDistance: 0,
+    weekDistance: 0,
+    monthDistance: 0,
+    rideStartTime: null,
+    accelerationStartTime: null,
+    accelerationStartSpeed: 0,
+    accelerationTimes: [],
+    maxLeanAngle: 0,
+    currentLeanAngle: 0,
+    maintenanceItems: [],
+    emergencyContacts: [],
+    rideHistory: [],
+    isCalibrating: false,
+    calibrationSamples: [],
+    leanOffset: 0,
+    crashDetected: false,
+    crashStartTime: null,
+    lastPosition: null,
+    rotationSpeed: 0,
+    map: null,
+    userMarker: null,
+    lockMarker: null,
+    line: null,
+    sessionActive: false,
+    sessionStartTime: null,
+    sessionDistance: 0,
+    sessionSpeeds: [],
+    accelerationTarget: 100,
+    sessionHistory: [],
+    sessionEndTime: null,
 
-      init: async function() {
+    init: async function() {
         this.initMap();
         this.setupEventListeners();
         this.setupTabs();
@@ -968,593 +969,733 @@ sessionHistory: [],
         this.log("MotoFindBack initialized");
 
         document.getElementById("maxDistInput").addEventListener("input", (e) => {
-          document.getElementById("maxDistValue").textContent = e.target.value;
+            document.getElementById("maxDistValue").textContent = e.target.value;
         });
 
         document.getElementById("stationaryTime").addEventListener("input", (e) => {
-          document.getElementById("stationaryTimeValue").textContent = e.target.value + ' sec';
+            document.getElementById("stationaryTimeValue").textContent = e.target.value + ' sec';
         });
 
         document.getElementById("speedThreshold").addEventListener("input", (e) => {
-          this.speedThreshold = parseFloat(e.target.value);
-          document.getElementById("speedThresholdValue").textContent = e.target.value + ' km/h';
+            this.speedThreshold = parseFloat(e.target.value);
+            document.getElementById("speedThresholdValue").textContent = e.target.value + ' km/h';
         });
 
         this.initDeviceOrientation();
-      },
+    },
 
-      initMap: function() {
+    initMap: function() {
         this.map = L.map('map').setView([51.505, -0.09], 15);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(this.map);
 
         const userIcon = L.divIcon({
-          className: 'user-marker',
-          html: '📍',
-          iconSize: [24, 24]
+            className: 'user-marker',
+            html: '📍',
+            iconSize: [24, 24]
         });
 
         const lockIcon = L.divIcon({
-          className: 'lock-marker',
-          html: '🔒',
-          iconSize: [24, 24]
+            className: 'lock-marker',
+            html: '🔒',
+            iconSize: [24, 24]
         });
 
         this.userMarker = L.marker([0, 0], { icon: userIcon }).addTo(this.map);
         this.lockMarker = L.marker([0, 0], { icon: lockIcon }).addTo(this.map);
         this.line = L.polyline([], { color: '#ff6600', weight: 2 }).addTo(this.map);
-      },
+    },
 
-      setupTabs: function() {
+    setupTabs: function() {
         const tabs = document.querySelectorAll('.tab');
         tabs.forEach(tab => {
-          tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => {
-              content.classList.remove('active');
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                tab.classList.add('active');
+                document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
             });
-            tab.classList.add('active');
-            document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
-          });
         });
-      },
+    },
 
-      setupCollapsibles: function() {
+    setupCollapsibles: function() {
         const coll = document.getElementsByClassName("collapsible");
         for (let i = 0; i < coll.length; i++) {
-          coll[i].addEventListener("click", function() {
-            this.classList.toggle("active");
-            const content = this.nextElementSibling;
-            if (content.style.maxHeight) {
-              content.style.maxHeight = null;
-            } else {
-              content.style.maxHeight = content.scrollHeight + "px";
-            }
-          });
+            coll[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                const content = this.nextElementSibling;
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                }
+            });
         }
-      },
+    },
 
-      setupEventListeners: function() {
+    updateSessionHistory: function() {
+        const historyElement = document.getElementById("sessionHistory");
+        historyElement.innerHTML = "";
+        
+        if (this.sessionHistory.length === 0) {
+            historyElement.innerHTML = "No sessions recorded yet.";
+            return;
+        }
+        
+        this.sessionHistory.slice().reverse().forEach((session, index) => {
+            const sessionElement = document.createElement("div");
+            sessionElement.style.padding = "5px";
+            sessionElement.style.borderBottom = "1px solid #444";
+            sessionElement.innerHTML = `
+                <strong>Session ${this.sessionHistory.length - index}</strong><br>
+                Date: ${new Date(session.startTime).toLocaleDateString()}<br>
+                Duration: ${this.formatDuration(session.duration)}<br>
+                Distance: ${session.distance.toFixed(2)} km<br>
+                Max Speed: ${(session.maxSpeed * 3.6).toFixed(1)} km/h
+            `;
+            historyElement.appendChild(sessionElement);
+        });
+    },
+
+    setupEventListeners: function() {
+        // Session controls
+        document.getElementById("startSessionBtn").addEventListener("click", () => {
+            this.startSession();
+        });
+
+        document.getElementById("endSessionBtn").addEventListener("click", () => {
+            this.endSession();
+        });
+
+        document.getElementById("saveSessionBtn").addEventListener("click", () => {
+            this.saveSession();
+        });
+
+        document.getElementById("setAccelerationTarget").addEventListener("click", () => {
+            this.setAccelerationTarget();
+        });
+
+        // Existing navigation controls
         document.getElementById("testBtn").addEventListener("click", () => {
-          this.initAudio();
-          this.playTestSound();
-          if (this.isAudioAllowed) {
-            this.lockCurrentPosition();
-          }
+            this.initAudio();
+            this.playTestSound();
+            if (this.isAudioAllowed) {
+                this.lockCurrentPosition();
+            }
         });
 
         document.getElementById("calibrateBtn").addEventListener("click", () => {
-          this.calibrateSensors();
+            this.calibrateSensors();
         });
 
         document.getElementById("autoLockBtn").addEventListener("click", () => {
-          this.toggleAutoLock();
+            this.toggleAutoLock();
         });
 
         document.getElementById("muteBtn").addEventListener("click", () => {
-          this.toggleMute();
+            this.toggleMute();
         });
 
         document.getElementById("stopBtn").addEventListener("click", () => {
-          this.stop();
+            this.stop();
         });
 
         document.getElementById("resetMetricsBtn").addEventListener("click", () => {
-          this.resetMetrics();
+            this.resetMetrics();
         });
 
         document.getElementById("exportMetricsBtn").addEventListener("click", () => {
-          this.exportMetrics();
+            this.exportMetrics();
         });
 
         document.getElementById("emergencyBtn").addEventListener("click", () => {
-          this.sendEmergencyAlert();
+            this.sendEmergencyAlert();
         });
 
         document.getElementById("testEmergencyBtn").addEventListener("click", () => {
-          this.testEmergency();
+            this.testEmergency();
         });
 
         document.getElementById("addContactBtn").addEventListener("click", () => {
-          this.addEmergencyContact();
+            this.addEmergencyContact();
         });
 
         document.getElementById("addMaintenanceBtn").addEventListener("click", () => {
-          this.showMaintenanceForm();
+            this.showMaintenanceForm();
         });
 
         document.getElementById("resetMaintenanceBtn").addEventListener("click", () => {
-          this.resetMaintenance();
+            this.resetMaintenance();
         });
 
         document.getElementById("saveMaintenanceBtn").addEventListener("click", () => {
-          this.saveMaintenanceItem();
+            this.saveMaintenanceItem();
         });
-      },
+    },
 
-      initDeviceOrientation: function() {
-        if (window.DeviceOrientationEvent) {
-          window.addEventListener('deviceorientation', (event) => {
+    initDeviceOrientation: function() {
+        if (!window.DeviceOrientationEvent) {
+            this.log("Device orientation not supported", true);
+            document.getElementById('crashStatus').textContent = 'Crash Detection: Not supported';
+            document.getElementById('crashStatus').className = 'status error';
+            return;
+        }
+
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission()
+                .then(permissionState => {
+                    if (permissionState === 'granted') {
+                        this.startOrientationListening();
+                    } else {
+                        this.log("Orientation permission denied", true);
+                    }
+                })
+                .catch(error => {
+                    this.log("Orientation permission error: " + error, true);
+                });
+        } else {
+            this.startOrientationListening();
+        }
+    },
+
+    startOrientationListening: function() {
+        window.addEventListener('deviceorientation', (event) => {
             if (this.isCalibrating) {
-              this.calibrationSamples.push(event.gamma || 0);
-              return;
+                this.calibrationSamples.push(event.gamma || 0);
+                return;
             }
             if (event.gamma !== null) {
-              this.currentLeanAngle = Math.round(Math.abs(event.gamma - this.leanOffset));
-              this.updateLeanAngleDisplay();
-              if (this.currentLeanAngle > this.maxLeanAngle) {
-                this.maxLeanAngle = this.currentLeanAngle;
-                document.getElementById('leanAngle').textContent = `${this.maxLeanAngle}°`;
-              }
+                this.currentLeanAngle = Math.round(Math.abs(event.gamma - this.leanOffset));
+                this.updateLeanAngleDisplay();
+                if (this.currentLeanAngle > this.maxLeanAngle) {
+                    this.maxLeanAngle = this.currentLeanAngle;
+                    document.getElementById('leanAngle').textContent = `${this.maxLeanAngle}°`;
+                }
             }
             if (event.beta !== null && !this.crashDetected) {
-              const betaAbs = Math.abs(event.beta);
-              if (betaAbs > 70) {
-                if (!this.crashStartTime) {
-                  this.crashStartTime = Date.now();
-                  document.getElementById('crashStatus').textContent = 'Possible crash detected... Confirming';
-                  document.getElementById('crashStatus').className = 'status warning';
-                  this.log('Possible crash detected, confirming for 5 seconds');
+                const betaAbs = Math.abs(event.beta);
+                if (betaAbs > 70) {
+                    if (!this.crashStartTime) {
+                        this.crashStartTime = Date.now();
+                        document.getElementById('crashStatus').textContent = 'Possible crash detected... Confirming';
+                        document.getElementById('crashStatus').className = 'status warning';
+                        this.log('Possible crash detected, confirming for 5 seconds');
+                    }
+                    if (Date.now() - this.crashStartTime > 5000) {
+                        this.crashDetected = true;
+                        this.triggerCrashAlert();
+                    }
+                } else {
+                    if (this.crashStartTime) {
+                        this.crashStartTime = null;
+                        document.getElementById('crashStatus').textContent = 'Crash Detection: Inactive';
+                        document.getElementById('crashStatus').className = 'status';
+                        this.log('Crash condition cleared');
+                    }
                 }
-                if (Date.now() - this.crashStartTime > 5000) {
-                  this.crashDetected = true;
-                  this.triggerCrashAlert();
-                }
-              } else {
-                if (this.crashStartTime) {
-                  this.crashStartTime = null;
-                  document.getElementById('crashStatus').textContent = 'Crash Detection: Inactive';
-                  document.getElementById('crashStatus').className = 'status';
-                  this.log('Crash condition cleared');
-                }
-              }
             }
-          });
-        } else {
-          this.log("Device orientation not supported", true);
-          document.getElementById('crashStatus').textContent = 'Crash Detection: Not supported';
-          document.getElementById('crashStatus').className = 'status error';
+        });
+    },
+
+    startSession: function() {
+        if (this.sessionActive) {
+            this.log("Session already active", true);
+            return;
         }
-      },
-
-        // Session management methods
-startSession: function() {
-  this.sessionActive = true;
-  this.sessionStartTime = new Date();
-  this.sessionDistance = 0;
-  this.sessionSpeeds = [];
-  this.maxSpeed = 0;
-  
-  document.getElementById("startSessionBtn").disabled = true;
-  document.getElementById("endSessionBtn").disabled = false;
-  document.getElementById("saveSessionBtn").disabled = true;
-  
-  this.log("Bike session started");
-},
-
-endSession: function() {
-  this.sessionActive = false;
-  const sessionDuration = new Date() - this.sessionStartTime;
-  
-  document.getElementById("startSessionBtn").disabled = false;
-  document.getElementById("endSessionBtn").disabled = true;
-  document.getElementById("saveSessionBtn").disabled = false;
-  
-  this.log(`Bike session ended. Duration: ${this.formatDuration(sessionDuration)}, Distance: ${this.sessionDistance.toFixed(2)} km`);
-},
-
-saveSession: function() {
-  if (this.sessionActive) {
-    alert("Please end the session before saving.");
-    return;
-  }
-  
-  const sessionData = {
-    startTime: this.sessionStartTime,
-    duration: new Date() - this.sessionStartTime,
-    distance: this.sessionDistance,
-    maxSpeed: this.maxSpeed,
-    maxLeanAngle: this.maxLeanAngle
-  };
-  
-  this.sessionHistory.push(sessionData);
-  this.saveData();
-  this.updateSessionHistory();
-  
-  this.log("Session saved successfully");
-},
-
-setAccelerationTarget: function() {
-  const target = parseInt(document.getElementById("accelerationTarget").value);
-  if (target && target >= 20 && target <= 300) {
-    this.accelerationTarget = target;
-    this.updateAccelerationTarget();
-    this.log(`Acceleration target set to 0-${target} km/h`);
-  } else {
-    alert("Please enter a valid acceleration target between 20 and 300 km/h");
-  }
-},
-
-updateAccelerationTarget: function() {
-  document.getElementById("accelerationLabel").textContent = `0-${this.accelerationTarget} km/h`;
-  document.getElementById("statsAccelerationLabel").textContent = `0-${this.accelerationTarget} km/h:`;
-},
         
-      calibrateSensors: function() {
+        this.sessionActive = true;
+        this.sessionStartTime = new Date();
+        this.sessionDistance = 0;
+        this.sessionSpeeds = [];
+        this.maxSpeed = 0;
+        this.maxLeanAngle = 0;
+        
+        document.getElementById("startSessionBtn").disabled = true;
+        document.getElementById("endSessionBtn").disabled = false;
+        document.getElementById("saveSessionBtn").disabled = true;
+        
+        this.sessionEndTime = null;
+        
+        this.log("Bike session started");
+        this.updateSessionUI();
+    },
+
+    updateSessionUI: function() {
+        const startBtn = document.getElementById("startSessionBtn");
+        const endBtn = document.getElementById("endSessionBtn");
+        const saveBtn = document.getElementById("saveSessionBtn");
+        
+        if (this.sessionActive) {
+            startBtn.disabled = true;
+            endBtn.disabled = false;
+            saveBtn.disabled = true;
+            startBtn.textContent = "Session Active";
+        } else {
+            startBtn.disabled = false;
+            endBtn.disabled = true;
+            saveBtn.disabled = !this.sessionEndTime;
+            startBtn.textContent = "Start Bike Session";
+        }
+    },
+
+    endSession: function() {
+        if (!this.sessionActive) {
+            this.log("No active session to end", true);
+            return;
+        }
+        
+        this.sessionActive = false;
+        this.sessionEndTime = new Date();
+        const sessionDuration = this.sessionEndTime - this.sessionStartTime;
+        
+        const sessionData = {
+            startTime: this.sessionStartTime,
+            endTime: this.sessionEndTime,
+            duration: sessionDuration,
+            distance: this.sessionDistance,
+            maxSpeed: this.maxSpeed,
+            maxLeanAngle: this.maxLeanAngle,
+            avgSpeed: this.sessionSpeeds.length > 0 ? 
+                this.sessionSpeeds.reduce((a, b) => a + b, 0) / this.sessionSpeeds.length : 0
+        };
+        
+        this.sessionHistory.push(sessionData);
+        
+        this.updateSessionUI();
+        this.updateSessionHistory();
+        
+        this.log(`Bike session ended. Duration: ${this.formatDuration(sessionDuration)}, Distance: ${this.sessionDistance.toFixed(2)} km`);
+    },
+
+    saveSession: function() {
+        if (this.sessionActive) {
+            alert("Please end the session before saving.");
+            return;
+        }
+        
+        const sessionData = {
+            startTime: this.sessionStartTime,
+            duration: new Date() - this.sessionStartTime,
+            distance: this.sessionDistance,
+            maxSpeed: this.maxSpeed,
+            maxLeanAngle: this.maxLeanAngle
+        };
+        
+        this.sessionHistory.push(sessionData);
+        this.saveData();
+        this.updateSessionHistory();
+        
+        this.log("Session saved successfully");
+    },
+
+    setAccelerationTarget: function() {
+        const target = parseInt(document.getElementById("accelerationTarget").value);
+        if (target && target >= 20 && target <= 300) {
+            this.accelerationTarget = target;
+            this.updateAccelerationTarget();
+            this.log(`Acceleration target set to 0-${target} km/h`);
+        } else {
+            alert("Please enter a valid acceleration target between 20 and 300 km/h");
+        }
+    },
+
+    updateAccelerationTarget: function() {
+        document.getElementById("accelerationLabel").textContent = `0-${this.accelerationTarget} km/h`;
+        document.getElementById("statsAccelerationLabel").textContent = `0-${this.accelerationTarget} km/h:`;
+    },
+
+    formatDuration: function(milliseconds) {
+        const seconds = Math.floor(milliseconds / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        
+        return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+    },
+
+    calibrateSensors: function() {
         this.isCalibrating = true;
         this.calibrationSamples = [];
         document.getElementById('calibrateStatus').textContent = 'Calibrating... Keep phone steady for 5 seconds.';
         this.log('Starting sensor calibration');
 
         setTimeout(() => {
-          if (this.calibrationSamples.length > 0) {
-            const avgGamma = this.calibrationSamples.reduce((a, b) => a + b, 0) / this.calibrationSamples.length;
-            this.leanOffset = avgGamma;
-            document.getElementById('calibrateStatus').textContent = 'Calibrated! Offset: ' + this.leanOffset.toFixed(1) + '°';
-            document.getElementById('calibrateStatus').className = 'status success';
-            this.log('Calibration complete: offset ' + this.leanOffset.toFixed(1) + '°');
-          } else {
-            document.getElementById('calibrateStatus').textContent = 'Calibration failed - no data';
-            document.getElementById('calibrateStatus').className = 'status error';
-            this.log('Calibration failed');
-          }
-          this.isCalibrating = false;
+            if (this.calibrationSamples.length > 0) {
+                const avgGamma = this.calibrationSamples.reduce((a, b) => a + b, 0) / this.calibrationSamples.length;
+                this.leanOffset = avgGamma;
+                document.getElementById('calibrateStatus').textContent = 'Calibrated! Offset: ' + this.leanOffset.toFixed(1) + '°';
+                document.getElementById('calibrateStatus').className = 'status success';
+                this.log('Calibration complete: offset ' + this.leanOffset.toFixed(1) + '°');
+            } else {
+                document.getElementById('calibrateStatus').textContent = 'Calibration failed - no data';
+                document.getElementById('calibrateStatus').className = 'status error';
+                this.log('Calibration failed');
+            }
+            this.isCalibrating = false;
         }, 5000);
-      },
+    },
 
-      triggerCrashAlert: function() {
+    triggerCrashAlert: function() {
         document.getElementById('crashStatus').textContent = 'Crash detected! Sending alert...';
         document.getElementById('crashStatus').className = 'status error';
         this.log('Crash confirmed, triggering emergency alert');
         
         if (this.lastPosition) {
-          const message = `CRASH DETECTED! ${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition.lat.toFixed(6)}, Lon: ${this.lastPosition.lon.toFixed(6)}`;
-          this.sendEmergencyAlert(message);
+            const message = `CRASH DETECTED! ${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition.lat.toFixed(6)}, Lon: ${this.lastPosition.lon.toFixed(6)}`;
+            this.sendEmergencyAlert(message);
         } else {
-          this.log('No recent position available for crash alert', true);
-          document.getElementById('crashStatus').textContent = 'Crash detected, but no position available';
+            this.log('No recent position available for crash alert', true);
+            document.getElementById('crashStatus').textContent = 'Crash detected, but no position available';
         }
-      },
+    },
 
-      updateLeanAngleDisplay: function() {
-        const leanBike = document.getElementById('leanBike');
-        const leanValue = document.getElementById('leanValue');
-        const displayAngle = Math.min(45, this.currentLeanAngle);
-        leanBike.style.transform = `translateX(-50%) rotate(${displayAngle}deg)`;
-        leanValue.textContent = `${this.currentLeanAngle}°`;
-        this.log(`Lean angle updated: ${this.currentLeanAngle}°`);
-      },
+    updateLeanAngleDisplay: function() {
+        try {
+            const leanBike = document.getElementById('leanBike');
+            const leanValue = document.getElementById('leanValue');
+            
+            if (!leanBike || !leanValue) {
+                this.log("Lean angle elements not found", true);
+                return;
+            }
+            
+            const displayAngle = Math.min(45, this.currentLeanAngle);
+            leanBike.style.transform = `translateX(-50%) rotate(${displayAngle}deg)`;
+            leanValue.textContent = `${this.currentLeanAngle}°`;
+            
+            if (this.currentLeanAngle > 40) {
+                leanValue.style.color = 'var(--warning-color)';
+            } else if (this.currentLeanAngle > 60) {
+                leanValue.style.color = 'var(--error-color)';
+            } else {
+                leanValue.style.color = 'var(--accent-color)';
+            }
+        } catch (error) {
+            this.log("Error updating lean display: " + error.message, true);
+        }
+    },
 
-      updateWheelAnimation: function() {
+    updateWheelAnimation: function() {
         const wheel = document.querySelector('.spinning-wheel');
         const spokes = document.querySelectorAll('.wheel-spoke');
         if (this.currentSpeed <= 0.1) {
-          wheel.style.animation = 'none';
-          spokes.forEach(spoke => spoke.style.animation = 'none');
-          this.log('Wheel animation stopped (speed <= 0.1 m/s)');
+            wheel.style.animation = 'none';
+            spokes.forEach(spoke => spoke.style.animation = 'none');
         } else {
-          const speedKmh = this.currentSpeed * 3.6;
-          this.rotationSpeed = Math.max(0.2, 2 / (speedKmh / 10));
-          wheel.style.animation = `wheel-spin ${this.rotationSpeed}s linear infinite`;
-          spokes.forEach((spoke, index) => {
-            const spokeSpeed = this.rotationSpeed * (1 + index * 0.5);
-            spoke.style.animation = `spoke-spin ${spokeSpeed}s linear infinite ${index % 2 === 0 ? '' : 'reverse'}`;
-          });
-          this.log(`Wheel animation updated: ${this.rotationSpeed.toFixed(2)}s per rotation at ${speedKmh.toFixed(1)} km/h`);
+            const speedKmh = this.currentSpeed * 3.6;
+            this.rotationSpeed = Math.max(0.2, 2 / (speedKmh / 10));
+            wheel.style.animation = `wheel-spin ${this.rotationSpeed}s linear infinite`;
+            spokes.forEach((spoke, index) => {
+                const spokeSpeed = this.rotationSpeed * (1 + index * 0.5);
+                spoke.style.animation = `spoke-spin ${spokeSpeed}s linear infinite ${index % 2 === 0 ? '' : 'reverse'}`;
+            });
         }
-      },
+    },
 
-      toggleMute: function() {
+    toggleMute: function() {
         this.isMuted = !this.isMuted;
         const muteBtn = document.getElementById("muteBtn");
         if (this.isMuted) {
-          muteBtn.textContent = "Sound Muted";
-          muteBtn.classList.add("muted");
-          clearTimeout(this.bleepTimer);
-          this.log("Audio muted");
+            muteBtn.textContent = "Sound Muted";
+            muteBtn.classList.add("muted");
+            clearTimeout(this.bleepTimer);
+            this.log("Audio muted");
         } else {
-          muteBtn.textContent = "Mute Sound";
-          muteBtn.classList.remove("muted");
-          this.log("Audio unmuted");
+            muteBtn.textContent = "Mute Sound";
+            muteBtn.classList.remove("muted");
+            this.log("Audio unmuted");
         }
-      },
+    },
 
-      toggleAutoLock: function() {
+    toggleAutoLock: function() {
         this.autoLockEnabled = !this.autoLockEnabled;
         if (this.autoLockEnabled) {
-          document.getElementById("autoLockBtn").textContent = "Auto-Lock: ON";
-          document.getElementById("autoLockBtn").style.backgroundColor = "#ff6600";
-          document.getElementById("autoLockBtn").style.color = "#000";
-          document.getElementById("autoLockSettings").style.display = "block";
-          this.log("Auto-lock enabled - will lock when stopped for specified time");
-          this.updateGpsStatus("Auto-lock enabled - will lock when stopped");
+            document.getElementById("autoLockBtn").textContent = "Auto-Lock: ON";
+            document.getElementById("autoLockBtn").style.backgroundColor = "#ff6600";
+            document.getElementById("autoLockBtn").style.color = "#000";
+            document.getElementById("autoLockSettings").style.display = "block";
+            this.log("Auto-lock enabled - will lock when stopped for specified time");
+            this.updateGpsStatus("Auto-lock enabled - will lock when stopped");
         } else {
-          document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
-          document.getElementById("autoLockBtn").style.backgroundColor = "";
-          document.getElementById("autoLockBtn").style.color = "";
-          document.getElementById("autoLockSettings").style.display = "none";
-          clearTimeout(this.autoLockDebounce);
-          this.autoLockDebounce = null;
-          this.isStationary = false;
-          this.lastStationaryTime = null;
-          this.lastStationaryPosition = null;
-          this.speedThreshold = 10;
-          document.getElementById("speedThreshold").value = 10;
-          document.getElementById("speedThresholdValue").textContent = "10 km/h";
-          this.log("Auto-lock disabled");
-          this.updateGpsStatus("Auto-lock disabled");
+            document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
+            document.getElementById("autoLockBtn").style.backgroundColor = "";
+            document.getElementById("autoLockBtn").style.color = "";
+            document.getElementById("autoLockSettings").style.display = "none";
+            clearTimeout(this.autoLockDebounce);
+            this.autoLockDebounce = null;
+            this.isStationary = false;
+            this.lastStationaryTime = null;
+            this.lastStationaryPosition = null;
+            this.speedThreshold = 10;
+            document.getElementById("speedThreshold").value = 10;
+            document.getElementById("speedThresholdValue").textContent = "10 km/h";
+            this.log("Auto-lock disabled");
+            this.updateGpsStatus("Auto-lock disabled");
         }
         this.updateUI();
-      },
+    },
 
-      initAudio: function() {
+    initAudio: function() {
         if (this.audioCtx) {
-          if (this.audioCtx.state === 'suspended') {
-            this.audioCtx.resume().then(() => {
-              this.log("Audio context resumed");
-            });
-          }
-          return;
+            if (this.audioCtx.state === 'suspended') {
+                this.audioCtx.resume().then(() => {
+                    this.log("Audio context resumed");
+                });
+            }
+            return;
         }
         try {
-          this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          document.getElementById("audioStatus").textContent = "Audio: Initialized";
-          document.getElementById("audioStatus").className = "status success";
-          document.getElementById("autoLockBtn").disabled = false;
-          this.log("Audio system initialized");
+            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            document.getElementById("audioStatus").textContent = "Audio: Initialized";
+            document.getElementById("audioStatus").className = "status success";
+            document.getElementById("autoLockBtn").disabled = false;
+            this.log("Audio system initialized");
         } catch (e) {
-          document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
-          document.getElementById("audioStatus").className = "status error";
-          this.log(`Audio init error: ${e.message}`, true);
+            document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
+            document.getElementById("audioStatus").className = "status error";
+            this.log(`Audio init error: ${e.message}`, true);
         }
-      },
+    },
 
-      playTestSound: function() {
+    playTestSound: function() {
         if (!this.audioCtx) {
-          this.log("Audio context not ready", true);
-          return;
+            this.log("Audio context not ready", true);
+            return;
         }
         try {
-          const now = this.audioCtx.currentTime;
-          const osc = this.audioCtx.createOscillator();
-          const gain = this.audioCtx.createGain();
-          osc.type = 'sine';
-          osc.frequency.value = 800;
-          osc.connect(gain);
-          gain.connect(this.audioCtx.destination);
-          gain.gain.setValueAtTime(0, now);
-          gain.gain.linearRampToValueAtTime(1, now + 0.01);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-          osc.start(now);
-          osc.stop(now + 0.1);
-          this.isAudioAllowed = true;
-          document.getElementById("audioStatus").textContent = "Audio: Working!";
-          document.getElementById("audioStatus").className = "status success";
-          document.getElementById("autoLockBtn").disabled = false;
-          document.getElementById("muteBtn").disabled = false;
-          this.log("Test sound played successfully - audio is enabled");
+            const now = this.audioCtx.currentTime;
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 800;
+            osc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(1, now + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            osc.start(now);
+            osc.stop(now + 0.1);
+            this.isAudioAllowed = true;
+            document.getElementById("audioStatus").textContent = "Audio: Working!";
+            document.getElementById("audioStatus").className = "status success";
+            document.getElementById("autoLockBtn").disabled = false;
+            document.getElementById("muteBtn").disabled = false;
+            this.log("Test sound played successfully - audio is enabled");
         } catch (e) {
-          document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
-          document.getElementById("audioStatus").className = "status error";
-          this.log(`Test sound failed: ${e.message}`, true);
+            document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
+            document.getElementById("audioStatus").className = "status error";
+            this.log(`Test sound failed: ${e.message}`, true);
         }
-      },
+    },
 
-      playBleep: function(freq) {
+    playBleep: function(freq) {
         if (!this.audioCtx || !this.isAudioAllowed || this.isMuted) return;
         try {
-          const now = this.audioCtx.currentTime;
-          const osc = this.audioCtx.createOscillator();
-          const gain = this.audioCtx.createGain();
-          osc.type = 'sine';
-          osc.frequency.value = freq;
-          osc.connect(gain);
-          gain.connect(this.audioCtx.destination);
-          gain.gain.setValueAtTime(0, now);
-          gain.gain.linearRampToValueAtTime(0.3, now + 0.01);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-          osc.start(now);
-          osc.stop(now + 0.1);
+            const now = this.audioCtx.currentTime;
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            osc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.3, now + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            osc.start(now);
+            osc.stop(now + 0.1);
         } catch (e) {
-          this.log(`Bleep error: ${e.message}`, true);
+            this.log(`Bleep error: ${e.message}`, true);
         }
-      },
+    },
 
-      lockCurrentPosition: function() {
+    lockCurrentPosition: function() {
         if (!navigator.geolocation) {
-          this.updateGpsStatus("Geolocation not supported", true);
-          return;
+            this.updateGpsStatus("Geolocation not supported", true);
+            return;
         }
         this.updateGpsStatus("Getting position...");
         navigator.geolocation.getCurrentPosition(
-          pos => {
-            this.lockPosition = {
-              lat: pos.coords.latitude,
-              lon: pos.coords.longitude,
-              accuracy: pos.coords.accuracy
-            };
-            this.updateGpsStatus(`Position locked! (Accuracy: ${this.lockPosition.accuracy.toFixed(1)}m)`);
-            this.updateLockStatus(`Locked (Accuracy: ${this.lockPosition.accuracy.toFixed(1)}m)`);
-            this.isActive = true;
-            this.startPositionWatch();
-            this.updateUI();
-          },
-          err => {
-            let errorMsg = `Error: ${err.message}`;
-            if (err.code === err.PERMISSION_DENIED) {
-              errorMsg = "Permission denied. Enable location services.";
-            } else if (err.code === err.TIMEOUT) {
-              errorMsg = "Timeout. Ensure GPS is enabled.";
-            } else if (err.code === err.POSITION_UNAVAILABLE) {
-              errorMsg = "Position unavailable. Try moving to open area.";
+            pos => {
+                this.lockPosition = {
+                    lat: pos.coords.latitude,
+                    lon: pos.coords.longitude,
+                    accuracy: pos.coords.accuracy
+                };
+                this.updateGpsStatus(`Position locked! (Accuracy: ${this.lockPosition.accuracy.toFixed(1)}m)`);
+                this.updateLockStatus(`Locked (Accuracy: ${this.lockPosition.accuracy.toFixed(1)}m)`);
+                this.isActive = true;
+                this.startPositionWatch();
+                this.updateUI();
+            },
+            err => {
+                let errorMsg = `Error: ${err.message}`;
+                if (err.code === err.PERMISSION_DENIED) {
+                    errorMsg = "Permission denied. Enable location services.";
+                } else if (err.code === err.TIMEOUT) {
+                    errorMsg = "Timeout. Ensure GPS is enabled.";
+                } else if (err.code === err.POSITION_UNAVAILABLE) {
+                    errorMsg = "Position unavailable. Try moving to open area.";
+                }
+                this.updateGpsStatus(errorMsg, true);
+                this.log(`GPS error: ${err.code} - ${err.message}`, true);
+            },
+            { 
+                enableHighAccuracy: true, 
+                timeout: 10000,
+                maximumAge: 0
             }
-            this.updateGpsStatus(errorMsg, true);
-            this.log(`GPS error: ${err.code} - ${err.message}`, true);
-          },
-          { 
-            enableHighAccuracy: true, 
-            timeout: 10000,
-            maximumAge: 0
-          }
         );
-      },
+    },
 
-      startPositionWatch: function() {
+    startPositionWatch: function() {
         if (this.watchId) {
-          navigator.geolocation.clearWatch(this.watchId);
+            navigator.geolocation.clearWatch(this.watchId);
         }
         this.watchId = navigator.geolocation.watchPosition(
-          pos => this.handlePositionUpdate(pos),
-          err => {
-            this.updateGpsStatus(`GPS error: ${err.message}`, true);
-          },
-          { 
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 15000
-          }
+            pos => this.handlePositionUpdate(pos),
+            err => {
+                this.updateGpsStatus(`GPS error: ${err.message}`, true);
+            },
+            { 
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 15000
+            }
         );
-      },
+    },
 
-      handlePositionUpdate: function(pos) {
+    handlePositionUpdate: function(pos) {
         const now = Date.now();
         this.lastUpdateTime = now;
         const { latitude, longitude, accuracy, speed } = pos.coords;
         this.currentSpeed = speed || 0;
         const speedKmh = (this.currentSpeed * 3.6).toFixed(1);
+        
+        const previousPosition = this.lastPosition;
         this.lastPosition = { lat: latitude, lon: longitude, accuracy };
+        
         document.getElementById("currentSpeed").textContent = `${speedKmh} km/h`;
         document.getElementById("statsCurrentSpeed").textContent = `${speedKmh} km/h`;
+        
         if (this.currentSpeed > this.maxSpeed) {
-          this.maxSpeed = this.currentSpeed;
-          document.getElementById("maxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
-          document.getElementById("statsMaxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
+            this.maxSpeed = this.currentSpeed;
+            document.getElementById("maxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
+            document.getElementById("statsMaxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
         }
+        
+        if (this.sessionActive && previousPosition && this.lastPosition) {
+            const distance = this.calculateDistance(
+                latitude, longitude, 
+                previousPosition.lat, previousPosition.lon
+            );
+            this.sessionDistance += distance / 1000;
+            this.todayDistance += distance / 1000;
+            this.totalDistance += distance / 1000;
+            
+            document.getElementById("todayDistance").textContent = `${this.todayDistance.toFixed(2)} km`;
+            document.getElementById("statsToday").textContent = `${this.todayDistance.toFixed(2)} km`;
+            document.getElementById("statsTotal").textContent = `${this.totalDistance.toFixed(2)} km`;
+        }
+        
         this.trackAcceleration(speedKmh);
         this.updateWheelAnimation();
+        
         if (this.map) {
-          const userPos = [latitude, longitude];
-          this.userMarker.setLatLng(userPos);
-          if (this.lockPosition) {
-            const lockPos = [this.lockPosition.lat, this.lockPosition.lon];
-            this.lockMarker.setLatLng(lockPos);
-            this.line.setLatLngs([userPos, lockPos]);
-            this.map.fitBounds([userPos, lockPos], { padding: [20, 20] });
-          }
+            const userPos = [latitude, longitude];
+            this.userMarker.setLatLng(userPos);
+            if (this.lockPosition) {
+                const lockPos = [this.lockPosition.lat, this.lockPosition.lon];
+                this.lockMarker.setLatLng(lockPos);
+                this.line.setLatLngs([userPos, lockPos]);
+                this.map.fitBounds([userPos, lockPos], { padding: [20, 20] });
+            }
         }
+        
         const threshold = this.speedThreshold * 1000 / 3600;
         const stationaryTime = parseFloat(document.getElementById("stationaryTime").value) * 1000;
+        
         if (this.autoLockEnabled) {
-          if (this.currentSpeed <= threshold && !this.isStationary) {
-            this.isStationary = true;
-            this.lastStationaryTime = now;
-            this.lastStationaryPosition = { lat: latitude, lon: longitude, accuracy };
-            this.log(`Stationary detected at ${speedKmh} km/h, waiting ${stationaryTime/1000}s to confirm lock`);
-            this.updateGpsStatus(`Stationary, waiting ${stationaryTime/1000}s to lock`);
-            clearTimeout(this.autoLockDebounce);
-            this.autoLockDebounce = setTimeout(() => {
-              if (this.isStationary && this.currentSpeed <= threshold) {
-                this.lockPosition = this.lastStationaryPosition;
-                this.updateGpsStatus(`Auto-locked! (Speed: ${speedKmh} km/h, Accuracy: ${accuracy.toFixed(1)}m)`);
-                this.updateLockStatus(`Auto-locked (Accuracy: ${this.lockPosition.accuracy.toFixed(1)}m)`);
-                this.isActive = true;
-                this.log(`Auto-locked position at ${speedKmh} km/h`);
-              }
-            }, stationaryTime);
-          } else if (this.currentSpeed > threshold && this.isStationary) {
-            this.isStationary = false;
-            this.lastStationaryTime = null;
-            clearTimeout(this.autoLockDebounce);
-            this.autoLockDebounce = null;
-            this.log(`Movement detected (${speedKmh} km/h), resetting stationary timer`);
-            this.updateGpsStatus(`Moving (${speedKmh} km/h), stationary timer reset`);
-            if (this.lockPosition) {
-              this.updateGpsStatus(`Keeping locked position (Speed: ${speedKmh} km/h)`);
+            if (this.currentSpeed <= threshold && !this.isStationary) {
+                this.isStationary = true;
+                this.lastStationaryTime = now;
+                this.lastStationaryPosition = { lat: latitude, lon: longitude, accuracy };
+                this.log(`Stationary detected at ${speedKmh} km/h, waiting ${stationaryTime/1000}s to confirm lock`);
+                this.updateGpsStatus(`Stationary, waiting ${stationaryTime/1000}s to lock`);
+                clearTimeout(this.autoLockDebounce);
+                this.autoLockDebounce = setTimeout(() => {
+                    if (this.isStationary && this.currentSpeed <= threshold) {
+                        this.lockPosition = this.lastStationaryPosition;
+                        this.updateGpsStatus(`Auto-locked! (Speed: ${speedKmh} km/h, Accuracy: ${accuracy.toFixed(1)}m)`);
+                        this.updateLockStatus(`Auto-locked (Accuracy: ${this.lockPosition.accuracy.toFixed(1)}m)`);
+                        this.isActive = true;
+                        this.log(`Auto-locked position at ${speedKmh} km/h`);
+                    }
+                }, stationaryTime);
+            } else if (this.currentSpeed > threshold && this.isStationary) {
+                this.isStationary = false;
+                this.lastStationaryTime = null;
+                clearTimeout(this.autoLockDebounce);
+                this.autoLockDebounce = null;
+                this.log(`Movement detected (${speedKmh} km/h), resetting stationary timer`);
+                this.updateGpsStatus(`Moving (${speedKmh} km/h), stationary timer reset`);
+                if (this.lockPosition) {
+                    this.updateGpsStatus(`Keeping locked position (Speed: ${speedKmh} km/h)`);
+                }
+            } else if (this.currentSpeed > threshold && this.lockPosition) {
+                this.log(`Moving with locked position (${speedKmh} km/h)`);
             }
-          } else if (this.currentSpeed > threshold && this.lockPosition) {
-            this.log(`Moving with locked position (${speedKmh} km/h)`);
-          }
         }
+        
         if (!this.lockPosition || !this.isActive) {
-          this.updateUI();
-          return;
+            this.updateUI();
+            return;
         }
+
         const distance = this.calculateDistance(latitude, longitude, this.lockPosition.lat, this.lockPosition.lon);
+        
         if (distance < 5 && !this.reachedPointDisplayed) {
-          document.getElementById("reachedMessage").style.display = "block";
-          this.reachedPointDisplayed = true;
-          this.log("You have reached the GPS locked point!");
+            document.getElementById("reachedMessage").style.display = "block";
+            this.reachedPointDisplayed = true;
+            this.log("You have reached the GPS locked point!");
         } else if (distance >= 5 && this.reachedPointDisplayed) {
-          document.getElementById("reachedMessage").style.display = "none";
-          this.reachedPointDisplayed = false;
+            document.getElementById("reachedMessage").style.display = "none";
+            this.reachedPointDisplayed = false;
         }
+        
         this.movementHistory.push({ time: now, distance, speed: this.currentSpeed });
         this.movementHistory = this.movementHistory.filter(item => now - item.time < 5000);
+        
         this.updateDirection(latitude, longitude);
         this.updateDisplay(distance, accuracy, this.currentSpeed);
         this.updateAudio(distance);
-      },
-        
-        // Add to your existing handlePositionUpdate method:
-updateDistance: function(lat, lon) {
-  if (!this.lastPosition || !this.sessionActive) return;
-  
-  const distance = this.calculateDistance(lat, lon, this.lastPosition.lat, this.lastPosition.lon);
-  this.sessionDistance += distance / 1000;
-  this.todayDistance += distance / 1000;
-  
-  document.getElementById("todayDistance").textContent = `${this.todayDistance.toFixed(2)} km`;
-  document.getElementById("statsToday").textContent = `${this.todayDistance.toFixed(2)} km`;
-  
-  this.lastPosition = { lat, lon };
-},
+    },
 
-
-      trackAcceleration: function(speedKmh) {
+    trackAcceleration: function(speedKmh) {
         const speedNum = parseFloat(speedKmh);
         if (speedNum < 5 && !this.accelerationStartTime) {
-          this.accelerationStartTime = Date.now();
-          this.accelerationStartSpeed = speedNum;
-          this.log("Acceleration timer started");
+            this.accelerationStartTime = Date.now();
+            this.accelerationStartSpeed = speedNum;
+            this.log("Acceleration timer started");
         }
-       if (speedNum >= this.accelerationTarget && this.accelerationStartTime) {
-          const accelerationTime = (Date.now() - this.accelerationStartTime) / 1000;
-          this.accelerationTimes.push(accelerationTime);
-          const recentTimes = this.accelerationTimes.slice(-3);
-          const avgTime = recentTimes.reduce((a, b) => a + b, 0) / recentTimes.length;
-          document.getElementById("accelerationTime").textContent = `${avgTime.toFixed(1)} s`;
-          document.getElementById("statsAcceleration").textContent = `${avgTime.toFixed(1)} s`;
-          this.accelerationStartTime = null;
-          this.log(`0-${this.accelerationTarget} km/h acceleration: ${accelerationTime.toFixed(1)}s`);
+        if (speedNum >= this.accelerationTarget && this.accelerationStartTime) {
+            const accelerationTime = (Date.now() - this.accelerationStartTime) / 1000;
+            this.accelerationTimes.push(accelerationTime);
+            const recentTimes = this.accelerationTimes.slice(-3);
+            const avgTime = recentTimes.reduce((a, b) => a + b, 0) / recentTimes.length;
+            document.getElementById("accelerationTime").textContent = `${avgTime.toFixed(1)} s`;
+            document.getElementById("statsAcceleration").textContent = `${avgTime.toFixed(1)} s`;
+            this.accelerationStartTime = null;
+            this.log(`0-${this.accelerationTarget} km/h acceleration: ${accelerationTime.toFixed(1)}s`);
         }
         if (this.accelerationStartTime && speedNum < this.accelerationStartSpeed) {
-          this.accelerationStartTime = null;
-          this.log("Acceleration timer reset");
+            this.accelerationStartTime = null;
+            this.log("Acceleration timer reset");
         }
-      },
+    },
 
-      updateDirection: function(currentLat, currentLon) {
+    updateDirection: function(currentLat, currentLon) {
         if (!this.lockPosition) return;
         const currentLatRad = currentLat * Math.PI/180;
         const currentLonRad = currentLon * Math.PI/180;
@@ -1570,10 +1711,10 @@ updateDistance: function(lat, lon) {
         const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
         const index = Math.round(bearing / 45) % 8;
         document.getElementById("directionStatus").textContent = 
-          `Direction: ${bearing.toFixed(1)}° (${directions[index]})`;
-      },
+            `Direction: ${bearing.toFixed(1)}° (${directions[index]})`;
+    },
 
-      calculateDistance: function(lat1, lon1, lat2, lon2) {
+    calculateDistance: function(lat1, lon1, lat2, lon2) {
         const R = 6371e3;
         const φ1 = lat1 * Math.PI/180;
         const φ2 = lat2 * Math.PI/180;
@@ -1584,15 +1725,15 @@ updateDistance: function(lat, lon) {
                   Math.sin(Δλ/2) * Math.sin(Δλ/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         return R * c;
-      },
+    },
 
-      updateAudio: function(currentDistance) {
+    updateAudio: function(currentDistance) {
         clearTimeout(this.bleepTimer);
         if (!this.isAudioAllowed || !this.audioCtx || this.isMuted) {
-          this.bleepTimer = setTimeout(() => {
-            this.updateAudio(currentDistance);
-          }, 1000);
-          return;
+            this.bleepTimer = setTimeout(() => {
+                this.updateAudio(currentDistance);
+            }, 1000);
+            return;
         }
         const maxDist = this.getValidMaxDistance();
         const freq = this.getValidFrequency();
@@ -1608,17 +1749,17 @@ updateDistance: function(lat, lon) {
         document.getElementById("bleepRate").textContent = bpm;
         this.playBleep(freq);
         this.bleepTimer = setTimeout(() => {
-          this.updateAudio(currentDistance);
+            this.updateAudio(currentDistance);
         }, this.currentTempo);
-      },
+    },
 
-      stop: function() {
+    stop: function() {
         clearTimeout(this.bleepTimer);
         clearTimeout(this.autoLockDebounce);
         this.autoLockDebounce = null;
         if (this.watchId) {
-          navigator.geolocation.clearWatch(this.watchId);
-          this.watchId = null;
+            navigator.geolocation.clearWatch(this.watchId);
+            this.watchId = null;
         }
         this.isActive = false;
         this.lockPosition = null;
@@ -1647,41 +1788,41 @@ updateDistance: function(lat, lon) {
         document.getElementById("reachedMessage").style.display = "none";
         this.updateWheelAnimation();
         this.log("Position tracking stopped");
-      },
+    },
 
-      updateDisplay: function(distance, accuracy, speed) {
+    updateDisplay: function(distance, accuracy, speed) {
         document.getElementById("distance").textContent = distance.toFixed(1);
         document.getElementById("accuracy").textContent = accuracy ? accuracy.toFixed(1) : '--';
-      },
+    },
 
-      updateGpsStatus: function(message, isError = false) {
+    updateGpsStatus: function(message, isError = false) {
         const statusEl = document.getElementById("gpsStatus");
         statusEl.textContent = `GPS: ${message}`;
         statusEl.className = isError ? "status error" : "status";
-      },
+    },
 
-      updateLockStatus: function(message, isError = false) {
+    updateLockStatus: function(message, isError = false) {
         const statusEl = document.getElementById("lockStatus");
         statusEl.textContent = `Lock Status: ${message}`;
         statusEl.className = isError ? "status error" : "status";
-      },
+    },
 
-      updateUI: function() {
+    updateUI: function() {
         document.getElementById("stopBtn").disabled = !this.isActive;
         document.getElementById("muteBtn").disabled = !this.isActive || !this.isAudioAllowed;
-      },
+    },
 
-      getValidFrequency: function() {
+    getValidFrequency: function() {
         const freq = parseFloat(document.getElementById("freqInput").value);
         return Math.min(20000, Math.max(20, isNaN(freq) ? 800 : freq));
-      },
+    },
 
-      getValidMaxDistance: function() {
+    getValidMaxDistance: function() {
         const dist = parseFloat(document.getElementById("maxDistInput").value);
         return Math.max(1, isNaN(dist) ? 50 : dist);
-      },
+    },
 
-      resetMetrics: function() {
+    resetMetrics: function() {
         this.maxSpeed = 0;
         this.totalDistance = 0;
         this.todayDistance = 0;
@@ -1692,15 +1833,15 @@ updateDistance: function(lat, lon) {
         this.currentLeanAngle = 0;
         this.updateMetricsDisplay();
         this.log("All metrics reset");
-      },
+    },
 
-      exportMetrics: function() {
+    exportMetrics: function() {
         const data = {
-          maxSpeed: this.maxSpeed,
-          totalDistance: this.totalDistance,
-          accelerationTimes: this.accelerationTimes,
-          maxLeanAngle: this.maxLeanAngle,
-          rideHistory: this.rideHistory
+            maxSpeed: this.maxSpeed,
+            totalDistance: this.totalDistance,
+            accelerationTimes: this.accelerationTimes,
+            maxLeanAngle: this.maxLeanAngle,
+            rideHistory: this.rideHistory
         };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
         const downloadAnchorNode = document.createElement('a');
@@ -1710,108 +1851,108 @@ updateDistance: function(lat, lon) {
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
         this.log("Metrics exported");
-      },
+    },
 
-      sendEmergencyAlert: function(customMessage = null) {
+    sendEmergencyAlert: function(customMessage = null) {
         const defaultMessage = document.getElementById("emergencyMessage").value;
         const message = customMessage || defaultMessage;
         const contacts = document.getElementById("emergencyContacts").value.split(',').map(c => c.trim());
         if (contacts.length === 0 || contacts[0] === "") {
-          this.log("No emergency contacts set", true);
-          document.getElementById('crashStatus').textContent = 'Crash Detection: No contacts set';
-          document.getElementById('crashStatus').className = 'status error';
-          return;
+            this.log("No emergency contacts set", true);
+            document.getElementById('crashStatus').textContent = 'Crash Detection: No contacts set';
+            document.getElementById('crashStatus').className = 'status error';
+            return;
         }
         contacts.forEach(contact => {
-          this.log(`Emergency message sent to ${contact}: ${message}`);
+            this.log(`Emergency message sent to ${contact}: ${message}`);
         });
         alert("Emergency alert sent to your contacts!");
         if (this.crashDetected) {
-          document.getElementById('crashStatus').textContent = 'Crash alert sent';
-          document.getElementById('crashStatus').className = 'status success';
+            document.getElementById('crashStatus').textContent = 'Crash alert sent';
+            document.getElementById('crashStatus').className = 'status success';
         }
-      },
+    },
 
-      testEmergency: function() {
+    testEmergency: function() {
         this.log("TEST: Emergency system checked - would send alerts to contacts");
         alert("Emergency system test completed successfully");
-      },
+    },
 
-      addEmergencyContact: function() {
+    addEmergencyContact: function() {
         const contact = prompt("Enter emergency contact number:");
         if (contact) {
-          this.emergencyContacts.push(contact);
-          this.updateEmergencyContactsDisplay();
-          this.log(`Emergency contact added: ${contact}`);
+            this.emergencyContacts.push(contact);
+            this.updateEmergencyContactsDisplay();
+            this.log(`Emergency contact added: ${contact}`);
         }
-      },
+    },
 
-      updateEmergencyContactsDisplay: function() {
+    updateEmergencyContactsDisplay: function() {
         const contactList = document.getElementById("emergencyContactList");
         contactList.innerHTML = "";
         this.emergencyContacts.forEach(contact => {
-          const contactItem = document.createElement("div");
-          contactItem.className = "contact-item";
-          contactItem.innerHTML = `
-            <div>${contact}</div>
-            <button onclick="MotoFindBack.removeEmergencyContact('${contact}')">Remove</button>
-          `;
-          contactList.appendChild(contactItem);
+            const contactItem = document.createElement("div");
+            contactItem.className = "contact-item";
+            contactItem.innerHTML = `
+                <div>${contact}</div>
+                <button onclick="MotoFindBack.removeEmergencyContact('${contact}')">Remove</button>
+            `;
+            contactList.appendChild(contactItem);
         });
-      },
+    },
 
-      removeEmergencyContact: function(contact) {
+    removeEmergencyContact: function(contact) {
         this.emergencyContacts = this.emergencyContacts.filter(c => c !== contact);
         this.updateEmergencyContactsDisplay();
         this.log(`Emergency contact removed: ${contact}`);
-      },
+    },
 
-      showMaintenanceForm: function() {
+    showMaintenanceForm: function() {
         const form = document.querySelector('#maintenance-tab .control-item');
         form.style.display = form.style.display === 'none' ? 'block' : 'none';
-      },
+    },
 
-      saveMaintenanceItem: function() {
+    saveMaintenanceItem: function() {
         const name = document.getElementById("newMaintenanceName").value;
         const interval = parseInt(document.getElementById("newMaintenanceInterval").value);
         if (name && interval) {
-          this.maintenanceItems.push({
-            name,
-            interval,
-            current: 0
-          });
-          this.updateMaintenanceDisplay();
-          document.getElementById("newMaintenanceName").value = "";
-          document.getElementById("newMaintenanceInterval").value = "";
-          this.log(`Maintenance item added: ${name} (every ${interval} km)`);
+            this.maintenanceItems.push({
+                name,
+                interval,
+                current: 0
+            });
+            this.updateMaintenanceDisplay();
+            document.getElementById("newMaintenanceName").value = "";
+            document.getElementById("newMaintenanceInterval").value = "";
+            this.log(`Maintenance item added: ${name} (every ${interval} km)`);
         }
-      },
+    },
 
-      resetMaintenance: function() {
+    resetMaintenance: function() {
         this.maintenanceItems = [];
         this.updateMaintenanceDisplay();
         this.log("All maintenance items reset");
-      },
+    },
 
-      updateMaintenanceDisplay: function() {
+    updateMaintenanceDisplay: function() {
         const maintenanceList = document.getElementById("maintenanceList");
         maintenanceList.innerHTML = "";
         this.maintenanceItems.forEach(item => {
-          const progress = (item.current / item.interval) * 100;
-          const itemEl = document.createElement("div");
-          itemEl.className = "maintenance-item";
-          itemEl.innerHTML = `
-            <div>${item.name}</div>
-            <div class="maintenance-progress">
-              <div class="maintenance-progress-bar" style="width: ${progress}%;"></div>
-            </div>
-            <div>${item.current}/${item.interval} km</div>
-          `;
-          maintenanceList.appendChild(itemEl);
+            const progress = (item.current / item.interval) * 100;
+            const itemEl = document.createElement("div");
+            itemEl.className = "maintenance-item";
+            itemEl.innerHTML = `
+                <div>${item.name}</div>
+                <div class="maintenance-progress">
+                    <div class="maintenance-progress-bar" style="width: ${progress}%;"></div>
+                </div>
+                <div>${item.current}/${item.interval} km</div>
+            `;
+            maintenanceList.appendChild(itemEl);
         });
-      },
+    },
 
-      updateMetricsDisplay: function() {
+    updateMetricsDisplay: function() {
         document.getElementById("todayDistance").textContent = `${this.todayDistance.toFixed(1)} km`;
         document.getElementById("statsToday").textContent = `${this.todayDistance.toFixed(1)} km`;
         document.getElementById("statsWeek").textContent = `${this.weekDistance.toFixed(1)} km`;
@@ -1820,57 +1961,74 @@ updateDistance: function(lat, lon) {
         document.getElementById("maxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
         document.getElementById("statsMaxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
         if (this.rideHistory.length > 0) {
-          const totalSpeed = this.rideHistory.reduce((sum, ride) => sum + ride.avgSpeed, 0);
-          const avgSpeed = totalSpeed / this.rideHistory.length;
-          document.getElementById("avgSpeed").textContent = `${avgSpeed.toFixed(1)} km/h`;
-          document.getElementById("statsAvgSpeed").textContent = `${avgSpeed.toFixed(1)} km/h`;
+            const totalSpeed = this.rideHistory.reduce((sum, ride) => sum + ride.avgSpeed, 0);
+            const avgSpeed = totalSpeed / this.rideHistory.length;
+            document.getElementById("avgSpeed").textContent = `${avgSpeed.toFixed(1)} km/h`;
+            document.getElementById("statsAvgSpeed").textContent = `${avgSpeed.toFixed(1)} km/h`;
         }
-      },
+    },
 
-      loadData: function() {
-        this.log("Data loaded");
-      },
+    loadData: function() {
+        try {
+            const savedData = localStorage.getItem('spinAppData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                this.todayDistance = data.todayDistance || 0;
+                this.totalDistance = data.totalDistance || 0;
+                this.sessionHistory = data.sessionHistory || [];
+                this.emergencyContacts = data.emergencyContacts || [];
+                this.maintenanceItems = data.maintenanceItems || [];
+                this.accelerationTarget = data.accelerationTarget || 100;
+                
+                this.updateMetricsDisplay();
+                this.updateSessionHistory();
+                this.updateEmergencyContactsDisplay();
+                this.updateMaintenanceDisplay();
+                this.updateAccelerationTarget();
+                
+                this.log("Data loaded from storage");
+            }
+        } catch (e) {
+            this.log("Error loading data: " + e.message, true);
+        }
+    },
 
-      saveData: function() {
-        this.log("Data saved");
-      },
+    saveData: function() {
+        try {
+            const data = {
+                todayDistance: this.todayDistance,
+                totalDistance: this.totalDistance,
+                sessionHistory: this.sessionHistory,
+                emergencyContacts: this.emergencyContacts,
+                maintenanceItems: this.maintenanceItems,
+                accelerationTarget: this.accelerationTarget
+            };
+            
+            localStorage.setItem('spinAppData', JSON.stringify(data));
+            this.log("Data saved to storage");
+        } catch (e) {
+            this.log("Error saving data: " + e.message, true);
+        }
+    },
 
-      log: function(message, isError = false) {
+    log: function(message, isError = false) {
         const debugEl = document.getElementById("debug");
         const entry = document.createElement('div');
         entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
         entry.style.color = isError ? '#ff3333' : '#00ccff';
         debugEl.prepend(entry);
         if (debugEl.children.length > 20) {
-          debugEl.removeChild(debugEl.lastChild);
+            debugEl.removeChild(debugEl.lastChild);
         }
-      }
-    };
+    }
+};
 
-    document.addEventListener('DOMContentLoaded', () => {
-      MotoFindBack.init();
-      if (/Mobi|Android/i.test(navigator.userAgent)) {
+document.addEventListener('DOMContentLoaded', () => {
+    MotoFindBack.init();
+    if (/Mobi|Android/i.test(navigator.userAgent)) {
         MotoFindBack.log("MOBILE DETECTED: Mount your phone securely for accurate lean angles and crash detection", false);
-      }
-    });
-    
-    // Add these to your existing setupEventListeners method
-document.getElementById("startSessionBtn").addEventListener("click", () => {
-  this.startSession();
+    }
 });
-
-document.getElementById("endSessionBtn").addEventListener("click", () => {
-  this.endSession();
-});
-
-document.getElementById("saveSessionBtn").addEventListener("click", () => {
-  this.saveSession();
-});
-
-document.getElementById("setAccelerationTarget").addEventListener("click", () => {
-  this.setAccelerationTarget();
-});
-  </script>
   <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

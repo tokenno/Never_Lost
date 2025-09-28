@@ -591,6 +591,7 @@
         <div class="dashboard-label">Max Corner G</div>
         <div class="dashboard-value" id="maxCornerG">-- g</div>
       </div>
+      <div>
       <div class="dashboard-label">Avg Corner Entry Speed</div>
       <div class="dashboard-value" id="avgCornerEntrySpeed">-- km/h</div>
     </div>
@@ -943,34 +944,48 @@ const MotoFindBack = {
     debug.scrollTop = debug.scrollHeight;
   },
 
-  init: async function() {
-    this.initMap();
-    this.canvas = document.getElementById('elevationCanvas');
-    if (!this.canvas) {
-      this.log("Error: elevationCanvas element not found", true);
-      return;
-    }
-    this.cornerChart = new Chart(document.getElementById('cornerChart').getContext('2d'), {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'Corner G-Force',
-          data: [],
-          borderColor: '#00ccff',
-          backgroundColor: 'rgba(0, 204, 255, 0.2)',
-          fill: true,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          y: { beginAtZero: true, title: { display: true, text: 'G-Force (g)' } },
-          x: { title: { display: true, text: 'Corner Number' } }
-        }
+ init: async function() {
+  // Request device orientation permissions for iOS
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const permission = await DeviceOrientationEvent.requestPermission();
+      if (permission === 'granted') {
+        this.log("Device orientation permission granted");
+      } else {
+        this.log("Device orientation permission denied", true);
       }
-    });
+    } catch (e) {
+      this.log(`Device orientation permission error: ${e.message}`, true);
+    }
+  }
+  
+  this.initMap();
+  this.canvas = document.getElementById('elevationCanvas');
+  if (!this.canvas) {
+    this.log("Error: elevationCanvas element not found", true);
+    return;
+  }
+  this.cornerChart = new Chart(document.getElementById('cornerChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Corner G-Force',
+        data: [],
+        borderColor: '#00ccff',
+        backgroundColor: 'rgba(0, 204, 255, 0.2)',
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: 'G-Force (g)' } },
+        x: { title: { display: true, text: 'Corner Number' } }
+      }
+    }
+  });
     this.setupEventListeners();
     this.setupTabs();
     this.setupCollapsibles();
@@ -1233,6 +1248,109 @@ document.getElementById("stopRideBtn").addEventListener("click", () => this.stop
   calculateCornerG: function(speedMs, leanAngle) {
     return Math.tan(leanAngle * Math.PI / 180);
   },
+    
+    calculateBearing: function(lat1, lon1, lat2, lon2) {
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const lat1Rad = lat1 * Math.PI / 180;
+  const lat2Rad = lat2 * Math.PI / 180;
+  
+  const y = Math.sin(dLon) * Math.cos(lat2Rad);
+  const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - 
+            Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
+  
+  let bearing = Math.atan2(y, x) * 180 / Math.PI;
+  return (bearing + 360) % 360;
+},
+
+updateDirectionArrow: function(bearing) {
+  const arrow = document.getElementById("directionArrow");
+  if (arrow) {
+    arrow.style.transform = `translate(-50%, -50%) rotate(${bearing}deg)`;
+  }
+},
+
+calculateTempo: function(distance) {
+  const maxDist = parseFloat(document.getElementById("maxDistInput").value);
+  return Math.max(100, 1000 * (distance / maxDist));
+},
+
+playBleep: function() {
+  if (!this.isActive || this.isMuted || !this.audioCtx) return;
+  
+  const distance = this.calculateDistance(this.lastPosition, this.lockPosition);
+  const maxDist = parseFloat(document.getElementById("maxDistInput").value);
+  const freq = parseFloat(document.getElementById("freqInput").value);
+  
+  if (distance < maxDist) {
+    const now = this.audioCtx.currentTime;
+    const osc = this.audioCtx.createOscillator();
+    const gain = this.audioCtx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now);
+    osc.connect(gain);
+    gain.connect(this.audioCtx.destination);
+    
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.5, now + 0.05);
+    gain.gain.linearRampToValueAtTime(0, now + 0.2);
+    
+    osc.start(now);
+    osc.stop(now + 0.2);
+  }
+},
+
+checkAcceleration: function() {
+  const speedKmh = this.currentSpeed * 3.6;
+  
+  if (speedKmh < 5 && this.accelerationStartTime) {
+    // Reset if speed drops too low
+    this.accelerationStartTime = null;
+    this.accelerationStartSpeed = 0;
+  } else if (!this.accelerationStartTime && speedKmh >= 5) {
+    // Start acceleration timing
+    this.accelerationStartTime = Date.now();
+    this.accelerationStartSpeed = speedKmh;
+  } else if (this.accelerationStartTime && speedKmh >= this.accelTarget) {
+    // Record acceleration time when target speed is reached
+    const accelerationTime = (Date.now() - this.accelerationStartTime) / 1000;
+    this.accelerationTimes.push(accelerationTime);
+    this.accelerationStartTime = null;
+    this.accelerationStartSpeed = 0;
+    this.log(`Acceleration 0-${this.accelTarget} km/h: ${accelerationTime.toFixed(2)}s`);
+  }
+},
+
+checkAutoLock: function() {
+  if (!this.autoLockEnabled || !this.lastPosition) return;
+  
+  const speedKmh = this.currentSpeed * 3.6;
+  const stationaryTime = parseInt(document.getElementById("stationaryTime").value) * 1000;
+  
+  if (speedKmh <= this.speedThreshold) {
+    if (!this.isStationary) {
+      this.isStationary = true;
+      this.lastStationaryTime = Date.now();
+      this.lastStationaryPosition = { ...this.lastPosition };
+      this.log(`Stationary detected at ${speedKmh.toFixed(1)} km/h`);
+    } else if (Date.now() - this.lastStationaryTime > stationaryTime) {
+      if (!this.lockPosition && this.lastStationaryPosition) {
+        this.lockPosition = { ...this.lastStationaryPosition };
+        document.getElementById("lockStatus").textContent = `Auto-Locked at Lat ${this.lockPosition.lat.toFixed(6)}, Lon ${this.lockPosition.lon.toFixed(6)}`;
+        document.getElementById("lockStatus").className = "status success";
+        this.log("Auto-lock activated - position locked");
+        this.startBleep();
+      }
+    }
+  } else {
+    if (this.isStationary) {
+      this.isStationary = false;
+      this.lastStationaryTime = null;
+      this.lastStationaryPosition = null;
+      this.log("No longer stationary - moving");
+    }
+  }
+},
 
   detectCorner: function(lat, lon, speedKmh, leanAngle, cornerG) {
     if (!lat || !lon || this.movementHistory.length < 3 || leanAngle < 5) return;
@@ -1717,37 +1835,34 @@ stopRide: function() {
     this.log("Metrics exported");
   },
 
-  sendEmergencyAlert: function(message = null) {
-    const msg = message || `${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition?.lat.toFixed(6)}, Lon: ${this.lastPosition?.lon.toFixed(6)}`;
-    this.emergencyContacts.forEach(contact => {
-      this.log(`Sending emergency alert to ${contact}: ${msg}`);
+sendEmergencyAlert: function(message = null) {
+  const msg = message || `${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition?.lat.toFixed(6)}, Lon: ${this.lastPosition?.lon.toFixed(6)}`;
+  
+  this.emergencyContacts.forEach(contact => {
+    // Copy message to clipboard for easy pasting
+    navigator.clipboard.writeText(msg).then(() => {
+      this.log(`Message copied to clipboard for ${contact}`);
+    }).catch(err => {
+      this.log(`Could not copy to clipboard: ${err}`, true);
     });
-    this.log("Emergency alert sent");
-  },
+    
+    // Use SMS - much more reliable
+    const smsUrl = `sms:${contact}?body=${encodeURIComponent(msg)}`;
+    window.location.href = smsUrl;
+    this.log(`Opening SMS to ${contact}: ${msg}`);
+  });
+  this.log("Emergency SMS messages opened");
+},
 
-  testEmergency: function() {
-    this.log("Testing emergency alert");
-    this.sendEmergencyAlert("TEST ALERT: This is a test emergency message.");
-  },
-
-  addEmergencyContact: function() {
-    const input = document.getElementById("emergencyContacts").value;
-    if (input) {
-      this.emergencyContacts = input.split(',').map(c => c.trim());
-      this.updateEmergencyContacts();
-      this.log("Emergency contacts updated");
-    }
-  },
-
-  updateEmergencyContacts: function() {
-    const list = document.getElementById("emergencyContactList");
-    list.innerHTML = this.emergencyContacts.map(contact => `
-      <div class="contact-item">
-        <span>${contact}</span>
-        <button onclick="MotoFindBack.sendEmergencyAlert('Emergency to ${contact}: ${document.getElementById('emergencyMessage').value}')">Call</button>
-      </div>
-    `).join('');
-  },
+updateEmergencyContacts: function() {
+  const list = document.getElementById("emergencyContactList");
+  list.innerHTML = this.emergencyContacts.map(contact => `
+    <div class="contact-item">
+      <span>${contact}</span>
+      <button onclick="MotoFindBack.sendEmergencyAlert('Emergency to ${contact}: ${document.getElementById('emergencyMessage').value}')">SMS</button>
+    </div>
+  `).join('');
+},
 
   showMaintenanceForm: function() {
     document.getElementById("newMaintenanceName").style.display = "block";

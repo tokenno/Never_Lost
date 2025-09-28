@@ -559,46 +559,38 @@
           <circle class="wheel-pulse" cx="50" cy="50" r="8"></circle> </svg> </div>
     </div>
     <div class="dashboard">
-      <div class="dashboard-item">
-        <div class="dashboard-label">Current Speed</div>
-        <div class="dashboard-value" id="currentSpeed">-- km/h</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Max Speed</div>
-        <div class="dashboard-value" id="maxSpeed">-- km/h</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Average Speed</div>
-        <div class="dashboard-value" id="avgSpeed">-- km/h</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Current Lean Angle</div>
-        <div class="dashboard-value" id="leanAngle">--°</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Today's Distance</div>
-        <div class="dashboard-value" id="todayDistance">-- km</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Elevation Gain</div>
-        <div class="dashboard-value" id="elevationGain">-- m</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Max Cornering Speed</div>
-        <div class="dashboard-value" id="maxCornerSpeed">-- km/h</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Max Corner G</div>
-        <div class="dashboard-value" id="maxCornerG">-- g</div>
-      </div>
-      <div>
-      <div class="dashboard-label">Avg Corner Entry Speed</div>
-      <div class="dashboard-value" id="avgCornerEntrySpeed">-- km/h</div>
-    </div>
-    <div class="dashboard-item">
-      <div class="dashboard-label">0-100 km/h</div>
-      <div class="dashboard-value" id="accelerationTime">-- s</div>
-    </div>
+  <div class="dashboard-item">
+    <div class="dashboard-label">Current Speed</div>
+    <div class="dashboard-value" id="currentSpeed">-- km/h</div>
+  </div>
+  <div class="dashboard-item">
+    <div class="dashboard-label">Max Speed</div>
+    <div class="dashboard-value" id="maxSpeed">-- km/h</div>
+  </div>
+  <div class="dashboard-item">
+    <div class="dashboard-label">Average Speed</div>
+    <div class="dashboard-value" id="avgSpeed">-- km/h</div>
+  </div>
+  <div class="dashboard-item">
+    <div class="dashboard-label">Current Lean Angle</div>
+    <div class="dashboard-value" id="leanAngle">--°</div>
+  </div>
+  <div class="dashboard-item">
+    <div class="dashboard-label">Today's Distance</div>
+    <div class="dashboard-value" id="todayDistance">-- km</div>
+  </div>
+  <div class="dashboard-item">
+    <div class="dashboard-label">Elevation Gain</div>
+    <div class="dashboard-value" id="elevationGain">-- m</div>
+  </div>
+  <div class="dashboard-item">
+    <div class="dashboard-label">Max Cornering Speed</div>
+    <div class="dashboard-value" id="maxCornerSpeed">-- km/h</div>
+  </div>
+  <div class="dashboard-item">
+    <div class="dashboard-label">Max Corner G</div>
+    <div class="dashboard-value" id="maxCornerG">-- g</div>
+  </div>
     <div class="tabs">
       <div class="tab active" data-tab="navigation">Navigation</div>
       <div class="tab" data-tab="metrics">Ride Metrics</div>
@@ -1120,6 +1112,17 @@ setupTabs: function() {
     });
   });
 },
+  
+  calculateCornerG: function(speedMs, leanAngle) {
+  if (speedMs <= 0 || leanAngle <= 0) return 0;
+  
+  const speedKmh = speedMs * 3.6;
+  const leanRad = leanAngle * Math.PI / 180;
+  
+  // Basic cornering G-force calculation
+  const gForce = Math.tan(leanRad);
+  return Math.min(2.0, gForce); // Cap at reasonable value
+},
 
   setupCollapsibles: function() {
     const coll = document.getElementsByClassName("collapsible");
@@ -1157,48 +1160,73 @@ document.getElementById("stopRideBtn").addEventListener("click", () => this.stop
     document.getElementById("saveMaintenanceBtn").addEventListener("click", () => this.saveMaintenanceItem());
   },
 
-  initDeviceOrientation: function() {
-    if (window.DeviceOrientationEvent) {
-      window.addEventListener('deviceorientation', (event) => {
-        if (this.isCalibrating) {
-          this.calibrationSamples.push(event.gamma || 0);
-          return;
+initDeviceOrientation: function() {
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', (event) => {
+      if (this.isCalibrating) {
+        this.calibrationSamples.push(event.gamma || 0);
+        return;
+      }
+      
+      // Handle gamma (lean angle)
+      if (event.gamma !== null) {
+        const rawLean = event.gamma - this.leanOffset;
+        this.currentLeanAngle = Math.round(Math.abs(rawLean));
+        
+        // Update display immediately
+        this.updateLeanAngleDisplay();
+        
+        // Update max lean angle
+        if (this.currentLeanAngle > this.maxLeanAngle) {
+          this.maxLeanAngle = this.currentLeanAngle;
         }
-        if (event.gamma !== null) {
-          this.currentLeanAngle = Math.round(Math.abs(event.gamma - this.leanOffset));
-          this.updateLeanAngleDisplay();
-          if (this.currentLeanAngle > this.maxLeanAngle) this.maxLeanAngle = this.currentLeanAngle;
-          const speedMs = this.currentSpeed;
-          this.currentCornerG = this.calculateCornerG(speedMs, this.currentLeanAngle);
-          this.detectCorner(this.lastPosition?.lat, this.lastPosition?.lon, speedMs * 3.6, this.currentLeanAngle, this.currentCornerG);
+        
+        // Calculate cornering G-force
+        const speedMs = this.currentSpeed;
+        this.currentCornerG = this.calculateCornerG(speedMs, this.currentLeanAngle);
+        
+        // Detect corners
+        if (this.lastPosition) {
+          this.detectCorner(
+            this.lastPosition.lat, 
+            this.lastPosition.lon, 
+            speedMs * 3.6, 
+            this.currentLeanAngle, 
+            this.currentCornerG
+          );
         }
-        if (event.beta !== null && !this.crashDetected) {
-          const betaAbs = Math.abs(event.beta);
-          if (betaAbs > 70) {
-            if (!this.crashStartTime) {
-              this.crashStartTime = Date.now();
-              document.getElementById('crashStatus').textContent = 'Possible crash detected... Confirming';
-              document.getElementById('crashStatus').className = 'status warning';
-              this.log('Possible crash detected, confirming for 5 seconds');
-            }
-            if (Date.now() - this.crashStartTime > 5000) {
-              this.crashDetected = true;
-              this.triggerCrashAlert();
-            }
-          } else if (this.crashStartTime) {
-            this.crashStartTime = null;
-            document.getElementById('crashStatus').textContent = 'Crash Detection: Inactive';
-            document.getElementById('crashStatus').className = 'status';
-            this.log('Crash condition cleared');
+      }
+      
+      // Handle beta (crash detection)
+      if (event.beta !== null && !this.crashDetected) {
+        const betaAbs = Math.abs(event.beta);
+        if (betaAbs > 70) {
+          if (!this.crashStartTime) {
+            this.crashStartTime = Date.now();
+            document.getElementById('crashStatus').textContent = 'Possible crash detected... Confirming';
+            document.getElementById('crashStatus').className = 'status warning';
+            this.log('Possible crash detected, confirming for 5 seconds');
           }
+          if (Date.now() - this.crashStartTime > 5000) {
+            this.crashDetected = true;
+            this.triggerCrashAlert();
+          }
+        } else if (this.crashStartTime) {
+          this.crashStartTime = null;
+          document.getElementById('crashStatus').textContent = 'Crash Detection: Inactive';
+          document.getElementById('crashStatus').className = 'status';
+          this.log('Crash condition cleared');
         }
-      });
-    } else {
-      this.log("Device orientation not supported", true);
-      document.getElementById('crashStatus').textContent = 'Crash Detection: Not supported';
-      document.getElementById('crashStatus').className = 'status error';
-    }
-  },
+      }
+    });
+    
+    this.log("Device orientation initialized");
+  } else {
+    this.log("Device orientation not supported", true);
+    document.getElementById('crashStatus').textContent = 'Crash Detection: Not supported';
+    document.getElementById('crashStatus').className = 'status error';
+  }
+},
 
   calibrateSensors: function() {
     this.isCalibrating = true;

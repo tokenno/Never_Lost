@@ -604,7 +604,124 @@
   color: #aaa;
   font-size: 0.9em;
 }
-    
+      
+      /* Session styles */
+.session-info {
+  background: rgba(50, 50, 50, 0.7);
+  padding: 15px;
+  border-radius: 8px;
+  margin: 10px 0;
+  border-left: 4px solid var(--primary-color);
+}
+
+.session-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 0.9em;
+}
+
+.session-stats div {
+  padding: 5px 0;
+}
+
+.session-history {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.session-item {
+  background: rgba(50, 50, 50, 0.5);
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 10px 0;
+  transition: all 0.3s ease;
+}
+
+.session-item:hover {
+  background: rgba(60, 60, 60, 0.7);
+  border-color: #555;
+}
+
+.session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.session-header strong {
+  color: var(--accent-color);
+  font-size: 1.1em;
+}
+
+.session-date {
+  color: #aaa;
+  font-size: 0.9em;
+}
+
+.session-details {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  color: #ccc;
+}
+
+.session-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.session-actions button {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  background: #555;
+  color: white;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.session-actions button:hover {
+  background: #666;
+}
+
+.session-notes {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(40, 40, 40, 0.5);
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: #aaa;
+  border-left: 3px solid var(--warning-color);
+}
+    .recording-instructions {
+  background: rgba(50, 50, 50, 0.5);
+  padding: 10px;
+  border-radius: 5px;
+  margin: 10px 0;
+  border-left: 3px solid var(--accent-color);
+}
+
+.calibration-info {
+  background: rgba(40, 40, 40, 0.7);
+  padding: 10px;
+  border-radius: 5px;
+  margin: 10px 0;
+}
+
+.calibration-info div {
+  margin: 5px 0;
+  font-size: 0.9em;
+}
+
+#startRecordingBtn.recording {
+  animation: pulse 1s infinite;
+  background: linear-gradient(to bottom, #ff3333, #cc0000) !important;
+}
+      
     @media (max-width: 768px) {
       .dashboard {
         grid-template-columns: 1fr;
@@ -706,89 +823,58 @@
       </div>
     </div>
     <div class="tabs">
-      <div class="tab active" data-tab="navigation">Nav</div>
-      <div class="tab" data-tab="metrics">Metrics</div>
+       <div class="tab active" data-tab="metrics">Metrics</div>
+      <div class="tab" data-tab="navigation">Nav</div>
       <div class="tab" data-tab="emergency">SOS</div>
       <div class="tab" data-tab="maintenance">Upkeep</div>
     </div>
       
-    <div class="tab-content active" id="navigation-tab">
-      <div class="panel">
-        <h2>GPS Navigation</h2>
-        <p class="warning">TAP "TEST AUDIO &amp; LOCK" FIRST!</p>
-        <div class="control-group"> <button id="testBtn" class="primary-btn">Test
-            Audio &amp; Lock</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
-            Sensors</button> <button id="autoLockBtn" class="secondary-btn" disabled="disabled">Auto-Lock
-            Mode</button> <button id="muteBtn" class="secondary-btn" disabled="disabled">Mute
-            Sound</button> <button id="stopBtn" class="secondary-btn" disabled="disabled">Stop</button>
-        </div>
-        <div id="autoLockSettings" style="display: none;">
-          <div class="control-group">
-            <div class="control-item"> <label for="stationaryTime">Stationary
-                Confirmation Time</label>
-              <div> <input id="stationaryTime" value="30" min="5" max="60" type="range">
-                <span id="stationaryTimeValue" class="slider-label">30 sec</span>
-              </div>
-            </div>
-            <div class="control-item"> <label for="speedThreshold">Speed
-                Threshold (km/h)</label>
-              <div> <input id="speedThreshold" value="10" min="5" max="20" type="range">
-                <span id="speedThresholdValue" class="slider-label">10 km/h</span>
-              </div>
-            </div>
-          </div>
-        </div>
-     
-        <div id="calibrateStatus" class="status">Sensors not calibrated</div>
-        <div id="lockStatus" class="status">Lock Status: Not locked</div>
-        <div id="audioStatus" class="status">Audio: Not initialized</div>
-        <div id="gpsStatus" class="status">GPS: Ready</div>
-        <div id="reachedMessage" class="reached-message" style="display: none;">You
-          have reached GPS locked point!</div>
-      </div>
-      <div class="panel">
-        <h2>Position Map</h2>
-        <div id="map"></div>
-      </div>
-      <div class="panel"> <button class="collapsible">Direction Indicator ▼</button>
-        <div class="collapsible-content">
-          <div class="direction-container">
-            <div id="directionArrow"></div>
-            <div class="direction-circle"></div>
-          </div>
-          <div id="directionStatus" class="direction-status">Direction: --</div>
-        </div>
-        <button class="collapsible">Sonar Parameters ▼</button>
-        <div class="collapsible-content">
-          <div class="control-group">
-            <div class="control-item"> <label for="freqInput">Bleep Freq (Hz)</label><br>
-              <input id="freqInput" value="800" min="20" max="20000" type="number">
-            </div>
-            <div class="control-item"> <label for="maxDistInput">Max Distance
-                (m)</label><br>
-              <input id="maxDistInput" value="50" min="1" max="500" type="range">
-              <span id="maxDistValue">50</span> m </div>
-          </div>
-        </div>
-        <button class="collapsible">Data Output ▼</button>
-        <div class="collapsible-content">
-          <div class="control-group">
-            <div class="control-item"> <label>Distance</label><br>
-              <span id="distance">--</span> m </div>
-            <div class="control-item"> <label>Accuracy</label><br>
-              <span id="accuracy">--</span> m </div>
-            <div class="control-item"> <label>BPM</label><br>
-              <span id="bleepRate">--</span> </div>
-          </div>
-        </div>
     
-      </div>
-    </div>
-    <div class="tab-content" id="metrics-tab">
+    <div class="tab-content active" id="metrics-tab">
       <div class="panel">
         <h2>Ride Metrics</h2>
-        <div class="control-group"> <button id="startRideBtn" class="primary-btn">Start
-            Ride</button> <button id="resetMetricsBtn" class="secondary-btn">Reset
+        <!-- Add to Metrics tab, near the top -->
+<div class="panel">
+  <h3>Ride Session Management</h3>
+  
+  <div class="control-group">
+    <button id="startSessionBtn" class="primary-btn" onclick="MotoFindBack.startNewSession()">
+      🏁 Start New Session
+    </button>
+     <button id="startRideBtn" class="primary-btn">Start Ride</button>
+    <button id="saveSessionBtn" class="secondary-btn" onclick="MotoFindBack.saveCurrentSession()">
+      💾 Save Session
+    </button>
+    <button id="quickSaveBtn" class="secondary-btn" onclick="MotoFindBack.quickSaveSession()">
+      ⚡ Quick Save
+    </button>
+    <button id="exportSessionBtn" class="secondary-btn" onclick="MotoFindBack.exportSession()">
+      📤 Export Current
+    </button>
+  </div>
+  
+  <div id="sessionInfo" class="session-info" style="display: none;">
+    <h4>Current Session</h4>
+    <div class="session-stats">
+      <div>Name: <span id="sessionName">--</span></div>
+      <div>Duration: <span id="sessionDuration">--</span></div>
+      <div>Distance: <span id="sessionDistance">--</span></div>
+      <div>Max Speed: <span id="sessionMaxSpeed">--</span></div>
+      <div>Corners: <span id="sessionCorners">--</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Session History Panel -->
+<div class="panel">
+  <h3>Session History</h3>
+  <div id="sessionHistoryList" class="session-history">
+    <div style="text-align: center; color: #aaa; padding: 20px;">
+      No saved sessions yet
+    </div>
+  </div>
+</div>
+         <button id="resetMetricsBtn" class="secondary-btn">Reset
             Metrics</button> <button id="exportMetricsBtn" class="secondary-btn">Export
             Data</button> </div>
         <div class="control-group">
@@ -878,6 +964,53 @@
       <div>Avg Shift RPM: <span id="avgShiftRPM">--</span></div>
     </div>
   </div>
+  <!-- Replace the calibration section with this -->
+<div class="control-item">
+  <h4>Impulse Response Calibration</h4>
+  
+  <div class="control-group">
+    <button id="startRecordingBtn" class="primary-btn" onclick="MotoFindBack.startRecordingCalibration()">
+      🎤 Record Engine Sample
+    </button>
+    <button class="secondary-btn" onclick="MotoFindBack.stopRecordingCalibration()">
+      Stop Recording
+    </button>
+  </div>
+  
+  <div class="recording-instructions">
+    <p><strong>How to calibrate:</strong></p>
+    <ol style="text-align: left; font-size: 0.9em; color: #ccc;">
+      <li>Start engine analysis</li>
+      <li>Click "Record Engine Sample"</li>
+      <li>Rev engine steadily for 3 seconds</li>
+      <li>System will auto-analyze your engine sound</li>
+    </ol>
+  </div>
+  
+  <div class="calibration-info">
+    <div>Bike Profile: <span id="bikeProfileName">Uncalibrated</span></div>
+    <div>Calibration: <span id="calibrationStatus">Not calibrated</span></div>
+    <div>Detected Range: <span id="detectedRange">--</span></div>
+    <div>Calibration Factor: <span id="calibrationMultiplier">--</span></div>
+  </div>
+</div>
+
+<!-- Add manual override section -->
+<div class="control-item">
+  <h4>Manual Calibration Override</h4>
+  
+  <label>Reference RPM: <span id="referenceRpmValue">0</span></label>
+  <input type="range" id="referenceRpm" min="1000" max="12000" step="100" value="5000"
+         oninput="MotoFindBack.updateReferenceRPM(this.value)">
+  
+  <label>Volume Threshold: <span id="volumeThresholdValue">20</span> dB</label>
+  <input type="range" id="volumeThreshold" min="1" max="50" step="1" value="20"
+         oninput="MotoFindBack.updateVolumeThreshold(this.value)">
+  
+  <button onclick="MotoFindBack.applyManualCalibration()" class="secondary-btn">
+    Apply Manual Calibration
+  </button>
+</div>
   <div class="control-item">
   <h4>Debug Info</h4>
   <div>Microphone Status: <span id="micStatus">Not Started</span></div>
@@ -910,8 +1043,80 @@
             No ride history yet. </div>
         </div>
       </div>
-    </div>
+   
     
+    <div class="tab-content" id="navigation-tab">
+      <div class="panel">
+        <h2>GPS Navigation</h2>
+        <p class="warning">TAP "TEST AUDIO &amp; LOCK" FIRST!</p>
+        <div class="control-group"> <button id="testBtn" class="primary-btn">Test
+            Audio &amp; Lock</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
+            Sensors</button> <button id="autoLockBtn" class="secondary-btn" disabled="disabled">Auto-Lock
+            Mode</button> <button id="muteBtn" class="secondary-btn" disabled="disabled">Mute
+            Sound</button> <button id="stopBtn" class="secondary-btn" disabled="disabled">Stop</button>
+        </div>
+        <div id="autoLockSettings" style="display: none;">
+          <div class="control-group">
+            <div class="control-item"> <label for="stationaryTime">Stationary
+                Confirmation Time</label>
+              <div> <input id="stationaryTime" value="30" min="5" max="60" type="range">
+                <span id="stationaryTimeValue" class="slider-label">30 sec</span>
+              </div>
+            </div>
+            <div class="control-item"> <label for="speedThreshold">Speed
+                Threshold (km/h)</label>
+              <div> <input id="speedThreshold" value="10" min="5" max="20" type="range">
+                <span id="speedThresholdValue" class="slider-label">10 km/h</span>
+              </div>
+            </div>
+          </div>
+        </div>
+     
+        <div id="calibrateStatus" class="status">Sensors not calibrated</div>
+        <div id="lockStatus" class="status">Lock Status: Not locked</div>
+        <div id="audioStatus" class="status">Audio: Not initialized</div>
+        <div id="gpsStatus" class="status">GPS: Ready</div>
+        <div id="reachedMessage" class="reached-message" style="display: none;">You
+          have reached GPS locked point!</div>
+      </div>
+      <div class="panel">
+        <h2>Position Map</h2>
+        <div id="map"></div>
+      </div>
+      <div class="panel"> <button class="collapsible">Direction Indicator ▼</button>
+        <div class="collapsible-content">
+          <div class="direction-container">
+            <div id="directionArrow"></div>
+            <div class="direction-circle"></div>
+          </div>
+          <div id="directionStatus" class="direction-status">Direction: --</div>
+        </div>
+        <button class="collapsible">Sonar Parameters ▼</button>
+        <div class="collapsible-content">
+          <div class="control-group">
+            <div class="control-item"> <label for="freqInput">Bleep Freq (Hz)</label><br>
+              <input id="freqInput" value="800" min="20" max="20000" type="number">
+            </div>
+            <div class="control-item"> <label for="maxDistInput">Max Distance
+                (m)</label><br>
+              <input id="maxDistInput" value="50" min="1" max="500" type="range">
+              <span id="maxDistValue">50</span> m </div>
+          </div>
+        </div>
+        <button class="collapsible">Data Output ▼</button>
+        <div class="collapsible-content">
+          <div class="control-group">
+            <div class="control-item"> <label>Distance</label><br>
+              <span id="distance">--</span> m </div>
+            <div class="control-item"> <label>Accuracy</label><br>
+              <span id="accuracy">--</span> m </div>
+            <div class="control-item"> <label>BPM</label><br>
+              <span id="bleepRate">--</span> </div>
+          </div>
+        </div>
+    
+      </div>
+    </div>
 
   
     <div class="tab-content" id="emergency-tab">
@@ -1124,28 +1329,96 @@ const MotoFindBack = {
   canvas: null, // Will store the canvas element
   cornerChart: null,
   tripleTapCount: 0,
-tripleTapTimeout: null,
-lastTapTime: 0,
-isOverlayVisible: false,
-  audioAnalysis: {
-  audioContext: null,
-  analyser: null,
-  microphone: null,
-  javascriptNode: null,
-  isListening: false,
-  engineRPM: 0,
-  gearPosition: 0,
-  engineHealth: 'Good',
-  soundProfile: null,
-  lastShiftTime: 0,
-  maxDb: 0,
-   frequencyData: new Uint8Array(1024)
-},
+  tripleTapTimeout: null,
+  lastTapTime: 0,
+  isOverlayVisible: false,
+  
+  // Session data structure - MOVED OUTSIDE audioAnalysis
+  sessionTemplate: {
+    id: null,
+    name: '',
+    startTime: null,
+    endTime: null,
+    duration: 0,
+    distance: 0,
+    maxSpeed: 0,
+    avgSpeed: 0,
+    elevationGain: 0,
+    corners: 0,
+    hardBrakingEvents: 0,
+    aggressiveCorners: 0,
+    routeData: [],
+    metrics: {
+      accelerationTimes: [],
+      leanAngles: [],
+      corneringData: [],
+      elevationData: []
+    },
+    weather: '',
+    notes: ''
+  },
+  sessionHistory: [],
+  currentSession: null,
+  autoSaveInterval: null,
 
+  audioAnalysis: {
+    audioContext: null,
+    analyser: null,
+    microphone: null,
+    javascriptNode: null,
+    isListening: false,
+    engineRPM: 0,
+    gearPosition: 0,
+    engineHealth: 'Good',
+    soundProfile: null,
+    lastShiftTime: 0,
+    maxDb: 0,
+    frequencyData: new Uint8Array(1024),
+    
+    // Calibration and recording moved INSIDE audioAnalysis
+    calibration: {
+      isCalibrated: false,
+      recordedSample: null,
+      referenceFrequency: 0,
+      referenceRPM: 0,
+      frequencyResponse: [],
+      volumeThreshold: 20,
+      minRPM: 1000,
+      maxRPM: 12000,
+      bikeProfile: {
+        name: 'Uncalibrated',
+        type: 'unknown',
+        redline: 8000,
+        idleRPM: 1500
+      }
+    },
+    recording: {
+      isRecording: false,
+      recordingBuffer: [],
+      recordingStartTime: 0,
+      sampleDuration: 3000, // 3 seconds
+      analysisBuffer: null
+    }
+  },
+  
   init: async function() {
     this.initMap();
   this.loadContactsFromStorage();
   this.setupTripleTapDetection();
+  this.loadSessionsFromStorage();
+    // Auto-start session when ride starts
+  const originalStartRide = this.startRide;
+  this.startRide = function() {
+    if (!this.currentSession) {
+      this.startNewSession();
+    }
+    return originalStartRide.apply(this, arguments);
+  }.bind(this);
+  
+  // Auto-update session display
+  setInterval(() => {
+    this.updateSessionDisplay();
+  }, 1000);
     this.canvas = document.getElementById('elevationCanvas'); // Store the canvas element
     if (!this.canvas) {
       this.log("Error: elevationCanvas element not found", true);
@@ -1268,43 +1541,37 @@ initMicrophone: function() {
 },
 
 // Engine sound analysis
-// Enhanced analyzeEngineSound with debugging
+// Modify analyzeEngineSound to handle recording
 analyzeEngineSound: function() {
   if (!this.audioAnalysis.analyser || !this.audioAnalysis.isListening) return;
   
   try {
-    // Get frequency data
     this.audioAnalysis.analyser.getByteFrequencyData(this.audioAnalysis.frequencyData);
     
-    // Debug: Check if we're getting any data
     const hasData = this.audioAnalysis.frequencyData.some(val => val > 0);
-    if (!hasData) {
-      console.log("No audio data detected");
-      return;
-    }
+    if (!hasData) return;
     
-    // Calculate dominant frequency (engine RPM correlate)
     const dominantFreq = this.findDominantFrequency();
     this.audioAnalysis.engineRPM = this.frequencyToRPM(dominantFreq);
     
-    // Only update if we have meaningful data
-    if (this.audioAnalysis.maxDb > 10) { // Minimum volume threshold
-      // Analyze engine health
+    // Store sample if recording
+    if (this.audioAnalysis.recording.isRecording) {
+      this.audioAnalysis.recording.recordingBuffer.push({
+        timestamp: Date.now(),
+        dominantFreq: dominantFreq,
+        maxDb: this.audioAnalysis.maxDb,
+        frequencyData: new Uint8Array(this.audioAnalysis.frequencyData) // Copy array
+      });
+    }
+    
+    // Only process if above threshold
+ 
+if (this.audioAnalysis.maxDb > this.audioAnalysis.calibration.volumeThreshold) {
       this.analyzeEngineHealth();
-      
-      // Detect gear shifts
       this.detectGearShifts();
-      
-      // Estimate current gear
       this.estimateGearPosition();
-      
-      // Detect engine problems
       this.detectEngineProblems();
-      
-      // Update UI
       this.updateEngineDisplay();
-      
-      // Update visualization
       this.updateFrequencyVisualization();
     }
     
@@ -1585,6 +1852,625 @@ stopEngineAnalysis: function() {
   document.getElementById("startEngineAnalysis").style.background = "";
   this.log("Engine sound analysis stopped");
 },
+  
+  // Recording-based calibration
+startRecordingCalibration: function() {
+  if (!this.audioAnalysis.isListening) {
+    alert('Please start engine analysis first');
+    return;
+  }
+
+  this.audioAnalysis.recording.isRecording = true;
+  this.audioAnalysis.recording.recordingBuffer = [];
+  this.audioAnalysis.recording.recordingStartTime = Date.now();
+  
+  document.getElementById('calibrationStatus').textContent = '🎤 Recording... Rev engine steadily for 3 seconds';
+  document.getElementById('calibrationStatus').style.color = 'var(--warning-color)';
+  document.getElementById('startRecordingBtn').textContent = 'Recording...';
+  document.getElementById('startRecordingBtn').style.background = 'linear-gradient(to bottom, #ff3333, #cc0000)';
+  
+  this.log('Started recording calibration sample');
+  
+  // Set timeout to stop recording automatically
+  setTimeout(() => {
+    if (this.audioAnalysis.recording.isRecording) {
+      this.stopRecordingCalibration();
+    }
+  }, this.audioAnalysis.recording.sampleDuration);
+},
+
+stopRecordingCalibration: function() {
+  if (!this.audioAnalysis.recording.isRecording) return;
+  
+  this.audioAnalysis.recording.isRecording = false;
+  
+  // Process the recorded sample
+  this.processRecordedSample();
+  
+  document.getElementById('startRecordingBtn').textContent = 'Record Engine Sample';
+  document.getElementById('startRecordingBtn').style.background = '';
+  this.log('Stopped recording calibration sample');
+},
+  
+processRecordedSample: function() {
+  if (this.audioAnalysis.recording.recordingBuffer.length === 0) {
+    this.log('No recording data to process', true);
+    return;
+  }
+  
+  document.getElementById('calibrationStatus').textContent = '🔍 Analyzing recording...';
+  
+  // Analyze the recorded sample
+  const analysis = this.analyzeRecordedSample(this.audioAnalysis.recording.recordingBuffer);
+  
+  if (analysis.success) {
+    this.applyCalibrationProfile(analysis);
+    document.getElementById('calibrationStatus').textContent = `✅ Calibrated! ${analysis.estimatedRPM.toFixed(0)} RPM detected`;
+    document.getElementById('calibrationStatus').style.color = 'var(--success-color)';
+    document.getElementById('detectedRange').textContent = `${analysis.idleRPM.toFixed(0)}-${analysis.redlineRPM.toFixed(0)} RPM`;
+    
+    this.log(`Calibration successful! Engine profile: ${analysis.engineType}, RPM range: ${analysis.idleRPM}-${analysis.redlineRPM}`);
+  } else {
+    document.getElementById('calibrationStatus').textContent = '❌ Calibration failed - try again';
+    document.getElementById('calibrationStatus').style.color = 'var(--error-color)';
+    this.log('Calibration failed: ' + analysis.error, true);
+  }
+},
+
+analyzeRecordedSample: function(recordingBuffer) {
+  try {
+    // Extract frequency characteristics from recording
+    const frequencyStats = this.analyzeFrequencyCharacteristics(recordingBuffer);
+    const amplitudeStats = this.analyzeAmplitudeCharacteristics(recordingBuffer);
+    
+    // Determine engine type based on frequency profile
+    const engineType = this.classifyEngineType(frequencyStats);
+    
+    // Estimate RPM range based on frequency content
+    const rpmEstimate = this.estimateRPMFromFrequency(frequencyStats.dominantFreq, engineType);
+    
+    // Calculate RPM range
+    const idleRPM = Math.max(800, rpmEstimate * 0.15);
+    const redlineRPM = rpmEstimate * 1.8;
+    
+    // Create frequency response profile
+    const frequencyResponse = this.buildFrequencyResponse(recordingBuffer);
+    
+    return {
+      success: true,
+      dominantFrequency: frequencyStats.dominantFreq,
+      estimatedRPM: rpmEstimate,
+      engineType: engineType,
+      idleRPM: idleRPM,
+      redlineRPM: redlineRPM,
+      frequencyResponse: frequencyResponse,
+      harmonics: frequencyStats.harmonics,
+      volumeRange: amplitudeStats
+    };
+    
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+},
+
+analyzeFrequencyCharacteristics: function(recordingBuffer) {
+  let dominantFreq = 0;
+  let maxAmplitude = 0;
+  const harmonics = [];
+  
+  // Analyze frequency content across all samples
+  recordingBuffer.forEach(sample => {
+    if (sample.maxDb > maxAmplitude) {
+      maxAmplitude = sample.maxDb;
+      dominantFreq = sample.dominantFreq;
+    }
+    
+    // Collect harmonic information
+    if (sample.dominantFreq > 50) { // Ignore very low frequencies
+      harmonics.push({
+        freq: sample.dominantFreq,
+        amplitude: sample.maxDb,
+        time: sample.timestamp
+      });
+    }
+  });
+  
+  return {
+    dominantFreq: dominantFreq,
+    maxAmplitude: maxAmplitude,
+    harmonics: harmonics,
+    frequencyVariance: this.calculateFrequencyVariance(harmonics)
+  };
+},
+
+analyzeAmplitudeCharacteristics: function(recordingBuffer) {
+  const amplitudes = recordingBuffer.map(sample => sample.maxDb);
+  const minAmplitude = Math.min(...amplitudes);
+  const maxAmplitude = Math.max(...amplitudes);
+  const avgAmplitude = amplitudes.reduce((a, b) => a + b) / amplitudes.length;
+  
+  return {
+    min: minAmplitude,
+    max: maxAmplitude,
+    average: avgAmplitude,
+    dynamicRange: maxAmplitude - minAmplitude
+  };
+},
+
+classifyEngineType: function(frequencyStats) {
+  const dominantFreq = frequencyStats.dominantFreq;
+  
+  if (dominantFreq < 80) return 'cruiser';
+  if (dominantFreq < 150) return 'standard';
+  if (dominantFreq < 250) return 'sport';
+  return 'high-rev';
+},
+
+estimateRPMFromFrequency: function(dominantFreq, engineType) {
+  // Base RPM estimation with engine type adjustments
+  const baseRPM = dominantFreq * 60; // Basic conversion
+  
+  switch(engineType) {
+    case 'cruiser':
+      return Math.min(6000, baseRPM * 0.8);
+    case 'standard':
+      return Math.min(9000, baseRPM * 1.0);
+    case 'sport':
+      return Math.min(12000, baseRPM * 1.2);
+    case 'high-rev':
+      return Math.min(14000, baseRPM * 1.4);
+    default:
+      return Math.min(10000, baseRPM * 1.0);
+  }
+},
+
+buildFrequencyResponse: function(recordingBuffer) {
+  // Build a frequency response profile for this engine
+  const freqBins = new Array(20).fill(0).map((_, i) => i * 100 + 50); // 50-2050 Hz
+  const response = {};
+  
+  freqBins.forEach(freq => {
+    const amplitudes = recordingBuffer
+      .filter(sample => Math.abs(sample.dominantFreq - freq) < 25) // ±25 Hz window
+      .map(sample => sample.maxDb);
+    
+    response[freq] = amplitudes.length > 0 ? 
+      amplitudes.reduce((a, b) => a + b) / amplitudes.length : 0;
+  });
+  
+  return response;
+},
+
+applyCalibrationProfile: function(analysis) {
+  this.audioAnalysis.calibration.isCalibrated = true;
+  this.audioAnalysis.calibration.referenceFrequency = analysis.dominantFrequency;
+  this.audioAnalysis.calibration.referenceRPM = analysis.estimatedRPM;
+  this.audioAnalysis.calibration.frequencyResponse = analysis.frequencyResponse;
+  this.audioAnalysis.calibration.minRPM = analysis.idleRPM;
+  this.audioAnalysis.calibration.maxRPM = analysis.redlineRPM;
+  this.audioAnalysis.calibration.volumeThreshold = analysis.volumeRange.average * 0.3;
+  
+  this.audioAnalysis.calibration.bikeProfile = {
+    name: `Calibrated ${analysis.engineType}`,
+    type: analysis.engineType,
+    redline: analysis.redlineRPM,
+    idleRPM: analysis.idleRPM
+  };
+  
+  // Update UI
+  document.getElementById('bikeProfileName').textContent = this.audioAnalysis.calibration.bikeProfile.name;
+  document.getElementById('calibrationMultiplier').textContent = (analysis.estimatedRPM / (analysis.dominantFrequency * 60)).toFixed(2) + 'x';
+},
+
+// Updated frequencyToRPM with impulse response matching
+frequencyToRPM: function(frequency) {
+
+  const cal = this.audioAnalysis.calibration;
+  
+  if (frequency < 20) return 0;
+  
+  if (cal.isCalibrated) {
+    // Use the recorded calibration profile
+    return this.calculateRPMFromCalibration(frequency);
+  } else {
+    // Fallback to basic calculation
+    return this.frequencyToRPMBasic(frequency);
+  }
+},
+
+calculateRPMFromCalibration: function(currentFrequency) {
+  const cal = this.audioAnalysis.calibration;
+  
+  // Base calculation using recorded reference
+  let baseRPM = (currentFrequency / cal.referenceFrequency) * cal.referenceRPM;
+  
+  // Apply frequency response correction
+  const responseCorrection = this.getFrequencyResponseCorrection(currentFrequency);
+  baseRPM *= responseCorrection;
+  
+  // Apply limits
+  baseRPM = Math.max(cal.minRPM, Math.min(cal.maxRPM, baseRPM));
+  
+  return Math.round(baseRPM);
+},
+
+getFrequencyResponseCorrection: function(frequency) {
+  const response = this.audioAnalysis.calibration.frequencyResponse;
+  if (!response || Object.keys(response).length === 0) return 1.0;
+  
+  // Find closest frequency bin
+  const frequencies = Object.keys(response).map(f => parseInt(f));
+  const closestFreq = frequencies.reduce((prev, curr) => {
+    return (Math.abs(curr - frequency) < Math.abs(prev - frequency) ? curr : prev);
+  });
+  
+  const expectedAmplitude = response[closestFreq];
+  if (expectedAmplitude === 0) return 1.0;
+  
+  // Calculate correction based on expected vs current response
+  const currentAmplitude = this.audioAnalysis.maxDb;
+  const correction = expectedAmplitude / (currentAmplitude || 1);
+  
+  // Limit correction to reasonable range
+  return Math.max(0.5, Math.min(2.0, correction));
+},
+
+frequencyToRPMBasic: function(frequency) {
+  // Basic fallback calculation
+  const baseRPM = frequency * 60;
+  return Math.max(1000, Math.min(12000, baseRPM));
+},
+  
+  // Manual calibration functions
+updateReferenceRPM: function(rpm) {
+  document.getElementById('referenceRpmValue').textContent = rpm;
+  this.manualReferenceRPM = parseInt(rpm);
+},
+
+applyManualCalibration: function() {
+  if (!this.audioAnalysis.isListening) {
+    alert('Start engine analysis first');
+    return;
+  }
+  
+  if (!this.manualReferenceRPM) {
+    alert('Set reference RPM first');
+    return;
+  }
+  
+  // Use current frequency reading as reference
+  const currentFreq = this.findDominantFrequency();
+  if (currentFreq < 20) {
+    alert('No engine sound detected');
+    return;
+  }
+  
+  this.audioAnalysis.calibration.isCalibrated = true;
+  this.audioAnalysis.calibration.referenceFrequency = currentFreq;
+  this.audioAnalysis.calibration.referenceRPM = this.manualReferenceRPM;
+  
+  document.getElementById('calibrationStatus').textContent = `Manual: ${this.manualReferenceRPM} RPM`;
+  document.getElementById('calibrationStatus').style.color = 'var(--success-color)';
+  
+  this.log(`Manual calibration applied: ${currentFreq.toFixed(1)} Hz = ${this.manualReferenceRPM} RPM`);
+},
+  
+  // Session management functions
+startNewSession: function() {
+  const sessionId = 'session_' + Date.now();
+  
+  this.currentSession = {
+    ...this.sessionTemplate,
+    id: sessionId,
+    name: `Ride ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
+    startTime: Date.now(),
+    routeData: [],
+    metrics: {
+      accelerationTimes: [],
+      leanAngles: [],
+      corneringData: [],
+      elevationData: []
+    }
+  };
+  
+  // Start auto-save every 30 seconds
+  this.autoSaveInterval = setInterval(() => {
+    this.autoSaveSession();
+  }, 30000);
+  
+  this.log(`New session started: ${sessionId}`);
+  this.updateSessionDisplay();
+},
+
+autoSaveSession: function() {
+  if (!this.currentSession) return;
+  
+  this.updateCurrentSessionData();
+  this.saveSessionsToStorage();
+  this.log('Session auto-saved');
+},
+
+updateCurrentSessionData: function() {
+  if (!this.currentSession) return;
+  
+  // Update basic metrics
+  this.currentSession.distance = this.todayDistance;
+  this.currentSession.maxSpeed = this.maxSpeed;
+  this.currentSession.avgSpeed = this.calculateAverageSpeed();
+  this.currentSession.elevationGain = this.elevationGain;
+  this.currentSession.corners = this.corners.length;
+  this.currentSession.duration = Date.now() - this.currentSession.startTime;
+  
+  // Count safety events
+  this.currentSession.hardBrakingEvents = this.hardBrakingEvents ? this.hardBrakingEvents.length : 0;
+  this.currentSession.aggressiveCorners = this.aggressiveCorneringEvents ? this.aggressiveCorneringEvents.length : 0;
+  
+  // Add current position to route
+  if (this.lastPosition) {
+    this.currentSession.routeData.push({
+      lat: this.lastPosition.lat,
+      lon: this.lastPosition.lon,
+      alt: this.lastPosition.alt,
+      speed: this.currentSpeed,
+      timestamp: Date.now(),
+      leanAngle: this.currentLeanAngle
+    });
+    
+    // Keep only last 1000 points to prevent memory issues
+    if (this.currentSession.routeData.length > 1000) {
+      this.currentSession.routeData = this.currentSession.routeData.slice(-1000);
+    }
+  }
+  
+  // Update detailed metrics
+  this.currentSession.metrics.accelerationTimes = [...this.accelerationTimes];
+  this.currentSession.metrics.leanAngles.push({
+    angle: this.currentLeanAngle,
+    timestamp: Date.now()
+  });
+  this.currentSession.metrics.corneringData = [...this.corners];
+  this.currentSession.metrics.elevationData = [...this.elevationHistory];
+},
+
+saveCurrentSession: function() {
+  if (!this.currentSession) {
+    alert('No active session to save');
+    return;
+  }
+  
+  this.updateCurrentSessionData();
+  
+  // Add end time
+  this.currentSession.endTime = Date.now();
+  this.currentSession.duration = this.currentSession.endTime - this.currentSession.startTime;
+  
+  // Prompt for session name and notes
+  const sessionName = prompt('Enter a name for this ride session:', this.currentSession.name);
+  if (sessionName !== null) {
+    this.currentSession.name = sessionName;
+    
+    const sessionNotes = prompt('Add any notes about this ride (optional):', '');
+    if (sessionNotes !== null) {
+      this.currentSession.notes = sessionNotes;
+    }
+    
+    // Add to session history
+    this.sessionHistory.unshift({...this.currentSession});
+    
+    // Save to storage
+    this.saveSessionsToStorage();
+    
+    this.log(`Session saved: ${this.currentSession.name}`);
+    this.showSessionSavedNotification();
+    
+    // Clear current session
+    this.currentSession = null;
+    clearInterval(this.autoSaveInterval);
+    
+    this.updateSessionHistoryDisplay();
+  }
+},
+
+quickSaveSession: function() {
+  if (!this.currentSession) {
+    this.startNewSession();
+  }
+  
+  this.updateCurrentSessionData();
+  this.saveSessionsToStorage();
+  this.showQuickSaveNotification();
+  this.log('Session quick-saved');
+},
+
+exportSession: function(sessionId = null) {
+  const session = sessionId ? 
+    this.sessionHistory.find(s => s.id === sessionId) : 
+    this.currentSession;
+  
+  if (!session) {
+    alert('No session to export');
+    return;
+  }
+  
+  const dataStr = JSON.stringify(session, null, 2);
+  const dataBlob = new Blob([dataStr], { type: 'application/json' });
+  
+  const url = URL.createObjectURL(dataBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `ride_session_${session.name.replace(/[^a-z0-9]/gi, '_')}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  this.log(`Session exported: ${session.name}`);
+},
+
+loadSession: function(sessionId) {
+  const session = this.sessionHistory.find(s => s.id === sessionId);
+  if (!session) return;
+  
+  // Create a visual replay of the session
+  this.replaySession(session);
+},
+
+replaySession: function(session) {
+  // Basic session info display
+  alert(`Session: ${session.name}\nDistance: ${session.distance.toFixed(1)} km\nDuration: ${this.formatDuration(session.duration)}\nMax Speed: ${session.maxSpeed.toFixed(1)} km/h`);
+  
+  // You could implement a full replay on the map here
+  this.log(`Loaded session: ${session.name}`);
+},
+
+deleteSession: function(sessionId) {
+  if (confirm('Are you sure you want to delete this session?')) {
+    this.sessionHistory = this.sessionHistory.filter(s => s.id !== sessionId);
+    this.saveSessionsToStorage();
+    this.updateSessionHistoryDisplay();
+    this.log('Session deleted');
+  }
+},
+
+// Storage functions
+saveSessionsToStorage: function() {
+  const data = {
+    sessions: this.sessionHistory,
+    lastUpdated: Date.now()
+  };
+  localStorage.setItem('rideSessions', JSON.stringify(data));
+},
+
+loadSessionsFromStorage: function() {
+  const saved = localStorage.getItem('rideSessions');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      this.sessionHistory = data.sessions || [];
+      this.updateSessionHistoryDisplay();
+      this.log(`Loaded ${this.sessionHistory.length} saved sessions`);
+    } catch (error) {
+      this.log('Error loading saved sessions: ' + error, true);
+    }
+  }
+},
+
+// Utility functions
+formatDuration: function(milliseconds) {
+  const seconds = Math.floor(milliseconds / 1000);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${secs}s`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${secs}s`;
+  } else {
+    return `${secs}s`;
+  }
+},
+
+formatDistance: function(km) {
+  if (km < 1) {
+    return `${(km * 1000).toFixed(0)} m`;
+  }
+  return `${km.toFixed(1)} km`;
+},
+
+// Session display functions
+updateSessionDisplay: function() {
+  const sessionInfo = document.getElementById('sessionInfo');
+  if (!this.currentSession) {
+    sessionInfo.style.display = 'none';
+    return;
+  }
+  
+  sessionInfo.style.display = 'block';
+  document.getElementById('sessionName').textContent = this.currentSession.name;
+  document.getElementById('sessionDuration').textContent = this.formatDuration(Date.now() - this.currentSession.startTime);
+  document.getElementById('sessionDistance').textContent = this.formatDistance(this.currentSession.distance);
+  document.getElementById('sessionMaxSpeed').textContent = this.currentSession.maxSpeed.toFixed(1) + ' km/h';
+  document.getElementById('sessionCorners').textContent = this.currentSession.corners;
+},
+
+updateSessionHistoryDisplay: function() {
+  const historyList = document.getElementById('sessionHistoryList');
+  
+  if (this.sessionHistory.length === 0) {
+    historyList.innerHTML = '<div style="text-align: center; color: #aaa; padding: 20px;">No saved sessions yet</div>';
+    return;
+  }
+  
+  historyList.innerHTML = this.sessionHistory.map(session => `
+    <div class="session-item" data-session-id="${session.id}">
+      <div class="session-header">
+        <strong>${session.name}</strong>
+        <span class="session-date">${new Date(session.startTime).toLocaleDateString()}</span>
+      </div>
+      <div class="session-details">
+        <span>${this.formatDistance(session.distance)}</span>
+        <span>${this.formatDuration(session.duration)}</span>
+        <span>${session.maxSpeed.toFixed(1)} km/h</span>
+        <span>${session.corners} corners</span>
+      </div>
+      <div class="session-actions">
+        <button onclick="MotoFindBack.exportSession('${session.id}')" title="Export">📤</button>
+        <button onclick="MotoFindBack.loadSession('${session.id}')" title="View">👁️</button>
+        <button onclick="MotoFindBack.deleteSession('${session.id}')" title="Delete" style="background: #ff3333;">🗑️</button>
+      </div>
+      ${session.notes ? `<div class="session-notes">${session.notes}</div>` : ''}
+    </div>
+  `).join('');
+},
+
+// UI Notification functions
+showSessionSavedNotification: function() {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(to bottom, #00cc66, #00aa55);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    font-weight: bold;
+  `;
+  notification.textContent = '✅ Ride Session Saved!';
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    document.body.removeChild(notification);
+  }, 3000);
+},
+
+showQuickSaveNotification: function() {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(to bottom, var(--accent-color), #0099cc);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 6px;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    font-size: 0.9em;
+  `;
+  notification.textContent = '💾 Session Quick-Saved';
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    document.body.removeChild(notification);
+  }, 2000);
+},
 
 // UI Updates
 updateEngineDisplay: function() {
@@ -1829,6 +2715,13 @@ setupEventListeners: function() {
   document.getElementById("saveMaintenanceBtn").addEventListener("click", () => this.saveMaintenanceItem());
   document.getElementById("startEngineAnalysis").addEventListener("click", () => this.startEngineAnalysis());
   document.getElementById("calibrateEngine").addEventListener("click", () => this.calibrateEngine());
+  document.getElementById("startSessionBtn").addEventListener("click", () => this.startNewSession());
+  document.getElementById("saveSessionBtn").addEventListener("click", () => this.saveCurrentSession());
+  document.getElementById("quickSaveBtn").addEventListener("click", () => this.quickSaveSession());
+  document.getElementById("exportSessionBtn").addEventListener("click", () => this.exportSession());
+  document.getElementById("startRecordingBtn").addEventListener("click", () => this.startRecordingCalibration());
+  document.getElementById("startSessionBtn").addEventListener("click", () => this.startNewSession());
+
 },  
 
   initDeviceOrientation: function() {

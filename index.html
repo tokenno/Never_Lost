@@ -912,9 +912,12 @@
           <canvas id="elevationCanvas" width="100%" height="150"></canvas>
           <p>Total Elevation Gain: <span id="totalElevationGain">0 m</span></p>
         </div>
+      <BR>
+        <BR>
         <div class="control-group">
           <div class="control-item">
             <h3>Distance Statistics</h3>
+            
             <div>Today: <span id="statsToday">0 km</span></div>
             <div>This Week: <span id="statsWeek">0 km</span></div>
             <div>This Month: <span id="statsMonth">0 km</span></div>
@@ -928,6 +931,8 @@
             <div>0-100 km/h: <span id="statsAcceleration">-- s</span></div>
           </div>
         </div>
+          <BR>
+        <BR>
         <!-- Add to Metrics tab -->
 <div class="panel">
   <h3>Engine Sound Analysis</h3>
@@ -1201,71 +1206,150 @@
         </div>
       </div>
     </div>
-    <div class="panel">
-      <h2 class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-        Help Guide ▼ </h2>
-      <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
-        <h1>Spin</h1>
-        <h2>Purpose:</h2>
-        Motorcycle-focused GPS navigation with ride metrics, emergency features,
-        and maintenance tracking. The spinning wheel in the header rotates to
-        reflect your current speed, spinning faster as you ride faster.
-        <h2>Navigation Tab</h2>
-        <strong>GPS Navigation:</strong> Lock your position and navigate back
-        with audio cues.<br>
-        <strong>Calibrate Sensors:</strong> Place phone on bike in riding
-        position and tap to set baseline for lean angle and crash detection.<br>
-        <strong>Auto-Lock Mode:</strong> Automatically locks position when
-        motorcycle is stationary.<br>
-        <strong>Direction Indicator:</strong> Visual compass pointing to locked
-        position.<br>
-        <strong>Sonar Parameters:</strong> Adjust audio feedback frequency and
-        range.
-        <h2>Metrics Tab</h2>
-        <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and
-        lean angles with real-time updates.<br>
-        <strong>Cornering Analysis:</strong> Detects corners using GPS curvature
-        and lean angle, calculates cornering G and speeds.<br>
-        <strong>Elevation Gain:</strong> Tracks altitude changes using GPS data,
-        with a profile chart.<br>
-        <strong>Lean Angle Indicator:</strong> Visual display of motorcycle lean
-        during corners, updated rapidly for responsiveness.<br>
-        <strong>Distance Statistics:</strong> Daily, weekly, monthly, and total
-        distance tracking.<br>
-        <strong>Acceleration Timer:</strong> Measures 0-100 km/h acceleration.
-        <h2>Emergency Tab</h2>
-        <strong>Emergency Alert:</strong> Send your location to emergency
-        contacts manually.<br>
-        <strong>Crash Detection:</strong> Automatically sends location to
-        contacts if bike is detected lying flat for 5 seconds.<br>
-        <strong>Quick Contacts:</strong> Pre-set emergency contacts for quick
-        access.<br>
-        <strong>Custom Message:</strong> Edit the emergency message with your
-        details.
-        <h2>Maintenance Tab</h2>
-        <strong>Maintenance Alerts:</strong> Track service intervals based on
-        mileage.<br>
-        <strong>Progress Indicators:</strong> Visual progress bars for each
-        maintenance item.<br>
-        <strong>Custom Items:</strong> Add your own maintenance tasks and
-        intervals.
-        <h2>Quick Start</h2>
-        1. Mount phone securely and tap "Calibrate Sensors" to set lean angle
-        and crash detection baseline.<br>
-        2. Set emergency contacts in the Emergency tab.<br>
-        3. Tap "Test Audio &amp; Lock" to initialize the app.<br>
-        4. Use the Navigation tab to lock your parking position.<br>
-        5. Check the Metrics tab during your ride for performance data; watch
-        the header wheel spin with your speed.<br>
-        6. Add maintenance schedules in the Maintenance tab.
-        <h2>Tips</h2>
-        - For accurate lean angles and crash detection, mount your phone
-        securely on the motorcycle and calibrate sensors.<br>
-        - Set up emergency contacts before your first ride to enable crash
-        detection alerts.<br>
-        - Regular maintenance alerts help keep your motorcycle in top condition.<br>
-        - Export your ride data to track your riding habits over time. </div>
+   <div class="panel">
+  <h2 class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+    Help Guide ▼
+  </h2>
+  <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
+    <h1>Spin - Motorcycle Companion</h1>
+    <h2>Purpose:</h2>
+    Comprehensive motorcycle-focused GPS navigation with advanced ride metrics, emergency features, maintenance tracking, and engine sound analysis. The spinning wheel in the header rotates to reflect your current speed, spinning faster as you ride faster.
+
+    <h2>🚀 Navigation Tab</h2>
+    <strong>GPS Navigation:</strong> Lock your position and navigate back with audio cues.<br>
+    <strong>Calibrate Sensors:</strong> Place phone on bike in riding position and tap to set baseline for lean angle and crash detection.<br>
+    <strong>Auto-Lock Mode:</strong> Automatically locks position when motorcycle is stationary.<br>
+    <strong>Direction Indicator:</strong> Visual compass pointing to locked position.<br>
+    <strong>Sonar Parameters:</strong> Adjust audio feedback frequency and range.<br>
+    <strong>Triple-Tap Overlay:</strong> Quickly tap screen 3 times to show enlarged speed/lean display.
+
+    <h2>📊 Metrics Tab</h2>
+    <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and lean angles with real-time updates.<br>
+    <strong>Cornering Analysis:</strong> Detects corners using GPS curvature and lean angle, calculates cornering G and speeds.<br>
+    <strong>Elevation Profile:</strong> Tracks altitude changes using GPS data with live chart.<br>
+    <strong>Lean Angle Indicator:</strong> Visual display of motorcycle lean during corners.<br>
+    <strong>Distance Statistics:</strong> Daily, weekly, monthly, and total distance tracking.<br>
+    <strong>Acceleration Timer:</strong> Measures 0-100 km/h (customizable) acceleration.<br>
+
+    <h3>🎵 Engine Sound Analysis</h3>
+    <strong>Real-time RPM Monitoring:</strong> Uses microphone to detect engine RPM from sound.<br>
+    <strong>Gear Position Estimation:</strong> Automatically estimates current gear based on speed/RPM ratio.<br>
+    <strong>Engine Health Monitoring:</strong> Detects engine knock, exhaust leaks, and unusual vibrations.<br>
+    <strong>Gear Shift Detection:</strong> Tracks shift patterns and quality.<br>
+    <strong>Impulse Response Calibration:</strong> Record your engine sound for precise RPM calibration.<br>
+    <strong>Sound Spectrum Visualization:</strong> Real-time frequency display.
+
+    <h3>💾 Session Management</h3>
+    <strong>Start Session:</strong> Begin recording a new ride with auto-save every 30 seconds.<br>
+    <strong>Save Session:</strong> Save ride with custom name and notes.<br>
+    <strong>Quick Save:</strong> Instant save without prompts.<br>
+    <strong>Export Session:</strong> Download ride data as JSON file.<br>
+    <strong>Session History:</strong> Browse and manage all past rides.
+
+    <h2>🚨 Emergency Tab</h2>
+    <strong>Emergency Alert:</strong> Send your location to emergency contacts manually.<br>
+    <strong>Crash Detection:</strong> Automatically sends location to contacts if bike is detected lying flat for 5 seconds.<br>
+    <strong>Quick Contacts:</strong> Pre-set emergency contacts for quick access with call/message buttons.<br>
+    <strong>Custom Message:</strong> Edit the emergency message with your details.<br>
+    <strong>Emergency Call:</strong> Direct access to 112/911 emergency services.
+
+    <h2>🔧 Maintenance Tab</h2>
+    <strong>Maintenance Alerts:</strong> Track service intervals based on mileage.<br>
+    <strong>Progress Indicators:</strong> Visual progress bars for each maintenance item.<br>
+    <strong>Custom Items:</strong> Add your own maintenance tasks and intervals.<br>
+    <strong>Auto Reminders:</strong> Get notified when maintenance is due.
+
+    <h2>🎛️ Advanced Features</h2>
+    <strong>Triple-Tap Overlay:</strong> Quick triple-tap anywhere to show enlarged stats display.<br>
+    <strong>Real-time Wheel Animation:</strong> Header wheel spins according to your speed.<br>
+    <strong>Comprehensive Data Export:</strong> Export metrics, sessions, and maintenance data.<br>
+    <strong>Offline Capable:</strong> Works without internet connection for basic navigation.<br>
+    <strong>Battery Efficient:</strong> Optimized sensors and GPS usage.
+
+    <h2>🚀 Quick Start Guide</h2>
+    <ol>
+      <li><strong>Initial Setup:</strong>
+        <ul>
+          <li>Mount phone securely on motorcycle</li>
+          <li>Tap "Calibrate Sensors" to set lean angle baseline</li>
+          <li>Set emergency contacts in Emergency tab</li>
+        </ul>
+      </li>
+      <li><strong>Before Riding:</strong>
+        <ul>
+          <li>Tap "Test Audio & Lock" to initialize app</li>
+          <li>Start Engine Analysis for RPM monitoring</li>
+          <li>Record engine sample for accurate RPM calibration</li>
+          <li>Start new session to track your ride</li>
+        </ul>
+      </li>
+      <li><strong>During Ride:</strong>
+        <ul>
+          <li>Use Navigation tab to lock parking position</li>
+          <li>Monitor Metrics tab for performance data</li>
+          <li>Watch header wheel spin with your speed</li>
+          <li>Triple-tap screen for quick stats overlay</li>
+        </ul>
+      </li>
+      <li><strong>After Ride:</strong>
+        <ul>
+          <li>Save session with notes</li>
+          <li>Check maintenance progress</li>
+          <li>Export data for analysis</li>
+        </ul>
+      </li>
+    </ol>
+
+    <h2>💡 Pro Tips</h2>
+    <strong>For Best Results:</strong>
+    <ul>
+      <li>Mount phone securely aligned with bike's centerline for accurate lean angles</li>
+      <li>Calibrate engine sound analysis in a quiet environment</li>
+      <li>Set realistic maintenance intervals based on your riding style</li>
+      <li>Test emergency features before your first ride</li>
+      <li>Use quick save frequently during long rides</li>
+      <li>Export session data regularly to backup your rides</li>
+    </ul>
+
+    <strong>Safety Features:</strong>
+    <ul>
+      <li>Crash detection requires proper phone mounting</li>
+      <li>Emergency contacts should be set before riding</li>
+      <li>Test audio navigation in a safe area first</li>
+      <li>Keep phone charged during long rides</li>
+    </ul>
+
+    <strong>Performance Tracking:</strong>
+    <ul>
+      <li>Monitor cornering G-forces to improve technique</li>
+      <li>Track acceleration times for performance tuning</li>
+      <li>Use elevation data for route planning</li>
+      <li>Analyze gear shift patterns for smoother riding</li>
+    </ul>
+
+    <h2>🔧 Troubleshooting</h2>
+    <strong>Common Issues:</strong>
+    <ul>
+      <li><em>No GPS signal:</em> Ensure location services are enabled</li>
+      <li><em>No engine sound detection:</em> Allow microphone access and start engine analysis</li>
+      <li><em>Inaccurate lean angles:</em> Recalibrate sensors with phone properly mounted</li>
+      <li><em>Audio not working:</em> Check phone volume and app permissions</li>
+      <li><em>Crash detection false positives:</em> Adjust phone mounting position</li>
+    </ul>
+
+    <strong>Support:</strong>
+    <ul>
+      <li>Ensure latest browser version for best performance</li>
+      <li>Grant all requested permissions for full functionality</li>
+      <li>Use in landscape mode for better dashboard visibility</li>eleveation 
+      <li>Keep app updated for new features and bug fixes</li>
+    </ul>
+
+    <div style="background: rgba(255,102,0,0.1); padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 3px solid var(--primary-color);">
+      <strong>🎯 Remember:</strong> Spin is designed to enhance your riding experience, not replace safe riding practices. Always ride responsibly and within your limits.
     </div>
+  </div>
+</div>
     <div id="debug"></div>
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

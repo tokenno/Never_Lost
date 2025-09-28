@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spin - Motorcycle GPS Locator</title>
-    <!-- Leaflet Map CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <style>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spin - Motorcycle GPS Locator</title>
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
     :root {
       --primary-color: #ff6600;
       --secondary-color: #333;
@@ -545,177 +545,210 @@
       }
     }
   </style>
-  </head>
-  <body>
-    <div class="app-header">
-      <h1 class="app-title">Spin</h1>
-      <div class="wheel-container">
-        <svg class="spinning-wheel" viewBox="0 0 100 100">
-          <circle class="wheel-outer" cx="50" cy="50" r="40"></circle>
-          <circle class="wheel-inner" cx="50" cy="50" r="25"></circle>
-          <line class="wheel-spoke spoke-1" x1="50" y1="50" x2="75" y2="50"></line>
-          <line class="wheel-spoke spoke-2" x1="50" y1="50" x2="50" y2="25"></line>
-          <line class="wheel-spoke spoke-3" x1="50" y1="50" x2="30" y2="70"></line>
-          <circle class="wheel-pulse" cx="50" cy="50" r="8"></circle> </svg> </div>
+</head>
+<body>
+  <div class="app-header">
+    <h1 class="app-title">Spin</h1>
+    <div class="wheel-container">
+      <svg class="spinning-wheel" viewBox="0 0 100 100">
+        <circle class="wheel-outer" cx="50" cy="50" r="40" />
+        <circle class="wheel-inner" cx="50" cy="50" r="25" />
+        <line class="wheel-spoke spoke-1" x1="50" y1="50" x2="75" y2="50" />
+        <line class="wheel-spoke spoke-2" x1="50" y1="50" x2="50" y2="25" />
+        <line class="wheel-spoke spoke-3" x1="50" y1="50" x2="30" y2="70" />
+        <circle class="wheel-pulse" cx="50" cy="50" r="8" />
+      </svg>
     </div>
-    <div class="dashboard">
-      <div class="dashboard-item">
-        <div class="dashboard-label">Current Speed</div>
-        <div class="dashboard-value" id="currentSpeed">-- km/h</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Max Speed</div>
-        <div class="dashboard-value" id="maxSpeed">-- km/h</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Average Speed</div>
-        <div class="dashboard-value" id="avgSpeed">-- km/h</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Current Lean Angle</div>
-        <div class="dashboard-value" id="leanAngle">--°</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Today's Distance</div>
-        <div class="dashboard-value" id="todayDistance">-- km</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Elevation Gain</div>
-        <div class="dashboard-value" id="elevationGain">-- m</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Max Cornering Speed</div>
-        <div class="dashboard-value" id="maxCornerSpeed">-- km/h</div>
-      </div>
-      <div class="dashboard-item">
-        <div class="dashboard-label">Max Corner G</div>
-        <div class="dashboard-value" id="maxCornerG">-- g</div>
-      </div>
-      <div class="dashboard-label">Avg Corner Entry Speed</div>
-      <div class="dashboard-value" id="avgCornerEntrySpeed">-- km/h</div>
+  </div>
+
+  <div class="dashboard">
+    <div class="dashboard-item">
+      <div class="dashboard-label">Current Speed</div>
+      <div class="dashboard-value" id="currentSpeed">-- km/h</div>
     </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Speed</div>
+      <div class="dashboard-value" id="maxSpeed">-- km/h</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Average Speed</div>
+      <div class="dashboard-value" id="avgSpeed">-- km/h</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Current Lean Angle</div>
+      <div class="dashboard-value" id="leanAngle">--°</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Today's Distance</div>
+      <div class="dashboard-value" id="todayDistance">-- km</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Elevation Gain</div>
+      <div class="dashboard-value" id="elevationGain">-- m</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Cornering Speed</div>
+      <div class="dashboard-value" id="maxCornerSpeed">-- km/h</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Corner G</div>
+      <div class="dashboard-value" id="maxCornerG">-- g</div>
+    </div>
+    <div class="dashboard-label">Avg Corner Entry Speed</div>
+  <div class="dashboard-value" id="avgCornerEntrySpeed">-- km/h</div>
+</div>
     <div class="dashboard-item">
       <div class="dashboard-label">0-100 km/h</div>
       <div class="dashboard-value" id="accelerationTime">-- s</div>
     </div>
-    <div class="tabs">
-      <div class="tab active" data-tab="navigation">Navigation</div>
-      <div class="tab" data-tab="metrics">Ride Metrics</div>
-      <div class="tab" data-tab="emergency">Emergency</div>
-      <div class="tab" data-tab="maintenance">Maintenance</div>
-    </div>
-    <div class="tab-content active" id="navigation-tab">
-      <div class="panel">
-        <h2>GPS Navigation</h2>
-        <p class="warning">TAP "TEST AUDIO &amp; LOCK" FIRST!</p>
-        <div class="control-group"> <button id="testBtn" class="primary-btn">Test
-            Audio &amp; Lock</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
-            Sensors</button> <button id="autoLockBtn" class="secondary-btn" disabled="disabled">Auto-Lock
-            Mode</button> <button id="muteBtn" class="secondary-btn" disabled="disabled">Mute
-            Sound</button> <button id="stopBtn" class="secondary-btn" disabled="disabled">Stop</button>
-        </div>
-        <div id="autoLockSettings" style="display: none;">
-          <div class="control-group">
-            <div class="control-item"> <label for="stationaryTime">Stationary
-                Confirmation Time</label>
-              <div> <input id="stationaryTime" value="30" min="5" max="60" type="range">
-                <span id="stationaryTimeValue" class="slider-label">30 sec</span>
-              </div>
-            </div>
-            <div class="control-item"> <label for="speedThreshold">Speed
-                Threshold (km/h)</label>
-              <div> <input id="speedThreshold" value="10" min="5" max="20" type="range">
-                <span id="speedThresholdValue" class="slider-label">10 km/h</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div id="calibrateStatus" class="status">Sensors not calibrated</div>
-        <div id="lockStatus" class="status">Lock Status: Not locked</div>
-        <div id="audioStatus" class="status">Audio: Not initialized</div>
-        <div id="gpsStatus" class="status">GPS: Ready</div>
-        <div id="reachedMessage" class="reached-message" style="display: none;">You
-          have reached GPS locked point!</div>
-      </div>
-      <div class="panel">
-        <h2>Position Map</h2>
-        <div id="map"></div>
-      </div>
-      <div class="panel"> <button class="collapsible">Direction Indicator ▼</button>
-        <div class="collapsible-content">
-          <div class="direction-container">
-            <div id="directionArrow"></div>
-            <div class="direction-circle"></div>
-          </div>
-          <div id="directionStatus" class="direction-status">Direction: --</div>
-        </div>
-        <button class="collapsible">Sonar Parameters ▼</button>
-        <div class="collapsible-content">
-          <div class="control-group">
-            <div class="control-item"> <label for="freqInput">Bleep Freq (Hz)</label><br>
-              <input id="freqInput" value="800" min="20" max="20000" type="number">
-            </div>
-            <div class="control-item"> <label for="maxDistInput">Max Distance
-                (m)</label><br>
-              <input id="maxDistInput" value="50" min="1" max="500" type="range">
-              <span id="maxDistValue">50</span> m </div>
-          </div>
-        </div>
-        <button class="collapsible">Data Output ▼</button>
-        <div class="collapsible-content">
-          <div class="control-group">
-            <div class="control-item"> <label>Distance</label><br>
-              <span id="distance">--</span> m </div>
-            <div class="control-item"> <label>Accuracy</label><br>
-              <span id="accuracy">--</span> m </div>
-            <div class="control-item"> <label>BPM</label><br>
-              <span id="bleepRate">--</span> </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-content" id="metrics-tab">
-      <div class="panel">
-        <h2>Ride Metrics</h2>
-        <div class="control-group"> <button id="startRideBtn" class="primary-btn">Start
-            Ride</button> <button id="resetMetricsBtn" class="secondary-btn">Reset
-            Metrics</button> <button id="exportMetricsBtn" class="secondary-btn">Export
-            Data</button> </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="navigation">Navigation</div>
+    <div class="tab" data-tab="metrics">Ride Metrics</div>
+    <div class="tab" data-tab="emergency">Emergency</div>
+    <div class="tab" data-tab="maintenance">Maintenance</div>
+  </div>
+
+  <div class="tab-content active" id="navigation-tab">
+    <div class="panel">
+      <h2>GPS Navigation</h2>
+      <p class="warning">TAP "TEST AUDIO & LOCK" FIRST!</p>
+
+      <div class="control-group">
+        <button id="testBtn" class="primary-btn">Test Audio & Lock</button>
+        <button id="calibrateBtn" class="secondary-btn">Calibrate Sensors</button>
+        <button id="autoLockBtn" class="secondary-btn" disabled>Auto-Lock Mode</button>
+      <button id="muteBtn" class="secondary-btn" disabled>Mute Sound</button>
+<button id="stopGpsLockBtn" class="secondary-btn" disabled>Stop GPS Lock</button>
+</div>
+      
+      <div id="autoLockSettings" style="display: none;">
         <div class="control-group">
-          <div class="control-item"> <label for="accelTarget">Acceleration
-              Target (km/h)</label><br>
-            <input id="accelTarget" value="100" min="10" max="200" type="number">
+          <div class="control-item">
+            <label for="stationaryTime">Stationary Confirmation Time</label>
+            <div>
+              <input type="range" id="stationaryTime" value="30" min="5" max="60" />
+              <span id="stationaryTimeValue" class="slider-label">30 sec</span>
+            </div>
+          </div>
+          <div class="control-item">
+            <label for="speedThreshold">Speed Threshold (km/h)</label>
+            <div>
+              <input type="range" id="speedThreshold" value="10" min="5" max="20" />
+              <span id="speedThresholdValue" class="slider-label">10 km/h</span>
+            </div>
           </div>
         </div>
-        <div class="lean-container">
-          <div class="lean-scale">
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-          </div>
-          <div class="lean-bike" id="leanBike"></div>
-          <div class="lean-value" id="leanValue">0°</div>
-        </div>
-        <h3>Cornering Analysis</h3>
-        <p>Current Corner G: <span id="currentCornerG">0 g</span></p>
-        <p>Max Corner Speed: <span id="currentMaxCornerSpeed">0 km/h</span></p>
-        <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
-        <canvas id="cornerChart" width="100%" height="150"></canvas>
-        <div id="cornerList">No corners detected yet.</div>
       </div>
+      
+      <div id="calibrateStatus" class="status">Sensors not calibrated</div>
+      <div id="lockStatus" class="status">Lock Status: Not locked</div>
+      <div id="audioStatus" class="status">Audio: Not initialized</div>
+      <div id="gpsStatus" class="status">GPS: Ready</div>
+      <div id="reachedMessage" class="reached-message" style="display: none;">You have reached GPS locked point!</div>
+    </div>
+
+    <div class="panel">
+      <h2>Position Map</h2>
+      <div id="map"></div>
+    </div>
+
+    <div class="panel">
+      <button class="collapsible">Direction Indicator ▼</button>
+      <div class="collapsible-content">
+        <div class="direction-container">
+          <div id="directionArrow"></div>
+          <div class="direction-circle"></div>
+        </div>
+        <div id="directionStatus" class="direction-status">Direction: --</div>
+      </div>
+
+      <button class="collapsible">Sonar Parameters ▼</button>
+      <div class="collapsible-content">
+        <div class="control-group">
+          <div class="control-item">
+            <label for="freqInput">Bleep Freq (Hz)</label><br>
+            <input type="number" id="freqInput" value="800" min="20" max="20000" />
+          </div>
+          <div class="control-item">
+            <label for="maxDistInput">Max Distance (m)</label><br>
+            <input type="range" id="maxDistInput" value="50" min="1" max="500" />
+            <span id="maxDistValue">50</span> m
+          </div>
+        </div>
+      </div>
+
+      <button class="collapsible">Data Output ▼</button>
+      <div class="collapsible-content">
+        <div class="control-group">
+          <div class="control-item">
+            <label>Distance</label><br>
+            <span id="distance">--</span> m
+          </div>
+          <div class="control-item">
+            <label>Accuracy</label><br>
+            <span id="accuracy">--</span> m
+          </div>
+          <div class="control-item">
+            <label>BPM</label><br>
+            <span id="bleepRate">--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="metrics-tab">
+    <div class="panel">
+      <h2>Ride Metrics</h2>
+      
+   <div class="control-group">
+  <button id="startRideBtn" class="primary-btn">Start Ride</button>
+  <button id="stopRideBtn" class="secondary-btn" disabled>Stop Ride</button>
+  <button id="resetMetricsBtn" class="secondary-btn">Reset Metrics</button>
+  <button id="exportMetricsBtn" class="secondary-btn">Export Data</button>
+</div>
+
+      <div class="control-group">
+        <div class="control-item">
+          <label for="accelTarget">Acceleration Target (km/h)</label><br>
+          <input type="number" id="accelTarget" value="100" min="10" max="200" />
+        </div>
+      </div>
+      
+      <div class="lean-container">
+        <div class="lean-scale">
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+        </div>
+        <div class="lean-bike" id="leanBike"></div>
+        <div class="lean-value" id="leanValue">0°</div>
+      </div>
+
+  <h3>Cornering Analysis</h3>
+  <p>Current Corner G: <span id="currentCornerG">0 g</span></p>
+  <p>Max Corner Speed: <span id="currentMaxCornerSpeed">0 km/h</span></p>
+  <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
+  <canvas id="cornerChart" width="100%" height="150"></canvas>
+  <div id="cornerList">No corners detected yet.</div>
+</div>
+
       <div class="elevation-profile">
         <h3>Elevation Profile</h3>
         <canvas id="elevationCanvas" width="100%" height="150"></canvas>
         <p>Total Elevation Gain: <span id="totalElevationGain">0 m</span></p>
       </div>
+      
       <div class="control-group">
         <div class="control-item">
           <h3>Distance Statistics</h3>
@@ -724,6 +757,7 @@
           <div>This Month: <span id="statsMonth">0 km</span></div>
           <div>Total: <span id="statsTotal">0 km</span></div>
         </div>
+        
         <div class="control-item">
           <h3>Speed Statistics</h3>
           <div>Current: <span id="statsCurrentSpeed">0 km/h</span></div>
@@ -732,148 +766,154 @@
           <div>0-100 km/h: <span id="statsAcceleration">-- s</span></div>
         </div>
       </div>
+      
       <div class="control-item">
         <h3>Ride History</h3>
         <div id="rideHistory" style="max-height: 200px; overflow-y: auto; text-align: left; padding: 10px; background: rgba(40,40,40,0.7); border-radius: 5px;">
-          No ride history yet. </div>
-      </div>
-    </div>
-    <div class="tab-content" id="emergency-tab">
-      <div class="panel emergency-panel">
-        <h2>Emergency Features</h2>
-        <div class="control-group"> <button id="emergencyBtn" class="emergency-btn">EMERGENCY
-            ALERT</button> </div>
-        <div id="crashStatus" class="status">Crash Detection: Inactive</div>
-        <div class="control-group">
-          <div class="control-item"> <label for="emergencyMessage">Emergency
-              Message</label><br>
-            <textarea id="emergencyMessage" rows="3" style="width: 100%;">I need help! My current location is: </textarea>
-          </div>
-        </div>
-        <div class="control-group">
-          <div class="control-item"> <label for="emergencyContacts">Emergency
-              Contacts (comma separated)</label><br>
-            <input id="emergencyContacts" value="" placeholder="+1234567890,+0987654321"
-              style="width: 100%;"
-              type="text">
-          </div>
-        </div>
-        <h3>Quick Contact</h3>
-        <div class="emergency-contacts" id="emergencyContactList"> </div>
-        <div class="control-group"> <button id="testEmergencyBtn" class="warning-btn">Test
-            Emergency</button> <button id="addContactBtn" class="secondary-btn">Add
-            Contact</button> </div>
-      </div>
-    </div>
-    <div class="tab-content" id="maintenance-tab">
-      <div class="panel">
-        <h2>Maintenance Alerts</h2>
-        <div class="control-group"> <button id="addMaintenanceBtn" class="primary-btn">Add
-            Maintenance Item</button> <button id="resetMaintenanceBtn" class="secondary-btn">Reset
-            All</button> </div>
-        <div id="maintenanceList">
-          <div class="maintenance-item">
-            <div>Oil Change</div>
-            <div class="maintenance-progress">
-              <div class="maintenance-progress-bar" style="width: 30%;"></div>
-            </div>
-            <div>2000/5000 km</div>
-          </div>
-          <div class="maintenance-item">
-            <div>Tire Pressure</div>
-            <div class="maintenance-progress">
-              <div class="maintenance-progress-bar" style="width: 70%;"></div>
-            </div>
-            <div>Check weekly</div>
-          </div>
-          <div class="maintenance-item">
-            <div>Chain Lubrication</div>
-            <div class="maintenance-progress">
-              <div class="maintenance-progress-bar" style="width: 50%;"></div>
-            </div>
-            <div>500/1000 km</div>
-          </div>
-        </div>
-        <div class="control-group">
-          <div class="control-item">
-            <h3>Add New Maintenance Item</h3>
-            <input id="newMaintenanceName" placeholder="Item name" type="text">
-            <input id="newMaintenanceInterval" placeholder="Interval (km)" type="number">
-            <button id="saveMaintenanceBtn" class="secondary-btn">Save</button>
-          </div>
+          No ride history yet.
         </div>
       </div>
     </div>
+  </div>
+
+  <div class="tab-content" id="emergency-tab">
+    <div class="panel emergency-panel">
+      <h2>Emergency Features</h2>
+      
+      <div class="control-group">
+        <button id="emergencyBtn" class="emergency-btn">EMERGENCY ALERT</button>
+      </div>
+      
+      <div id="crashStatus" class="status">Crash Detection: Inactive</div>
+      
+      <div class="control-group">
+        <div class="control-item">
+          <label for="emergencyMessage">Emergency Message</label><br>
+          <textarea id="emergencyMessage" rows="3" style="width: 100%;">I need help! My current location is: </textarea>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <div class="control-item">
+          <label for="emergencyContacts">Emergency Contacts (comma separated)</label><br>
+          <input type="text" id="emergencyContacts" value="" placeholder="+1234567890,+0987654321" style="width: 100%;" />
+        </div>
+      </div>
+      
+      <h3>Quick Contact</h3>
+      <div class="emergency-contacts" id="emergencyContactList">
+      </div>
+      
+      <div class="control-group">
+        <button id="testEmergencyBtn" class="warning-btn">Test Emergency</button>
+        <button id="addContactBtn" class="secondary-btn">Add Contact</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="maintenance-tab">
     <div class="panel">
-      <h2 class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-        Help Guide ▼ </h2>
-      <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
-        <h1>Spin</h1>
-        <h2>Purpose:</h2>
-        Motorcycle-focused GPS navigation with ride metrics, emergency features,
-        and maintenance tracking. The spinning wheel in the header rotates to
-        reflect your current speed, spinning faster as you ride faster.
-        <h2>Navigation Tab</h2>
-        <strong>GPS Navigation:</strong> Lock your position and navigate back
-        with audio cues.<br>
-        <strong>Calibrate Sensors:</strong> Place phone on bike in riding
-        position and tap to set baseline for lean angle and crash detection.<br>
-        <strong>Auto-Lock Mode:</strong> Automatically locks position when
-        motorcycle is stationary.<br>
-        <strong>Direction Indicator:</strong> Visual compass pointing to locked
-        position.<br>
-        <strong>Sonar Parameters:</strong> Adjust audio feedback frequency and
-        range.
-        <h2>Metrics Tab</h2>
-        <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and
-        lean angles with real-time updates.<br>
-        <strong>Cornering Analysis:</strong> Detects corners using GPS curvature
-        and lean angle, calculates cornering G and speeds.<br>
-        <strong>Elevation Gain:</strong> Tracks altitude changes using GPS data,
-        with a profile chart.<br>
-        <strong>Lean Angle Indicator:</strong> Visual display of motorcycle lean
-        during corners, updated rapidly for responsiveness.<br>
-        <strong>Distance Statistics:</strong> Daily, weekly, monthly, and total
-        distance tracking.<br>
-        <strong>Acceleration Timer:</strong> Measures 0-100 km/h acceleration.
-        <h2>Emergency Tab</h2>
-        <strong>Emergency Alert:</strong> Send your location to emergency
-        contacts manually.<br>
-        <strong>Crash Detection:</strong> Automatically sends location to
-        contacts if bike is detected lying flat for 5 seconds.<br>
-        <strong>Quick Contacts:</strong> Pre-set emergency contacts for quick
-        access.<br>
-        <strong>Custom Message:</strong> Edit the emergency message with your
-        details.
-        <h2>Maintenance Tab</h2>
-        <strong>Maintenance Alerts:</strong> Track service intervals based on
-        mileage.<br>
-        <strong>Progress Indicators:</strong> Visual progress bars for each
-        maintenance item.<br>
-        <strong>Custom Items:</strong> Add your own maintenance tasks and
-        intervals.
-        <h2>Quick Start</h2>
-        1. Mount phone securely and tap "Calibrate Sensors" to set lean angle
-        and crash detection baseline.<br>
-        2. Set emergency contacts in the Emergency tab.<br>
-        3. Tap "Test Audio &amp; Lock" to initialize the app.<br>
-        4. Use the Navigation tab to lock your parking position.<br>
-        5. Check the Metrics tab during your ride for performance data; watch
-        the header wheel spin with your speed.<br>
-        6. Add maintenance schedules in the Maintenance tab.
-        <h2>Tips</h2>
-        - For accurate lean angles and crash detection, mount your phone
-        securely on the motorcycle and calibrate sensors.<br>
-        - Set up emergency contacts before your first ride to enable crash
-        detection alerts.<br>
-        - Regular maintenance alerts help keep your motorcycle in top condition.<br>
-        - Export your ride data to track your riding habits over time. </div>
+      <h2>Maintenance Alerts</h2>
+      
+      <div class="control-group">
+        <button id="addMaintenanceBtn" class="primary-btn">Add Maintenance Item</button>
+        <button id="resetMaintenanceBtn" class="secondary-btn">Reset All</button>
+      </div>
+      
+      <div id="maintenanceList">
+        <div class="maintenance-item">
+          <div>Oil Change</div>
+          <div class="maintenance-progress">
+            <div class="maintenance-progress-bar" style="width: 30%;"></div>
+          </div>
+          <div>2000/5000 km</div>
+        </div>
+        
+        <div class="maintenance-item">
+          <div>Tire Pressure</div>
+          <div class="maintenance-progress">
+            <div class="maintenance-progress-bar" style="width: 70%;"></div>
+          </div>
+          <div>Check weekly</div>
+        </div>
+        
+        <div class="maintenance-item">
+          <div>Chain Lubrication</div>
+          <div class="maintenance-progress">
+            <div class="maintenance-progress-bar" style="width: 50%;"></div>
+          </div>
+          <div>500/1000 km</div>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <div class="control-item">
+          <h3>Add New Maintenance Item</h3>
+          <input type="text" id="newMaintenanceName" placeholder="Item name" />
+          <input type="number" id="newMaintenanceInterval" placeholder="Interval (km)" />
+          <button id="saveMaintenanceBtn" class="secondary-btn">Save</button>
+        </div>
+      </div>
     </div>
-    <div id="debug"></div>
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
+  </div>
+
+  <div class="panel">
+    <h2 class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+      Help Guide ▼
+    </h2>
+    <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
+      <h1>Spin</h1>
+      <h2>Purpose:</h2>
+      Motorcycle-focused GPS navigation with ride metrics, emergency features, and maintenance tracking. The spinning wheel in the header rotates to reflect your current speed, spinning faster as you ride faster.
+
+      <h2>Navigation Tab</h2>
+      <strong>GPS Navigation:</strong> Lock your position and navigate back with audio cues.<br>
+      <strong>Calibrate Sensors:</strong> Place phone on bike in riding position and tap to set baseline for lean angle and crash detection.<br>
+      <strong>Auto-Lock Mode:</strong> Automatically locks position when motorcycle is stationary.<br>
+      <strong>Direction Indicator:</strong> Visual compass pointing to locked position.<br>
+      <strong>Sonar Parameters:</strong> Adjust audio feedback frequency and range.
+
+      <h2>Metrics Tab</h2>
+      <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and lean angles with real-time updates.<br>
+      <strong>Cornering Analysis:</strong> Detects corners using GPS curvature and lean angle, calculates cornering G and speeds.<br>
+      <strong>Elevation Gain:</strong> Tracks altitude changes using GPS data, with a profile chart.<br>
+      <strong>Lean Angle Indicator:</strong> Visual display of motorcycle lean during corners, updated rapidly for responsiveness.<br>
+      <strong>Distance Statistics:</strong> Daily, weekly, monthly, and total distance tracking.<br>
+      <strong>Acceleration Timer:</strong> Measures 0-100 km/h acceleration.
+
+      <h2>Emergency Tab</h2>
+      <strong>Emergency Alert:</strong> Send your location to emergency contacts manually.<br>
+      <strong>Crash Detection:</strong> Automatically sends location to contacts if bike is detected lying flat for 5 seconds.<br>
+      <strong>Quick Contacts:</strong> Pre-set emergency contacts for quick access.<br>
+      <strong>Custom Message:</strong> Edit the emergency message with your details.
+
+      <h2>Maintenance Tab</h2>
+      <strong>Maintenance Alerts:</strong> Track service intervals based on mileage.<br>
+      <strong>Progress Indicators:</strong> Visual progress bars for each maintenance item.<br>
+      <strong>Custom Items:</strong> Add your own maintenance tasks and intervals.
+
+      <h2>Quick Start</h2>
+      1. Mount phone securely and tap "Calibrate Sensors" to set lean angle and crash detection baseline.<br>
+      2. Set emergency contacts in the Emergency tab.<br>
+      3. Tap "Test Audio & Lock" to initialize the app.<br>
+      4. Use the Navigation tab to lock your parking position.<br>
+      5. Check the Metrics tab during your ride for performance data; watch the header wheel spin with your speed.<br>
+      6. Add maintenance schedules in the Maintenance tab.
+
+      <h2>Tips</h2>
+      - For accurate lean angles and crash detection, mount your phone securely on the motorcycle and calibrate sensors.<br>
+      - Set up emergency contacts before your first ride to enable crash detection alerts.<br>
+      - Regular maintenance alerts help keep your motorcycle in top condition.<br>
+      - Export your ride data to track your riding habits over time.
+    </div>
+  </div>
+
+  <div id="debug"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
 const MotoFindBack = {
   audioCtx: null,
   watchId: null,
@@ -1092,15 +1132,19 @@ const MotoFindBack = {
   },
 
   setupEventListeners: function() {
-    document.getElementById("testBtn").addEventListener("click", () => {
-      this.initAudio();
-      this.playTestSound();
-      if (this.isAudioAllowed) this.lockCurrentPosition();
-    });
+document.getElementById("testBtn").addEventListener("click", () => {
+  this.initAudio();
+  this.playTestSound();
+  if (this.isAudioAllowed) {
+    this.lockCurrentPosition();
+    document.getElementById("stopGpsLockBtn").disabled = false;
+  }
+});
     document.getElementById("calibrateBtn").addEventListener("click", () => this.calibrateSensors());
     document.getElementById("autoLockBtn").addEventListener("click", () => this.toggleAutoLock());
     document.getElementById("muteBtn").addEventListener("click", () => this.toggleMute());
-    document.getElementById("stopBtn").addEventListener("click", () => this.stop());
+document.getElementById("stopGpsLockBtn").addEventListener("click", () => this.stop());
+document.getElementById("stopRideBtn").addEventListener("click", () => this.stopRide());
     document.getElementById("startRideBtn").addEventListener("click", () => this.startRide());
     document.getElementById("resetMetricsBtn").addEventListener("click", () => this.resetMetrics());
     document.getElementById("exportMetricsBtn").addEventListener("click", () => this.exportMetrics());
@@ -1421,27 +1465,31 @@ const MotoFindBack = {
     document.getElementById("gpsStatus").className = message.includes("error") ? "status error" : "status success";
   },
 
-  updateUI: function() {
-    document.getElementById("currentSpeed").textContent = (this.currentSpeed * 3.6).toFixed(1) + " km/h";
-    document.getElementById("maxSpeed").textContent = this.maxSpeed.toFixed(1) + " km/h";
-    document.getElementById("avgSpeed").textContent = this.calculateAverageSpeed().toFixed(1) + " km/h";
-    document.getElementById("todayDistance").textContent = this.todayDistance.toFixed(1) + " km";
-    document.getElementById("statsToday").textContent = this.todayDistance.toFixed(1) + " km";
-    document.getElementById("statsWeek").textContent = this.weekDistance.toFixed(1) + " km";
-    document.getElementById("statsMonth").textContent = this.monthDistance.toFixed(1) + " km";
-    document.getElementById("statsTotal").textContent = this.totalDistance.toFixed(1) + " km";
-    document.getElementById("statsCurrentSpeed").textContent = (this.currentSpeed * 3.6).toFixed(1) + " km/h";
-    document.getElementById("statsMaxSpeed").textContent = this.maxSpeed.toFixed(1) + " km/h";
-    document.getElementById("statsAvgSpeed").textContent = this.calculateAverageSpeed().toFixed(1) + " km/h";
-    document.getElementById("statsAcceleration").textContent = this.calculateAccelerationTime().toFixed(2) + " s";
-    document.getElementById("accelerationTime").textContent = this.calculateAccelerationTime().toFixed(2) + " s";
-    this.updateCornerDisplay();
-    this.updateElevationProfile();
-    this.updateMaintenanceList();
-    this.updateEmergencyContacts();
-    this.updateRideHistory();
-  },
-
+updateUI: function() {
+  document.getElementById("currentSpeed").textContent = (this.currentSpeed * 3.6).toFixed(1) + " km/h";
+  document.getElementById("maxSpeed").textContent = this.maxSpeed.toFixed(1) + " km/h";
+  document.getElementById("avgSpeed").textContent = this.calculateAverageSpeed().toFixed(1) + " km/h";
+  document.getElementById("todayDistance").textContent = this.todayDistance.toFixed(1) + " km";
+  document.getElementById("statsToday").textContent = this.todayDistance.toFixed(1) + " km";
+  document.getElementById("statsWeek").textContent = this.weekDistance.toFixed(1) + " km";
+  document.getElementById("statsMonth").textContent = this.monthDistance.toFixed(1) + " km";
+  document.getElementById("statsTotal").textContent = this.totalDistance.toFixed(1) + " km";
+  document.getElementById("statsCurrentSpeed").textContent = (this.currentSpeed * 3.6).toFixed(1) + " km/h";
+  document.getElementById("statsMaxSpeed").textContent = this.maxSpeed.toFixed(1) + " km/h";
+  document.getElementById("statsAvgSpeed").textContent = this.calculateAverageSpeed().toFixed(1) + " km/h";
+  document.getElementById("statsAcceleration").textContent = this.calculateAccelerationTime().toFixed(2) + " s";
+  document.getElementById("accelerationTime").textContent = this.calculateAccelerationTime().toFixed(2) + " s";
+  document.getElementById("startRideBtn").disabled = this.isRideActive;
+  document.getElementById("stopRideBtn").disabled = !this.isRideActive;
+  document.getElementById("stopGpsLockBtn").disabled = !this.isActive;
+  document.getElementById("muteBtn").disabled = !this.isActive;
+  this.updateCornerDisplay();
+  this.updateElevationProfile();
+  this.updateMaintenanceList();
+  this.updateEmergencyContacts();
+  this.updateRideHistory();
+},
+  
   calculateAverageSpeed: function() {
     if (this.movementHistory.length < 2) return 0;
     const totalSpeed = this.movementHistory.reduce((sum, pos) => sum + pos.speed * 3.6, 0);
@@ -1453,30 +1501,25 @@ const MotoFindBack = {
     return this.accelerationTimes.reduce((sum, time) => sum + time, 0) / this.accelerationTimes.length;
   },
 
-  startRide: function() {
-    if (this.isRideActive) return;
-    this.isRideActive = true;
-    this.rideStartTime = Date.now();
-    this.movementHistory = [];
-    this.corners = [];
-    this.cornerEntrySpeeds = [];
-    this.cornerExitSpeeds = [];
-    this.elevationHistory = [];
-    this.elevationGain = 0;
-    this.maxSpeed = 0;
-    this.maxLeanAngle = 0;
-    this.maxCornerG = 0;
-    this.maxCornerSpeed = 0;
-    this.accelerationTimes = [];
-    document.getElementById("startRideBtn").textContent = "Ride Active";
-    document.getElementById("startRideBtn").disabled = true;
-    this.watchId = navigator.geolocation.watchPosition(
-      pos => this.updatePosition(pos),
-      err => this.handleGpsError(err),
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
-    );
-    this.log("Ride started");
-  },
+startRide: function() {
+  this.isRideActive = true;
+  this.rideStartTime = new Date();
+  this.movementHistory = [];
+  this.elevationHistory = [];
+  this.corners = [];
+  this.cornerEntrySpeeds = [];
+  this.cornerExitSpeeds = [];
+  this.maxCornerSpeed = 0;
+  this.maxCornerG = 0;
+  this.maxLeanAngle = 0;
+  this.elevationGain = 0;
+  this.accelerationStartTime = null;
+  this.accelerationTimes = [];
+  document.getElementById("startRideBtn").disabled = true;
+  document.getElementById("stopRideBtn").disabled = false;
+  this.log("Ride started");
+  this.updateRideHistory();
+},
 
   updatePosition: function(pos) {
     this.prevPosition = this.lastPosition;
@@ -1560,23 +1603,27 @@ const MotoFindBack = {
     document.getElementById("directionStatus").textContent = `Direction: ${angle.toFixed(0)}°`;
   },
 
-  stop: function() {
-    if (this.watchId) {
-      navigator.geolocation.clearWatch(this.watchId);
-      this.watchId = null;
-    }
-    clearTimeout(this.bleepTimer);
+ stop: function() {
+  if (this.isActive) {
     this.isActive = false;
-    this.isRideActive = false;
-    document.getElementById("startRideBtn").textContent = "Start Ride";
-    document.getElementById("startRideBtn").disabled = false;
-    document.getElementById("stopBtn").disabled = true;
-    document.getElementById("muteBtn").disabled = true;
+    this.lockPosition = null;
+    this.lastPosition = null;
+    this.reachedPointDisplayed = false;
+    document.getElementById("reachedMessage").style.display = "none";
     document.getElementById("lockStatus").textContent = "Lock Status: Not locked";
     document.getElementById("lockStatus").className = "status";
-    this.lockPosition = null;
-    this.updateWheelAnimation();
-    this.log("Tracking stopped");
+    document.getElementById("stopGpsLockBtn").disabled = true;
+    document.getElementById("muteBtn").disabled = true;
+    clearTimeout(this.bleepTimer);
+    this.updateGpsStatus("GPS lock stopped");
+    this.log("GPS lock stopped");
+    this.line.setLatLngs([]);
+    this.lockMarker.setLatLng([0, 0]);
+  }
+},
+
+stopRide: function() {
+  if (this.isRideActive) {
     if (this.rideStartTime) {
       const ride = {
         startTime: this.rideStartTime,
@@ -1591,8 +1638,24 @@ const MotoFindBack = {
       this.saveData();
       this.rideStartTime = null;
     }
+    this.isRideActive = false;
+    this.movementHistory = [];
+    this.elevationHistory = [];
+    this.corners = [];
+    this.cornerEntrySpeeds = [];
+    this.cornerExitSpeeds = [];
+    this.maxCornerSpeed = 0;
+    this.maxCornerG = 0;
+    this.maxLeanAngle = 0;
+    this.elevationGain = 0;
+    document.getElementById("stopRideBtn").disabled = true;
+    document.getElementById("startRideBtn").disabled = false;
     this.updateRideHistory();
-  },
+    this.updateCornerDisplay();
+    this.updateElevationProfile();
+    this.log("Ride stopped and metrics reset");
+  }
+},
 
   resetMetrics: function() {
     this.maxSpeed = 0;
@@ -1757,5 +1820,6 @@ const MotoFindBack = {
 
 MotoFindBack.init();
 </script>
-  </body>
+
+</body>
 </html>

@@ -742,33 +742,33 @@
           No ride history yet. </div>
       </div>
     </div>
-    <div class="tab-content" id="emergency-tab">
-      <div class="panel emergency-panel">
-        <h2>Emergency Features</h2>
-        <div class="control-group"> <button id="emergencyBtn" class="emergency-btn">EMERGENCY
-            ALERT</button> </div>
-        <div id="crashStatus" class="status">Crash Detection: Inactive</div>
-        <div class="control-group">
-          <div class="control-item"> <label for="emergencyMessage">Emergency
-              Message</label><br>
-            <textarea id="emergencyMessage" rows="3" style="width: 100%;">I need help! My current location is: </textarea>
-          </div>
-        </div>
-        <div class="control-group">
-          <div class="control-item"> <label for="emergencyContacts">Emergency
-              Contacts (comma separated)</label><br>
-            <input id="emergencyContacts" value="" placeholder="+1234567890,+0987654321"
-              style="width: 100%;"
-              type="text">
-          </div>
-        </div>
-        <h3>Quick Contact</h3>
-        <div class="emergency-contacts" id="emergencyContactList"> </div>
-        <div class="control-group"> <button id="testEmergencyBtn" class="warning-btn">Test
-            Emergency</button> <button id="addContactBtn" class="secondary-btn">Add
-            Contact</button> </div>
+  <div class="tab-content" id="emergency-tab">
+  <div class="panel emergency-panel">
+    <h2>Emergency Features</h2>
+    <div class="control-group"> <button id="emergencyBtn" class="emergency-btn">EMERGENCY
+        ALERT</button> </div>
+    <div id="crashStatus" class="status">Crash Detection: Inactive</div>
+    <div class="control-group">
+      <div class="control-item"> <label for="emergencyMessage">Emergency
+          Message</label><br>
+        <textarea id="emergencyMessage" rows="3" style="width: 100%;">I need help! My current location is: </textarea>
       </div>
     </div>
+ <div class="control-group">
+  <div class="control-item"> <label for="emergencyContacts">Emergency
+      Contacts (Phone numbers, comma separated)</label><br>
+    <input id="emergencyContacts" value="" placeholder="+1234567890,+0987654321"
+      style="width: 100%;"
+      type="text">
+  </div>
+</div>
+    <h3>Quick Contact</h3>
+    <div class="emergency-contacts" id="emergencyContactList"> </div>
+    <div class="control-group"> <button id="testEmergencyBtn" class="warning-btn">Test
+        Emergency</button> <button id="addContactBtn" class="secondary-btn">Add
+        Contact</button> </div>
+  </div>
+</div>
     <div class="tab-content" id="maintenance-tab">
       <div class="panel">
         <h2>Maintenance Alerts</h2>
@@ -877,7 +877,7 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
+<script>
 const MotoFindBack = {
   audioCtx: null,
   watchId: null,

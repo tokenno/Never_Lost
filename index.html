@@ -526,6 +526,84 @@
       margin: 10px 0;
       position: relative;
     }
+      
+      /* Triple-tap overlay styles */
+.triple-tap-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 10000;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.triple-tap-overlay.active {
+  display: flex;
+}
+
+.enlarged-wheel {
+  width: 200px;
+  height: 200px;
+  position: relative;
+  margin-bottom: 30px;
+}
+
+.enlarged-wheel .wheel-outer {
+  fill: none;
+  stroke: var(--primary-color);
+  stroke-width: 4;
+  stroke-dasharray: 5;
+  animation: wheel-dash 1s linear infinite;
+}
+
+.enlarged-wheel .wheel-inner {
+  fill: none;
+  stroke: var(--accent-color);
+  stroke-width: 3;
+}
+
+.enlarged-wheel .wheel-spoke {
+  stroke: var(--accent-color);
+  stroke-width: 3;
+  transform-origin: center;
+}
+
+.enlarged-wheel .wheel-pulse {
+  fill: var(--primary-color);
+  animation: wheel-pulse 2s ease-in-out infinite;
+}
+
+.overlay-stats {
+  text-align: center;
+  background: rgba(40, 40, 40, 0.8);
+  padding: 20px;
+  border-radius: 15px;
+  border: 2px solid var(--primary-color);
+  min-width: 250px;
+}
+
+.overlay-stat-item {
+  margin: 10px 0;
+  font-size: 1.2em;
+}
+
+.overlay-stat-value {
+  color: var(--accent-color);
+  font-weight: bold;
+  font-size: 1.4em;
+}
+
+.overlay-close-hint {
+  position: absolute;
+  bottom: 30px;
+  color: #aaa;
+  font-size: 0.9em;
+}
     
     @media (max-width: 768px) {
       .dashboard {
@@ -548,6 +626,36 @@
   </style>
   </head>
   <body>
+    <!-- Triple Tap Overlay -->
+<div class="triple-tap-overlay" id="tripleTapOverlay">
+  <div class="enlarged-wheel">
+    <svg viewBox="0 0 100 100">
+      <circle class="wheel-outer" cx="50" cy="50" r="40" />
+      <circle class="wheel-inner" cx="50" cy="50" r="25" />
+      <line class="wheel-spoke spoke-1" x1="50" y1="50" x2="75" y2="50" />
+      <line class="wheel-spoke spoke-2" x1="50" y1="50" x2="50" y2="25" />
+      <line class="wheel-spoke spoke-3" x1="50" y1="50" x2="30" y2="70" />
+      <circle class="wheel-pulse" cx="50" cy="50" r="8" />
+    </svg>
+  </div>
+  
+  <div class="overlay-stats">
+    <div class="overlay-stat-item">
+      Average Speed: <span class="overlay-stat-value" id="overlayAvgSpeed">-- km/h</span>
+    </div>
+    <div class="overlay-stat-item">
+      Current Lean: <span class="overlay-stat-value" id="overlayLeanAngle">--°</span>
+    </div>
+    <div class="overlay-stat-item">
+      Max Lean: <span class="overlay-stat-value" id="overlayMaxLean">--°</span>
+    </div>
+    <div class="overlay-stat-item">
+      Current Speed: <span class="overlay-stat-value" id="overlayCurrentSpeed">-- km/h</span>
+    </div>
+  </div>
+  
+  <div class="overlay-close-hint">Tap anywhere to close</div>
+</div>
     <div class="app-header">
       <h1 class="app-title">Spin</h1>
       <div class="wheel-container">
@@ -963,10 +1071,15 @@ const MotoFindBack = {
   elevationHistory: [],
   canvas: null, // Will store the canvas element
   cornerChart: null,
+  tripleTapCount: 0,
+tripleTapTimeout: null,
+lastTapTime: 0,
+isOverlayVisible: false,
 
   init: async function() {
     this.initMap();
   this.loadContactsFromStorage();
+  this.setupTripleTapDetection();
     this.canvas = document.getElementById('elevationCanvas'); // Store the canvas element
     if (!this.canvas) {
       this.log("Error: elevationCanvas element not found", true);
@@ -1032,6 +1145,125 @@ const MotoFindBack = {
       });
     }
   },
+    
+    
+// Triple-tap detection setup
+setupTripleTapDetection: function() {
+  document.addEventListener('click', (e) => {
+    this.handleTripleTap(e);
+  });
+  
+  // Also close overlay when clicking on it
+  document.getElementById('tripleTapOverlay').addEventListener('click', (e) => {
+    this.hideOverlay();
+  });
+},
+
+handleTripleTap: function(e) {
+  const currentTime = Date.now();
+  const timeSinceLastTap = currentTime - this.lastTapTime;
+  
+  // Reset if too much time passed between taps (500ms max between taps)
+  if (timeSinceLastTap > 500) {
+    this.tripleTapCount = 1;
+  } else {
+    this.tripleTapCount++;
+  }
+  
+  this.lastTapTime = currentTime;
+  
+  // Clear existing timeout
+  if (this.tripleTapTimeout) {
+    clearTimeout(this.tripleTapTimeout);
+  }
+  
+  // Check for triple tap
+  if (this.tripleTapCount >= 3) {
+    this.tripleTapCount = 0;
+    this.showOverlay();
+    return;
+  }
+  
+  // Reset counter after timeout
+  this.tripleTapTimeout = setTimeout(() => {
+    this.tripleTapCount = 0;
+  }, 500);
+},
+
+showOverlay: function() {
+  if (this.isOverlayVisible) return;
+  
+  this.isOverlayVisible = true;
+  const overlay = document.getElementById('tripleTapOverlay');
+  overlay.classList.add('active');
+  
+  // Update stats
+  this.updateOverlayStats();
+  
+  // Start animation for enlarged wheel
+  this.updateEnlargedWheelAnimation();
+  
+  this.log("Triple-tap overlay shown");
+},
+
+hideOverlay: function() {
+  if (!this.isOverlayVisible) return;
+  
+  this.isOverlayVisible = false;
+  const overlay = document.getElementById('tripleTapOverlay');
+  overlay.classList.remove('active');
+  
+  this.log("Triple-tap overlay hidden");
+},
+
+updateOverlayStats: function() {
+  document.getElementById('overlayAvgSpeed').textContent = this.calculateAverageSpeed().toFixed(1) + " km/h";
+  document.getElementById('overlayLeanAngle').textContent = this.currentLeanAngle + "°";
+  document.getElementById('overlayMaxLean').textContent = this.maxLeanAngle + "°";
+  document.getElementById('overlayCurrentSpeed').textContent = (this.currentSpeed * 3.6).toFixed(1) + " km/h";
+},
+
+updateEnlargedWheelAnimation: function() {
+  const enlargedWheel = document.querySelector('.enlarged-wheel');
+  const enlargedSpokes = document.querySelectorAll('.enlarged-wheel .wheel-spoke');
+  
+  if (this.currentSpeed <= 0.1) {
+    enlargedWheel.style.animation = 'none';
+    enlargedSpokes.forEach(spoke => spoke.style.animation = 'none');
+  } else {
+    const speedKmh = this.currentSpeed * 3.6;
+    const rotationSpeed = Math.max(0.2, 2 / (speedKmh / 10));
+    enlargedWheel.style.animation = `wheel-spin ${rotationSpeed}s linear infinite`;
+    enlargedSpokes.forEach((spoke, index) => {
+      const spokeSpeed = rotationSpeed * (1 + index * 0.5);
+      spoke.style.animation = `spoke-spin ${spokeSpeed}s linear infinite ${index % 2 === 0 ? '' : 'reverse'}`;
+    });
+  }
+},
+
+// Update your existing updateWheelAnimation function to also update the enlarged wheel:
+updateWheelAnimation: function() {
+  const wheel = document.querySelector('.spinning-wheel');
+  const spokes = document.querySelectorAll('.wheel-spoke');
+  
+  if (this.currentSpeed <= 0.1) {
+    wheel.style.animation = 'none';
+    spokes.forEach(spoke => spoke.style.animation = 'none');
+  } else {
+    const speedKmh = this.currentSpeed * 3.6;
+    this.rotationSpeed = Math.max(0.2, 2 / (speedKmh / 10));
+    wheel.style.animation = `wheel-spin ${this.rotationSpeed}s linear infinite`;
+    spokes.forEach((spoke, index) => {
+      const spokeSpeed = this.rotationSpeed * (1 + index * 0.5);
+      spoke.style.animation = `spoke-spin ${spokeSpeed}s linear infinite ${index % 2 === 0 ? '' : 'reverse'}`;
+    });
+  }
+  
+  // Also update enlarged wheel if visible
+  if (this.isOverlayVisible) {
+    this.updateEnlargedWheelAnimation();
+  }
+},
 
   updateElevationProfile: function() {
     if (!this.canvas) {
@@ -1216,7 +1448,13 @@ const MotoFindBack = {
     leanValue.textContent = `${this.currentLeanAngle}°`;
     dashboardLean.textContent = `${this.currentLeanAngle}°`;
     this.log(`Lean angle updated: ${this.currentLeanAngle}°`);
-  },
+   if (this.isOverlayVisible) {
+    document.getElementById('overlayLeanAngle').textContent = this.currentLeanAngle + "°";
+    if (this.currentLeanAngle > this.maxLeanAngle) {
+      document.getElementById('overlayMaxLean').textContent = this.maxLeanAngle + "°";
+    }
+  }
+},
 
   calculateCornerG: function(speedMs, leanAngle) {
     return Math.tan(leanAngle * Math.PI / 180);
@@ -1458,6 +1696,10 @@ const MotoFindBack = {
     this.updateMaintenanceList();
     this.updateEmergencyContacts();
     this.updateRideHistory();
+     if (this.isOverlayVisible) {
+    this.updateOverlayStats();
+    this.updateEnlargedWheelAnimation();
+  }
   },
 
   calculateAverageSpeed: function() {
@@ -1944,6 +2186,8 @@ callEmergency: function() {
     debug.scrollTop = debug.scrollHeight;
   }
 };
+                                                                                                                                 
+                                                                                                                                 
 
 MotoFindBack.init();
 </script>

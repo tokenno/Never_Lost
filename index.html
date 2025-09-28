@@ -878,7 +878,14 @@
       <div>Avg Shift RPM: <span id="avgShiftRPM">--</span></div>
     </div>
   </div>
-  
+  <div class="control-item">
+  <h4>Debug Info</h4>
+  <div>Microphone Status: <span id="micStatus">Not Started</span></div>
+  <div>Dominant Frequency: <span id="debugFreq">0</span> Hz</div>
+  <div>Max Volume: <span id="debugVolume">0</span></div>
+  <div>Total Energy: <span id="debugEnergy">0</span></div>
+  <button onclick="MotoFindBack.stopEngineAnalysis()" class="secondary-btn">Stop Analysis</button>
+</div>
   <!-- Real-time frequency visualization -->
   <div class="control-item">
     <h4>Sound Spectrum</h4>
@@ -1207,6 +1214,7 @@ isOverlayVisible: false,
     
     
     // Microphone initialization
+// Update the initMicrophone function to handle permissions better
 initMicrophone: function() {
   return new Promise((resolve, reject) => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1215,11 +1223,14 @@ initMicrophone: function() {
       return;
     }
 
+    // Request microphone permission first
     navigator.mediaDevices.getUserMedia({ 
       audio: {
         echoCancellation: false,
         noiseSuppression: false,
-        autoGainControl: false
+        autoGainControl: false,
+        channelCount: 1,
+        sampleRate: 44100
       } 
     }).then(stream => {
       this.audioAnalysis.audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -1227,7 +1238,9 @@ initMicrophone: function() {
       this.audioAnalysis.microphone = this.audioAnalysis.audioContext.createMediaStreamSource(stream);
       
       this.audioAnalysis.analyser.fftSize = 2048;
-      this.audioAnalysis.analyser.smoothingTimeConstant = 0.8;
+      this.audioAnalysis.analyser.smoothingTimeConstant = 0.6;
+      this.audioAnalysis.analyser.minDecibels = -90;
+      this.audioAnalysis.analyser.maxDecibels = -10;
       
       this.audioAnalysis.microphone.connect(this.audioAnalysis.analyser);
       
@@ -1236,11 +1249,16 @@ initMicrophone: function() {
       this.audioAnalysis.javascriptNode.connect(this.audioAnalysis.audioContext.destination);
       
       this.audioAnalysis.javascriptNode.onaudioprocess = () => {
-        this.analyzeEngineSound();
+        if (this.audioAnalysis.isListening) {
+          this.analyzeEngineSound();
+        }
       };
       
       this.audioAnalysis.isListening = true;
       this.log('Microphone initialized for engine analysis');
+      
+      // Start visualization
+      this.startFrequencyVisualization();
       resolve();
     }).catch(error => {
       this.log('Microphone access denied: ' + error.message, true);
@@ -1250,45 +1268,108 @@ initMicrophone: function() {
 },
 
 // Engine sound analysis
+// Enhanced analyzeEngineSound with debugging
 analyzeEngineSound: function() {
-  if (!this.audioAnalysis.analyser) return;
+  if (!this.audioAnalysis.analyser || !this.audioAnalysis.isListening) return;
   
-  // Get frequency data
-  this.audioAnalysis.analyser.getByteFrequencyData(this.audioAnalysis.frequencyData);
-  
-  // Calculate dominant frequency (engine RPM correlate)
-  const dominantFreq = this.findDominantFrequency();
-  this.audioAnalysis.engineRPM = this.frequencyToRPM(dominantFreq);
-  
-  // Analyze engine health
-  this.analyzeEngineHealth();
-  
-  // Detect gear shifts
-  this.detectGearShifts();
-  
-  // Estimate current gear
-  this.estimateGearPosition();
-  
-  // Detect engine problems
-  this.detectEngineProblems();
-  
-  // Update UI
-  this.updateEngineDisplay();
+  try {
+    // Get frequency data
+    this.audioAnalysis.analyser.getByteFrequencyData(this.audioAnalysis.frequencyData);
+    
+    // Debug: Check if we're getting any data
+    const hasData = this.audioAnalysis.frequencyData.some(val => val > 0);
+    if (!hasData) {
+      console.log("No audio data detected");
+      return;
+    }
+    
+    // Calculate dominant frequency (engine RPM correlate)
+    const dominantFreq = this.findDominantFrequency();
+    this.audioAnalysis.engineRPM = this.frequencyToRPM(dominantFreq);
+    
+    // Only update if we have meaningful data
+    if (this.audioAnalysis.maxDb > 10) { // Minimum volume threshold
+      // Analyze engine health
+      this.analyzeEngineHealth();
+      
+      // Detect gear shifts
+      this.detectGearShifts();
+      
+      // Estimate current gear
+      this.estimateGearPosition();
+      
+      // Detect engine problems
+      this.detectEngineProblems();
+      
+      // Update UI
+      this.updateEngineDisplay();
+      
+      // Update visualization
+      this.updateFrequencyVisualization();
+    }
+    
+  } catch (error) {
+    console.error("Error in engine sound analysis:", error);
+  }
 },
 
+// Better frequency detection
 findDominantFrequency: function() {
   let maxVolume = 0;
   let dominantFreq = 0;
+  let totalEnergy = 0;
   
-  for (let i = 0; i < this.audioAnalysis.frequencyData.length; i++) {
-    if (this.audioAnalysis.frequencyData[i] > maxVolume) {
-      maxVolume = this.audioAnalysis.frequencyData[i];
+  // Skip very low frequencies (below 50Hz) which are often noise
+  const minBin = Math.floor(50 * this.audioAnalysis.frequencyData.length / (this.audioAnalysis.audioContext.sampleRate / 2));
+  
+  for (let i = minBin; i < this.audioAnalysis.frequencyData.length; i++) {
+    const volume = this.audioAnalysis.frequencyData[i];
+    totalEnergy += volume;
+    
+    if (volume > maxVolume) {
+      maxVolume = volume;
       dominantFreq = i * (this.audioAnalysis.audioContext.sampleRate / 2) / this.audioAnalysis.frequencyData.length;
     }
   }
   
   this.audioAnalysis.maxDb = maxVolume;
+  this.audioAnalysis.totalEnergy = totalEnergy;
+  
   return dominantFreq;
+},
+  
+  // Add frequency visualization to see what's being detected
+startFrequencyVisualization: function() {
+  this.frequencyCanvas = document.getElementById('frequencyCanvas');
+  if (!this.frequencyCanvas) return;
+  
+  this.frequencyCtx = this.frequencyCanvas.getContext('2d');
+  this.frequencyCanvas.width = this.frequencyCanvas.offsetWidth;
+  this.frequencyCanvas.height = 100;
+},
+
+updateFrequencyVisualization: function() {
+  if (!this.frequencyCtx || !this.audioAnalysis.frequencyData) return;
+  
+  const width = this.frequencyCanvas.width;
+  const height = this.frequencyCanvas.height;
+  const bufferLength = this.audioAnalysis.frequencyData.length;
+  
+  this.frequencyCtx.fillStyle = 'rgb(0, 0, 0)';
+  this.frequencyCtx.fillRect(0, 0, width, height);
+  
+  const barWidth = (width / bufferLength) * 2.5;
+  let barHeight;
+  let x = 0;
+  
+  for (let i = 0; i < bufferLength; i++) {
+    barHeight = this.audioAnalysis.frequencyData[i] / 2;
+    
+    this.frequencyCtx.fillStyle = 'rgb(' + Math.floor(barHeight + 100) + ',50,50)';
+    this.frequencyCtx.fillRect(x, height - barHeight, barWidth, barHeight);
+    
+    x += barWidth + 1;
+  }
 },
 
 frequencyToRPM: function(frequency) {
@@ -1473,6 +1554,37 @@ analyzeEngineRegularity: function() {
   
   return Math.max(0, 1 - cv);
 },
+  
+  startEngineAnalysis: function() {
+  this.initMicrophone().then(() => {
+    document.getElementById("startEngineAnalysis").textContent = "Analysis Running";
+    document.getElementById("startEngineAnalysis").style.background = "linear-gradient(to bottom, #00cc66, #00aa55)";
+    this.log("Engine sound analysis started");
+  }).catch(error => {
+    this.log("Failed to start engine analysis: " + error, true);
+    alert("Please allow microphone access to analyze engine sounds");
+  });
+},
+
+stopEngineAnalysis: function() {
+  if (this.audioAnalysis.javascriptNode) {
+    this.audioAnalysis.javascriptNode.disconnect();
+    this.audioAnalysis.javascriptNode = null;
+  }
+  if (this.audioAnalysis.microphone) {
+    this.audioAnalysis.microphone.disconnect();
+    this.audioAnalysis.microphone = null;
+  }
+  if (this.audioAnalysis.audioContext) {
+    this.audioAnalysis.audioContext.close();
+    this.audioAnalysis.audioContext = null;
+  }
+  
+  this.audioAnalysis.isListening = false;
+  document.getElementById("startEngineAnalysis").textContent = "Start Engine Analysis";
+  document.getElementById("startEngineAnalysis").style.background = "";
+  this.log("Engine sound analysis stopped");
+},
 
 // UI Updates
 updateEngineDisplay: function() {
@@ -1482,6 +1594,13 @@ updateEngineDisplay: function() {
   document.getElementById('engineGear').textContent = this.audioAnalysis.gearPosition;
   document.getElementById('engineHealth').textContent = this.audioAnalysis.engineHealth;
   document.getElementById('engineVolume').textContent = this.audioAnalysis.maxDb + ' dB';
+  
+  // Debug info
+  document.getElementById('micStatus').textContent = this.audioAnalysis.isListening ? 'Listening' : 'Stopped';
+  const dominantFreq = this.findDominantFrequency();
+  document.getElementById('debugFreq').textContent = Math.round(dominantFreq);
+  document.getElementById('debugVolume').textContent = this.audioAnalysis.maxDb;
+  document.getElementById('debugEnergy').textContent = this.audioAnalysis.totalEnergy || 0;
 },
     
 // Triple-tap detection setup
@@ -1689,26 +1808,28 @@ updateWheelAnimation: function() {
     }
   },
 
-  setupEventListeners: function() {
-    document.getElementById("testBtn").addEventListener("click", () => {
-      this.initAudio();
-      this.playTestSound();
-      if (this.isAudioAllowed) this.lockCurrentPosition();
-    });
-    document.getElementById("calibrateBtn").addEventListener("click", () => this.calibrateSensors());
-    document.getElementById("autoLockBtn").addEventListener("click", () => this.toggleAutoLock());
-    document.getElementById("muteBtn").addEventListener("click", () => this.toggleMute());
-    document.getElementById("stopBtn").addEventListener("click", () => this.stop());
-    document.getElementById("startRideBtn").addEventListener("click", () => this.startRide());
-    document.getElementById("resetMetricsBtn").addEventListener("click", () => this.resetMetrics());
-    document.getElementById("exportMetricsBtn").addEventListener("click", () => this.exportMetrics());
-    document.getElementById("emergencyBtn").addEventListener("click", () => this.sendEmergencyAlert());
-    document.getElementById("testEmergencyBtn").addEventListener("click", () => this.testEmergency());
-    document.getElementById("addContactBtn").addEventListener("click", () => this.addEmergencyContact());
-    document.getElementById("addMaintenanceBtn").addEventListener("click", () => this.showMaintenanceForm());
-    document.getElementById("resetMaintenanceBtn").addEventListener("click", () => this.resetMaintenance());
-    document.getElementById("saveMaintenanceBtn").addEventListener("click", () => this.saveMaintenanceItem());
-  },
+setupEventListeners: function() {
+  document.getElementById("testBtn").addEventListener("click", () => {
+    this.initAudio();
+    this.playTestSound();
+    if (this.isAudioAllowed) this.lockCurrentPosition();
+  });
+  document.getElementById("calibrateBtn").addEventListener("click", () => this.calibrateSensors());
+  document.getElementById("autoLockBtn").addEventListener("click", () => this.toggleAutoLock());
+  document.getElementById("muteBtn").addEventListener("click", () => this.toggleMute());
+  document.getElementById("stopBtn").addEventListener("click", () => this.stop());
+  document.getElementById("startRideBtn").addEventListener("click", () => this.startRide());
+  document.getElementById("resetMetricsBtn").addEventListener("click", () => this.resetMetrics());
+  document.getElementById("exportMetricsBtn").addEventListener("click", () => this.exportMetrics());
+  document.getElementById("emergencyBtn").addEventListener("click", () => this.sendEmergencyAlert());
+  document.getElementById("testEmergencyBtn").addEventListener("click", () => this.testEmergency());
+  document.getElementById("addContactBtn").addEventListener("click", () => this.addEmergencyContact());
+  document.getElementById("addMaintenanceBtn").addEventListener("click", () => this.showMaintenanceForm());
+  document.getElementById("resetMaintenanceBtn").addEventListener("click", () => this.resetMaintenance());
+  document.getElementById("saveMaintenanceBtn").addEventListener("click", () => this.saveMaintenanceItem());
+  document.getElementById("startEngineAnalysis").addEventListener("click", () => this.startEngineAnalysis());
+  document.getElementById("calibrateEngine").addEventListener("click", () => this.calibrateEngine());
+},  
 
   initDeviceOrientation: function() {
     if (window.DeviceOrientationEvent) {

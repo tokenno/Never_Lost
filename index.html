@@ -1234,21 +1234,21 @@ document.getElementById("stopRideBtn").addEventListener("click", () => this.stop
     }
   },
 
-  updateLeanAngleDisplay: function() {
-    const leanBike = document.getElementById('leanBike');
-    const leanValue = document.getElementById('leanValue');
-    const dashboardLean = document.getElementById('leanAngle');
+updateLeanAngleDisplay: function() {
+  const leanBike = document.getElementById('leanBike');
+  const leanValue = document.getElementById('leanValue');
+  const dashboardLean = document.getElementById('leanAngle');
+  
+  if (leanBike && leanValue && dashboardLean) {
     const displayAngle = Math.min(45, this.currentLeanAngle);
     leanBike.style.transform = `translateX(-50%) rotate(${displayAngle}deg)`;
     leanValue.textContent = `${this.currentLeanAngle}°`;
     dashboardLean.textContent = `${this.currentLeanAngle}°`;
     this.log(`Lean angle updated: ${this.currentLeanAngle}°`);
-  },
-
-  calculateCornerG: function(speedMs, leanAngle) {
-    return Math.tan(leanAngle * Math.PI / 180);
-  },
-    
+  } else {
+    this.log("Error: Lean angle elements not found", true);
+  }
+},
     calculateBearing: function(lat1, lon1, lat2, lon2) {
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const lat1Rad = lat1 * Math.PI / 180;

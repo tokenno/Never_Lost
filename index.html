@@ -1095,30 +1095,52 @@ const MotoFindBack = {
     document.getElementById('minElevation').textContent = minElev.toFixed(0) + ' m';
   },
 
-  initMap: function() {
-    this.map = L.map('map').setView([51.505, -0.09], 15);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(this.map);
+ initMap: function() {
+  this.map = L.map('map', { zoomControl: true }).setView([51.505, -0.09], 15);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(this.map);
 
-    const userIcon = L.divIcon({ className: 'user-marker', html: '📍', iconSize: [24, 24] });
-    const lockIcon = L.divIcon({ className: 'lock-marker', html: '🔒', iconSize: [24, 24] });
-    this.userMarker = L.marker([0, 0], { icon: userIcon }).addTo(this.map);
-    this.lockMarker = L.marker([0, 0], { icon: lockIcon }).addTo(this.map);
-    this.line = L.polyline([], { color: '#ff6600', weight: 2 }).addTo(this.map);
-  },
+  const userIcon = L.divIcon({ className: 'user-marker', html: '📍', iconSize: [24, 24] });
+  const lockIcon = L.divIcon({ className: 'lock-marker', html: '🔒', iconSize: [24, 24] });
+  this.userMarker = L.marker([0, 0], { icon: userIcon }).addTo(this.map);
+  this.lockMarker = L.marker([0, 0], { icon: lockIcon }).addTo(this.map);
+  this.line = L.polyline([], { color: '#ff6600', weight: 2 }).addTo(this.map);
 
-  setupTabs: function() {
-    const tabs = document.querySelectorAll('.tab');
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
-      });
+  // Force map to redraw after initialization
+  setTimeout(() => {
+    this.map.invalidateSize();
+    this.log("Map initialized and redrawn");
+  }, 100);
+
+  // Redraw map when Navigation tab is shown
+  document.querySelector('.tab[data-tab="navigation"]').addEventListener('click', () => {
+    setTimeout(() => {
+      this.map.invalidateSize();
+      this.log("Map redrawn on Navigation tab activation");
+    }, 100);
+  });
+},
+  
+setupTabs: function() {
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+      // Redraw map when Navigation tab is activated
+      if (tab.dataset.tab === 'navigation' && this.map) {
+        setTimeout(() => {
+          this.map.invalidateSize();
+          this.log("Map redrawn on Navigation tab switch");
+        }, 100);
+      }
     });
-  },
+  });
+},
 
   setupCollapsibles: function() {
     const coll = document.getElementsByClassName("collapsible");
@@ -1403,22 +1425,41 @@ document.getElementById("stopRideBtn").addEventListener("click", () => this.stop
     }
   },
 
-  lockCurrentPosition: function() {
-    if (!this.lastPosition) {
-      this.log("No position available to lock", true);
-      return;
-    }
-    this.lockPosition = { lat: this.lastPosition.lat, lon: this.lastPosition.lon };
-    this.lockMarker.setLatLng([this.lockPosition.lat, this.lockPosition.lon]);
-    document.getElementById("lockStatus").textContent = `Lock Status: Locked at Lat ${this.lockPosition.lat.toFixed(6)}, Lon ${this.lockPosition.lon.toFixed(6)}`;
-    document.getElementById("lockStatus").className = "status success";
-    this.isActive = true;
-    document.getElementById("stopBtn").disabled = false;
-    document.getElementById("muteBtn").disabled = false;
-    this.updateGpsStatus("Position locked");
-    this.log(`Position locked at Lat ${this.lockPosition.lat.toFixed(6)}, Lon ${this.lockPosition.lon.toFixed(6)}`);
-    this.startBleep();
-  },
+lockCurrentPosition: function() {
+  if (navigator.geolocation) {
+    this.watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        this.isActive = true;
+        if (!this.lockPosition) {
+          this.lockPosition = {
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          };
+          document.getElementById("lockStatus").textContent = `Lock Status: Locked at Lat ${this.lockPosition.lat.toFixed(6)}, Lon ${this.lockPosition.lon.toFixed(6)}`;
+          document.getElementById("lockStatus").className = "status success";
+          this.log("Position locked at: " + JSON.stringify(this.lockPosition));
+          // Center map on locked position
+          if (this.map) {
+            this.map.setView([this.lockPosition.lat, this.lockPosition.lon], 15);
+            this.map.invalidateSize();
+            this.log("Map centered on locked position");
+          }
+        }
+        this.updatePosition(position);
+      },
+      (error) => {
+        document.getElementById("gpsStatus").textContent = `GPS Error: ${error.message}`;
+        document.getElementById("gpsStatus").className = "status error";
+        this.log("GPS Error: " + error.message, true);
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
+  } else {
+    document.getElementById("gpsStatus").textContent = "GPS: Not supported";
+    document.getElementById("gpsStatus").className = "status error";
+    this.log("Geolocation not supported", true);
+  }
+},
 
   startBleep: function() {
     if (!this.isActive || this.isMuted || !this.audioCtx) return;
@@ -1521,73 +1562,73 @@ startRide: function() {
   this.updateRideHistory();
 },
 
-  updatePosition: function(pos) {
-    this.prevPosition = this.lastPosition;
-    this.lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude, alt: pos.coords.altitude || 0 };
-    this.currentSpeed = pos.coords.speed || 0;
-    if (this.currentSpeed > this.maxSpeed) this.maxSpeed = this.currentSpeed * 3.6;
-    this.movementHistory.push({ lat: this.lastPosition.lat, lon: this.lastPosition.lon, speed: this.currentSpeed, alt: this.lastPosition.alt, time: Date.now() });
+updatePosition: function(position) {
+  const lat = position.coords.latitude;
+  const lon = position.coords.longitude;
+  this.lastPosition = { lat, lon, accuracy: position.coords.accuracy || 0, altitude: position.coords.altitude || 0 };
+  this.currentSpeed = position.coords.speed || 0;
 
-    if (this.prevPosition) {
-      const distance = this.calculateDistance(this.prevPosition, this.lastPosition) / 1000;
-      this.totalDistance += distance;
-      this.todayDistance += distance;
-      this.weekDistance += distance;
-      this.monthDistance += distance;
+  // Update map elements
+  if (this.userMarker && this.map) {
+    this.userMarker.setLatLng([lat, lon]);
+    this.map.panTo([lat, lon]); // Center map on current position
+    this.log(`Map updated: User marker moved to Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}`);
+  } else {
+    this.log("Error: userMarker or map not initialized", true);
+  }
 
-      if (this.prevPosition.alt && this.lastPosition.alt && this.lastPosition.alt > this.prevPosition.alt) {
-        this.elevationGain += this.lastPosition.alt - this.prevPosition.alt;
-      }
-      this.elevationHistory.push({ elev: this.lastPosition.alt, time: Date.now() });
-    }
+  if (this.isActive && this.lockPosition && this.lockMarker && this.line) {
+    this.lockMarker.setLatLng([this.lockPosition.lat, this.lockPosition.lon]);
+    this.line.setLatLngs([[lat, lon], [this.lockPosition.lat, this.lockPosition.lon]]);
+    this.log(`Map updated: Lock marker at Lat: ${this.lockPosition.lat.toFixed(6)}, Lon: ${this.lockPosition.lon.toFixed(6)}, polyline drawn`);
+  }
 
-    if (this.isRideActive && this.currentSpeed * 3.6 >= this.accelTarget && this.accelerationStartTime && !this.accelerationTimes.some(t => t)) {
-      const accelTime = (Date.now() - this.accelerationStartTime) / 1000;
-      this.accelerationTimes.push(accelTime);
-      this.accelerationStartTime = null;
-    } else if (this.currentSpeed * 3.6 < this.accelTarget && !this.accelerationStartTime) {
-      this.accelerationStartTime = Date.now();
-    }
-
-    this.userMarker.setLatLng([this.lastPosition.lat, this.lastPosition.lon]);
-    this.line.addLatLng([this.lastPosition.lat, this.lastPosition.lon]);
-    this.map.panTo([this.lastPosition.lat, this.lastPosition.lon]);
-
-    if (this.lockPosition) {
-      const distance = this.calculateDistance(this.lastPosition, this.lockPosition);
-      document.getElementById("distance").textContent = distance.toFixed(0);
-      document.getElementById("accuracy").textContent = pos.coords.accuracy.toFixed(1);
-      if (distance < 5 && !this.reachedPointDisplayed) {
-        document.getElementById("reachedMessage").style.display = "block";
-        this.reachedPointDisplayed = true;
-        setTimeout(() => {
-          document.getElementById("reachedMessage").style.display = "none";
-          this.reachedPointDisplayed = false;
-        }, 5000);
-        this.stop();
-      }
-      this.updateDirection();
-    }
-
-    if (this.autoLockEnabled) {
-      if (this.currentSpeed * 3.6 < this.speedThreshold) {
-        if (!this.lastStationaryTime) {
-          this.lastStationaryTime = Date.now();
-          this.lastStationaryPosition = this.lastPosition;
-        } else if (Date.now() - this.lastStationaryTime > parseInt(document.getElementById("stationaryTime").value) * 1000) {
-          this.lockCurrentPosition();
-          this.toggleAutoLock();
-        }
-      } else {
-        this.lastStationaryTime = null;
-        this.lastStationaryPosition = null;
+  if (this.isRideActive) {
+    this.movementHistory.push({ lat, lon, speed: this.currentSpeed, time: Date.now(), elev: position.coords.altitude || 0 });
+    if (this.movementHistory.length > 1) {
+      const last = this.movementHistory[this.movementHistory.length - 2];
+      const dist = this.calculateDistance(last.lat, last.lon, lat, lon);
+      this.todayDistance += dist;
+      this.weekDistance += dist;
+      this.monthDistance += dist;
+      this.totalDistance += dist;
+      if (position.coords.altitude && last.elev) {
+        const elevDiff = position.coords.altitude - last.elev;
+        if (elevDiff > 0) this.elevationGain += elevDiff;
       }
     }
+    this.maxSpeed = Math.max(this.maxSpeed, this.currentSpeed * 3.6);
+    this.checkAcceleration();
+  }
 
-    this.updateWheelAnimation();
-    this.updateUI();
-    this.startBleep();
-  },
+  if (this.isActive && this.lockPosition) {
+    const distance = this.calculateDistance(lat, lon, this.lockPosition.lat, this.lockPosition.lon);
+    document.getElementById("distance").textContent = distance.toFixed(1);
+    document.getElementById("accuracy").textContent = position.coords.accuracy.toFixed(1);
+    const bearing = this.calculateBearing(lat, lon, this.lockPosition.lat, this.lockPosition.lon);
+    this.updateDirectionArrow(bearing);
+    document.getElementById("directionStatus").textContent = `Direction: ${bearing.toFixed(1)}°`;
+    if (!this.isMuted) {
+      const tempo = this.calculateTempo(distance);
+      this.currentTempo = tempo;
+      document.getElementById("bleepRate").textContent = (60000 / tempo).toFixed(0);
+      this.playBleep();
+    }
+    if (distance < 5 && !this.reachedPointDisplayed) {
+      document.getElementById("reachedMessage").style.display = "block";
+      this.reachedPointDisplayed = true;
+    }
+  }
+
+  this.updateWheelAnimation();
+  this.checkAutoLock();
+  this.updateUI();
+
+  // Ensure map is redrawn
+  if (this.map) {
+    this.map.invalidateSize();
+  }
+},
 
   handleGpsError: function(err) {
     this.log(`GPS error: ${err.message}`, true);
@@ -1603,7 +1644,7 @@ startRide: function() {
     document.getElementById("directionStatus").textContent = `Direction: ${angle.toFixed(0)}°`;
   },
 
- stop: function() {
+stop: function() {
   if (this.isActive) {
     this.isActive = false;
     this.lockPosition = null;
@@ -1617,8 +1658,19 @@ startRide: function() {
     clearTimeout(this.bleepTimer);
     this.updateGpsStatus("GPS lock stopped");
     this.log("GPS lock stopped");
-    this.line.setLatLngs([]);
-    this.lockMarker.setLatLng([0, 0]);
+    if (this.line) this.line.setLatLngs([]);
+    if (this.lockMarker) this.lockMarker.setLatLng([0, 0]);
+    if (this.userMarker) this.userMarker.setLatLng([0, 0]);
+    if (this.map) {
+      this.map.setView([0, 0], 2); // Reset map view
+      this.map.invalidateSize();
+      this.log("Map reset after stopping GPS lock");
+    }
+    if (this.watchId) {
+      navigator.geolocation.clearWatch(this.watchId);
+      this.watchId = null;
+      this.log("Geolocation watch cleared");
+    }
   }
 },
 

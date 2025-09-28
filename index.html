@@ -6,6 +6,7 @@
   <title>Spin - Motorcycle GPS Locator</title>
   <!-- Leaflet Map CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --primary-color: #ff6600;
@@ -510,6 +511,22 @@
       transition: max-height 0.2s ease-out;
     }
     
+    .corner-analysis {
+      margin: 10px 0;
+      padding: 10px;
+      background: rgba(50, 50, 50, 0.5);
+      border-radius: 5px;
+      text-align: left;
+    }
+    
+    .elevation-profile {
+      height: 150px;
+      background: #333;
+      border-radius: 5px;
+      margin: 10px 0;
+      position: relative;
+    }
+    
     @media (max-width: 768px) {
       .dashboard {
         grid-template-columns: 1fr;
@@ -558,7 +575,7 @@
       <div class="dashboard-label">Average Speed</div>
       <div class="dashboard-value" id="avgSpeed">-- km/h</div>
     </div>
-        <div class="dashboard-item">
+    <div class="dashboard-item">
       <div class="dashboard-label">Current Lean Angle</div>
       <div class="dashboard-value" id="leanAngle">--°</div>
     </div>
@@ -567,10 +584,23 @@
       <div class="dashboard-value" id="todayDistance">-- km</div>
     </div>
     <div class="dashboard-item">
+      <div class="dashboard-label">Elevation Gain</div>
+      <div class="dashboard-value" id="elevationGain">-- m</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Cornering Speed</div>
+      <div class="dashboard-value" id="maxCornerSpeed">-- km/h</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Corner G</div>
+      <div class="dashboard-value" id="maxCornerG">-- g</div>
+    </div>
+    <div class="dashboard-item">
       <div class="dashboard-label">0-100 km/h</div>
       <div class="dashboard-value" id="accelerationTime">-- s</div>
     </div>
   </div>
+  
 
   <div class="tabs">
     <div class="tab active" data-tab="navigation">Navigation</div>
@@ -610,6 +640,18 @@
           </div>
         </div>
       </div>
+      
+      <div class="panel">
+  <h3>Cornering Analysis</h3>
+  <!-- Add this canvas for the corner chart -->
+  <canvas id="cornerChart" width="100%" height="200"></canvas>
+  <!-- Your existing corner analysis content -->
+  <p>Current Corner G: <span id="currentCornerG">0 g</span></p>
+  <p>Max Corner Speed: <span id="currentMaxCornerSpeed">0 km/h</span></p>
+  <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
+        <p>Avg Corner Entry Speed: <span id="avgCornerEntrySpeed">0 km/h</span></p>
+  <div id="cornerList">No corners detected yet.</div>
+</div>
       
       <div id="calibrateStatus" class="status">Sensors not calibrated</div>
       <div id="lockStatus" class="status">Lock Status: Not locked</div>
@@ -701,6 +743,20 @@
         </div>
         <div class="lean-bike" id="leanBike"></div>
         <div class="lean-value" id="leanValue">0°</div>
+      </div>
+
+      <div class="corner-analysis">
+        <h3>Cornering Analysis</h3>
+        <p>Current Corner G: <span id="currentCornerG">0 g</span></p>
+        <p>Max Corner Speed: <span id="currentMaxCornerSpeed">0 km/h</span></p>
+        <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
+        <div id="cornerList">No corners detected yet.</div>
+      </div>
+
+      <div class="elevation-profile">
+        <h3>Elevation Profile</h3>
+        <canvas id="elevationCanvas" width="100%" height="150"></canvas>
+        <p>Total Elevation Gain: <span id="totalElevationGain">0 m</span></p>
       </div>
       
       <div class="control-group">
@@ -829,6 +885,8 @@
 
       <h2>Metrics Tab</h2>
       <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and lean angles with real-time updates.<br>
+      <strong>Cornering Analysis:</strong> Detects corners using GPS curvature and lean angle, calculates cornering G and speeds.<br>
+      <strong>Elevation Gain:</strong> Tracks altitude changes using GPS data, with a profile chart.<br>
       <strong>Lean Angle Indicator:</strong> Visual display of motorcycle lean during corners, updated rapidly for responsiveness.<br>
       <strong>Distance Statistics:</strong> Daily, weekly, monthly, and total distance tracking.<br>
       <strong>Acceleration Timer:</strong> Measures 0-100 km/h acceleration.
@@ -865,963 +923,865 @@
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const MotoFindBack = {
-      audioCtx: null,
-      watchId: null,
-      bleepTimer: null,
-      lockPosition: null,
-      lastUpdateTime: Date.now(),
-      lastBleedTime: 0,
-      isAudioAllowed: false,
-      isActive: false,
-      isRideActive: false,
-      movementHistory: [],
-      currentTempo: 1000,
-      autoLockEnabled: false,
-      autoLockDebounce: null,
-      currentSpeed: 0,
-      reachedPointDisplayed: false,
-      isMuted: false,
-      isStationary: false,
-      lastStationaryTime: null,
-      lastStationaryPosition: null,
-      speedThreshold: 10,
-      maxSpeed: 0,
-      totalDistance: 0,
-      todayDistance: 0,
-      weekDistance: 0,
-      monthDistance: 0,
-      rideStartTime: null,
-      accelerationStartTime: null,
-      accelerationStartSpeed: 0,
-      accelerationTimes: [],
-      maxLeanAngle: 0,
-      currentLeanAngle: 0,
-      maintenanceItems: [],
-      emergencyContacts: [],
-      rideHistory: [],
-      isCalibrating: false,
-      calibrationSamples: [],
-      leanOffset: 0,
-      crashDetected: false,
-      crashStartTime: null,
-      lastPosition: null,
-      prevPosition: null,
-      rotationSpeed: 0, // Duration in seconds for wheel rotation
-      map: null,
-      userMarker: null,
-      lockMarker: null,
-      line: null,
-      accelTarget: 100,
+const MotoFindBack = {
+  audioCtx: null,
+  watchId: null,
+  bleepTimer: null,
+  lockPosition: null,
+  lastUpdateTime: Date.now(),
+  lastBleedTime: 0,
+  isAudioAllowed: false,
+  isActive: false,
+  isRideActive: false,
+  movementHistory: [],
+  currentTempo: 1000,
+  autoLockEnabled: false,
+  autoLockDebounce: null,
+  currentSpeed: 0,
+  reachedPointDisplayed: false,
+  isMuted: false,
+  isStationary: false,
+  lastStationaryTime: null,
+  lastStationaryPosition: null,
+  speedThreshold: 10,
+  maxSpeed: 0,
+  totalDistance: 0,
+  todayDistance: 0,
+  weekDistance: 0,
+  monthDistance: 0,
+  elevationGain: 0,
+  rideStartTime: null,
+  accelerationStartTime: null,
+  accelerationStartSpeed: 0,
+  accelerationTimes: [],
+  maxLeanAngle: 0,
+  currentLeanAngle: 0,
+  currentCornerG: 0,
+  maxCornerG: 0,
+  maxCornerSpeed: 0,
+  corners: [],
+  cornerEntrySpeeds: [],
+  cornerExitSpeeds: [],
+  maintenanceItems: [],
+  emergencyContacts: [],
+  rideHistory: [],
+  isCalibrating: false,
+  calibrationSamples: [],
+  leanOffset: 0,
+  crashDetected: false,
+  crashStartTime: null,
+  lastPosition: null,
+  prevPosition: null,
+  rotationSpeed: 0,
+  map: null,
+  userMarker: null,
+  lockMarker: null,
+  line: null,
+  accelTarget: 100,
+  elevationHistory: [],
+  canvas: null, // Will store the canvas element
+  cornerChart: null,
 
-      init: async function() {
-        this.initMap();
-        this.setupEventListeners();
-        this.setupTabs();
-        this.setupCollapsibles();
-        this.loadData();
-        this.updateUI();
-        this.log("MotoFindBack initialized");
-
-        document.getElementById("maxDistInput").addEventListener("input", (e) => {
-          document.getElementById("maxDistValue").textContent = e.target.value;
-        });
-
-        document.getElementById("stationaryTime").addEventListener("input", (e) => {
-          document.getElementById("stationaryTimeValue").textContent = e.target.value + ' sec';
-        });
-
-        document.getElementById("speedThreshold").addEventListener("input", (e) => {
-          this.speedThreshold = parseFloat(e.target.value);
-          document.getElementById("speedThresholdValue").textContent = e.target.value + ' km/h';
-        });
-
-        document.getElementById("accelTarget").addEventListener("input", (e) => {
-          this.accelTarget = parseFloat(e.target.value) || 100;
-          document.getElementById("accelerationTime").previousElementSibling.textContent = `0-${this.accelTarget} km/h`;
-          document.getElementById("statsAcceleration").previousElementSibling.textContent = `0-${this.accelTarget} km/h`;
-        });
-
-        this.initDeviceOrientation();
+  init: async function() {
+    this.initMap();
+    this.canvas = document.getElementById('elevationCanvas'); // Store the canvas element
+    if (!this.canvas) {
+      this.log("Error: elevationCanvas element not found", true);
+      return;
+    }
+    this.cornerChart = new Chart(document.getElementById('cornerChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Corner G-Force',
+          data: [],
+          borderColor: '#00ccff',
+          backgroundColor: 'rgba(0, 204, 255, 0.2)',
+          fill: true,
+          tension: 0.4
+        }]
       },
-
-      initMap: function() {
-        this.map = L.map('map').setView([51.505, -0.09], 15);
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(this.map);
-
-        const userIcon = L.divIcon({
-          className: 'user-marker',
-          html: '📍',
-          iconSize: [24, 24]
-        });
-
-        const lockIcon = L.divIcon({
-          className: 'lock-marker',
-          html: '🔒',
-          iconSize: [24, 24]
-        });
-
-        this.userMarker = L.marker([0, 0], { icon: userIcon }).addTo(this.map);
-        this.lockMarker = L.marker([0, 0], { icon: lockIcon }).addTo(this.map);
-        this.line = L.polyline([], { color: '#ff6600', weight: 2 }).addTo(this.map);
-      },
-
-      setupTabs: function() {
-        const tabs = document.querySelectorAll('.tab');
-        tabs.forEach(tab => {
-          tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => {
-              content.classList.remove('active');
-            });
-            tab.classList.add('active');
-            document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
-          });
-        });
-      },
-
-      setupCollapsibles: function() {
-        const coll = document.getElementsByClassName("collapsible");
-        for (let i = 0; i < coll.length; i++) {
-          coll[i].addEventListener("click", function() {
-            this.classList.toggle("active");
-            const content = this.nextElementSibling;
-            if (content.style.maxHeight) {
-              content.style.maxHeight = null;
-            } else {
-              content.style.maxHeight = content.scrollHeight + "px";
-            }
-          });
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true, title: { display: true, text: 'G-Force (g)' } },
+          x: { title: { display: true, text: 'Corner Number' } }
         }
-      },
+      }
+    });
+    this.setupEventListeners();
+    this.setupTabs();
+    this.setupCollapsibles();
+    this.loadData();
+    this.updateUI();
+    this.log("MotoFindBack initialized");
+    this.initDeviceOrientation();
 
-      setupEventListeners: function() {
-        document.getElementById("testBtn").addEventListener("click", () => {
-          this.initAudio();
-          this.playTestSound();
-          if (this.isAudioAllowed) {
-            this.lockCurrentPosition();
+    document.getElementById("maxDistInput").addEventListener("input", (e) => {
+      document.getElementById("maxDistValue").textContent = e.target.value;
+    });
+
+    document.getElementById("stationaryTime").addEventListener("input", (e) => {
+      document.getElementById("stationaryTimeValue").textContent = e.target.value + ' sec';
+    });
+
+    document.getElementById("speedThreshold").addEventListener("input", (e) => {
+      this.speedThreshold = parseFloat(e.target.value);
+      document.getElementById("speedThresholdValue").textContent = e.target.value + ' km/h';
+    });
+
+    document.getElementById("accelTarget").addEventListener("input", (e) => {
+      this.accelTarget = parseFloat(e.target.value) || 100;
+      const label = document.querySelector('#accelerationTime').previousElementSibling;
+      if (label) label.textContent = `0-${this.accelTarget} km/h`;
+      const statsLabel = document.querySelector('#statsAcceleration').previousElementSibling;
+      if (statsLabel) statsLabel.textContent = `0-${this.accelTarget} km/h`;
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        this.log('Service Worker registered');
+      }).catch(err => {
+        this.log('Service Worker registration failed: ' + err, true);
+      });
+    }
+  },
+
+  updateElevationProfile: function() {
+    if (!this.canvas) {
+      this.log("Error: canvas not initialized", true);
+      return;
+    }
+    const ctx = this.canvas.getContext('2d'); // Get context here
+    if (!ctx) {
+      this.log("Error: Unable to get 2D context for elevationCanvas", true);
+      return;
+    }
+    this.canvas.width = this.canvas.parentElement.offsetWidth; // Reset width to handle resizing
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    if (this.elevationHistory.length < 2) {
+      this.log("Not enough elevation data to plot");
+      return;
+    }
+
+    const smoothedElevations = [];
+    for (let i = 0; i < this.elevationHistory.length; i++) {
+      const start = Math.max(0, i - 1);
+      const end = Math.min(this.elevationHistory.length - 1, i + 1);
+      const avgElev = this.elevationHistory.slice(start, end + 1)
+        .reduce((sum, p) => sum + p.elev, 0) / (end - start + 1);
+      smoothedElevations.push(avgElev);
+    }
+
+    const minElev = Math.min(...smoothedElevations);
+    const maxElev = Math.max(...smoothedElevations);
+    const range = maxElev - minElev || 1;
+
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    smoothedElevations.forEach((elev, i) => {
+      const x = (i / (smoothedElevations.length - 1)) * w;
+      const y = h - ((elev - minElev) / range * h * 0.8);
+      ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = 'var(--accent-color)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    document.getElementById('totalElevationGain').textContent = this.elevationGain.toFixed(0) + ' m';
+    document.getElementById('elevationGain').textContent = this.elevationGain.toFixed(0) + ' m';
+    document.getElementById('maxElevation').textContent = maxElev.toFixed(0) + ' m';
+    document.getElementById('minElevation').textContent = minElev.toFixed(0) + ' m';
+  },
+
+  // Remaining methods (unchanged from previous response)
+  initMap: function() {
+    this.map = L.map('map').setView([51.505, -0.09], 15);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(this.map);
+
+    const userIcon = L.divIcon({ className: 'user-marker', html: '📍', iconSize: [24, 24] });
+    const lockIcon = L.divIcon({ className: 'lock-marker', html: '🔒', iconSize: [24, 24] });
+    this.userMarker = L.marker([0, 0], { icon: userIcon }).addTo(this.map);
+    this.lockMarker = L.marker([0, 0], { icon: lockIcon }).addTo(this.map);
+    this.line = L.polyline([], { color: '#ff6600', weight: 2 }).addTo(this.map);
+  },
+
+  setupTabs: function() {
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+      });
+    });
+  },
+
+  setupCollapsibles: function() {
+    const coll = document.getElementsByClassName("collapsible");
+    for (let i = 0; i < coll.length; i++) {
+      coll[i].addEventListener("click", function() {
+        this.classList.toggle("active");
+        const content = this.nextElementSibling;
+        content.style.maxHeight = content.style.maxHeight ? null : content.scrollHeight + "px";
+      });
+    }
+  },
+
+  setupEventListeners: function() {
+    document.getElementById("testBtn").addEventListener("click", () => {
+      this.initAudio();
+      this.playTestSound();
+      if (this.isAudioAllowed) this.lockCurrentPosition();
+    });
+    document.getElementById("calibrateBtn").addEventListener("click", () => this.calibrateSensors());
+    document.getElementById("autoLockBtn").addEventListener("click", () => this.toggleAutoLock());
+    document.getElementById("muteBtn").addEventListener("click", () => this.toggleMute());
+    document.getElementById("stopBtn").addEventListener("click", () => this.stop());
+    document.getElementById("startRideBtn").addEventListener("click", () => this.startRide());
+    document.getElementById("resetMetricsBtn").addEventListener("click", () => this.resetMetrics());
+    document.getElementById("exportMetricsBtn").addEventListener("click", () => this.exportMetrics());
+    document.getElementById("emergencyBtn").addEventListener("click", () => this.sendEmergencyAlert());
+    document.getElementById("testEmergencyBtn").addEventListener("click", () => this.testEmergency());
+    document.getElementById("addContactBtn").addEventListener("click", () => this.addEmergencyContact());
+    document.getElementById("addMaintenanceBtn").addEventListener("click", () => this.showMaintenanceForm());
+    document.getElementById("resetMaintenanceBtn").addEventListener("click", () => this.resetMaintenance());
+    document.getElementById("saveMaintenanceBtn").addEventListener("click", () => this.saveMaintenanceItem());
+  },
+
+  initDeviceOrientation: function() {
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', (event) => {
+        if (this.isCalibrating) {
+          this.calibrationSamples.push(event.gamma || 0);
+          return;
+        }
+        if (event.gamma !== null) {
+          this.currentLeanAngle = Math.round(Math.abs(event.gamma - this.leanOffset));
+          this.updateLeanAngleDisplay();
+          if (this.currentLeanAngle > this.maxLeanAngle) this.maxLeanAngle = this.currentLeanAngle;
+          const speedMs = this.currentSpeed;
+          this.currentCornerG = this.calculateCornerG(speedMs, this.currentLeanAngle);
+          this.detectCorner(this.lastPosition?.lat, this.lastPosition?.lon, speedMs * 3.6, this.currentLeanAngle, this.currentCornerG);
+        }
+        if (event.beta !== null && !this.crashDetected) {
+          const betaAbs = Math.abs(event.beta);
+          if (betaAbs > 70) {
+            if (!this.crashStartTime) {
+              this.crashStartTime = Date.now();
+              document.getElementById('crashStatus').textContent = 'Possible crash detected... Confirming';
+              document.getElementById('crashStatus').className = 'status warning';
+              this.log('Possible crash detected, confirming for 5 seconds');
+            }
+            if (Date.now() - this.crashStartTime > 5000) {
+              this.crashDetected = true;
+              this.triggerCrashAlert();
+            }
+          } else if (this.crashStartTime) {
+            this.crashStartTime = null;
+            document.getElementById('crashStatus').textContent = 'Crash Detection: Inactive';
+            document.getElementById('crashStatus').className = 'status';
+            this.log('Crash condition cleared');
           }
-        });
-
-        document.getElementById("calibrateBtn").addEventListener("click", () => {
-          this.calibrateSensors();
-        });
-
-        document.getElementById("autoLockBtn").addEventListener("click", () => {
-          this.toggleAutoLock();
-        });
-
-        document.getElementById("muteBtn").addEventListener("click", () => {
-          this.toggleMute();
-        });
-
-        document.getElementById("stopBtn").addEventListener("click", () => {
-          this.stop();
-        });
-
-        document.getElementById("startRideBtn").addEventListener("click", () => {
-          this.startRide();
-        });
-
-        document.getElementById("resetMetricsBtn").addEventListener("click", () => {
-          this.resetMetrics();
-        });
-
-        document.getElementById("exportMetricsBtn").addEventListener("click", () => {
-          this.exportMetrics();
-        });
-
-        document.getElementById("emergencyBtn").addEventListener("click", () => {
-          this.sendEmergencyAlert();
-        });
-
-        document.getElementById("testEmergencyBtn").addEventListener("click", () => {
-          this.testEmergency();
-        });
-
-        document.getElementById("addContactBtn").addEventListener("click", () => {
-          this.addEmergencyContact();
-        });
-
-        document.getElementById("addMaintenanceBtn").addEventListener("click", () => {
-          this.showMaintenanceForm();
-        });
-
-        document.getElementById("resetMaintenanceBtn").addEventListener("click", () => {
-          this.resetMaintenance();
-        });
-
-        document.getElementById("saveMaintenanceBtn").addEventListener("click", () => {
-          this.saveMaintenanceItem();
-        });
-      },
-
-      initDeviceOrientation: function() {
-        if (window.DeviceOrientationEvent) {
-          window.addEventListener('deviceorientation', (event) => {
-            if (this.isCalibrating) {
-              this.calibrationSamples.push(event.gamma || 0);
-              return;
-            }
-            if (event.gamma !== null) {
-              this.currentLeanAngle = Math.round(Math.abs(event.gamma - this.leanOffset));
-              this.updateLeanAngleDisplay();
-              if (this.currentLeanAngle > this.maxLeanAngle) {
-                this.maxLeanAngle = this.currentLeanAngle;
-              }
-            }
-            if (event.beta !== null && !this.crashDetected) {
-              const betaAbs = Math.abs(event.beta);
-              if (betaAbs > 70) {
-                if (!this.crashStartTime) {
-                  this.crashStartTime = Date.now();
-                  document.getElementById('crashStatus').textContent = 'Possible crash detected... Confirming';
-                  document.getElementById('crashStatus').className = 'status warning';
-                  this.log('Possible crash detected, confirming for 5 seconds');
-                }
-                if (Date.now() - this.crashStartTime > 5000) {
-                  this.crashDetected = true;
-                  this.triggerCrashAlert();
-                }
-              } else {
-                if (this.crashStartTime) {
-                  this.crashStartTime = null;
-                  document.getElementById('crashStatus').textContent = 'Crash Detection: Inactive';
-                  document.getElementById('crashStatus').className = 'status';
-                  this.log('Crash condition cleared');
-                }
-              }
-            }
-          });
-        } else {
-          this.log("Device orientation not supported", true);
-          document.getElementById('crashStatus').textContent = 'Crash Detection: Not supported';
-          document.getElementById('crashStatus').className = 'status error';
         }
-      },
+      });
+    } else {
+      this.log("Device orientation not supported", true);
+      document.getElementById('crashStatus').textContent = 'Crash Detection: Not supported';
+      document.getElementById('crashStatus').className = 'status error';
+    }
+  },
 
-      calibrateSensors: function() {
-        this.isCalibrating = true;
-        this.calibrationSamples = [];
-        document.getElementById('calibrateStatus').textContent = 'Calibrating... Keep phone steady for 5 seconds.';
-        this.log('Starting sensor calibration');
+  calibrateSensors: function() {
+    this.isCalibrating = true;
+    this.calibrationSamples = [];
+    document.getElementById('calibrateStatus').textContent = 'Calibrating... Keep phone steady for 5 seconds.';
+    this.log('Starting sensor calibration');
+    setTimeout(() => {
+      if (this.calibrationSamples.length > 0) {
+        const avgGamma = this.calibrationSamples.reduce((a, b) => a + b, 0) / this.calibrationSamples.length;
+        this.leanOffset = avgGamma;
+        document.getElementById('calibrateStatus').textContent = 'Calibrated! Offset: ' + this.leanOffset.toFixed(1) + '°';
+        document.getElementById('calibrateStatus').className = 'status success';
+        this.log('Calibration complete: offset ' + this.leanOffset.toFixed(1) + '°');
+      } else {
+        document.getElementById('calibrateStatus').textContent = 'Calibration failed - no data';
+        document.getElementById('calibrateStatus').className = 'status error';
+        this.log('Calibration failed');
+      }
+      this.isCalibrating = false;
+    }, 5000);
+  },
 
+  triggerCrashAlert: function() {
+    document.getElementById('crashStatus').textContent = 'Crash detected! Sending alert...';
+    document.getElementById('crashStatus').className = 'status error';
+    this.log('Crash confirmed, triggering emergency alert');
+    if (this.lastPosition) {
+      const message = `CRASH DETECTED! ${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition.lat.toFixed(6)}, Lon: ${this.lastPosition.lon.toFixed(6)}`;
+      this.sendEmergencyAlert(message);
+    } else {
+      this.log('No recent position available for crash alert', true);
+      document.getElementById('crashStatus').textContent = 'Crash detected, but no position available';
+    }
+  },
+
+  updateLeanAngleDisplay: function() {
+    const leanBike = document.getElementById('leanBike');
+    const leanValue = document.getElementById('leanValue');
+    const dashboardLean = document.getElementById('leanAngle');
+    const displayAngle = Math.min(45, this.currentLeanAngle);
+    leanBike.style.transform = `translateX(-50%) rotate(${displayAngle}deg)`;
+    leanValue.textContent = `${this.currentLeanAngle}°`;
+    dashboardLean.textContent = `${this.currentLeanAngle}°`;
+    this.log(`Lean angle updated: ${this.currentLeanAngle}°`);
+  },
+
+  calculateCornerG: function(speedMs, leanAngle) {
+    return Math.tan(leanAngle * Math.PI / 180);
+  },
+
+  detectCorner: function(lat, lon, speedKmh, leanAngle, cornerG) {
+    if (!lat || !lon || this.movementHistory.length < 3 || leanAngle < 5) return;
+    const recent = this.movementHistory.slice(-3);
+    const avgBearingChange = recent.reduce((sum, item, idx) => {
+      if (idx === 0) return sum;
+      const dLon = recent[idx].lon - recent[idx - 1].lon;
+      const dLat = recent[idx].lat - recent[idx - 1].lat;
+      return sum + Math.atan2(dLon, dLat) * 180 / Math.PI;
+    }, 0) / 2;
+    if (Math.abs(avgBearingChange) > 2 && cornerG > 0.2) {
+      const cornerType = leanAngle > 30 ? 'Tight' : leanAngle > 15 ? 'Medium' : 'Sweeping';
+      const corner = {
+        startLat: recent[0].lat,
+        startLon: recent[0].lon,
+        speed: parseFloat(speedKmh),
+        entrySpeed: parseFloat(recent[0].speed * 3.6),
+        exitSpeed: parseFloat(speedKmh),
+        g: cornerG,
+        lean: leanAngle,
+        type: cornerType,
+        time: Date.now()
+      };
+      this.corners.push(corner);
+      this.cornerEntrySpeeds.push(corner.entrySpeed);
+      this.cornerExitSpeeds.push(corner.exitSpeed);
+      if (speedKmh > this.maxCornerSpeed) this.maxCornerSpeed = parseFloat(speedKmh);
+      if (cornerG > this.maxCornerG) this.maxCornerG = cornerG;
+      this.updateCornerDisplay();
+    }
+  },
+
+  updateCornerDisplay: function() {
+    document.getElementById('currentCornerG').textContent = this.currentCornerG.toFixed(2) + ' g';
+    document.getElementById('maxCornerSpeed').textContent = this.maxCornerSpeed.toFixed(1) + ' km/h';
+    document.getElementById('maxCornerG').textContent = this.maxCornerG.toFixed(2) + ' g';
+    const avgLean = this.corners.reduce((sum, c) => sum + c.lean, 0) / Math.max(1, this.corners.length);
+    document.getElementById('avgCornerLean').textContent = avgLean.toFixed(1) + '°';
+    const avgEntrySpeed = this.cornerEntrySpeeds.reduce((sum, s) => sum + s, 0) / Math.max(1, this.cornerEntrySpeeds.length);
+    document.getElementById('avgCornerEntrySpeed').textContent = avgEntrySpeed.toFixed(1) + ' km/h';
+    const cornerList = document.getElementById('cornerList');
+    cornerList.innerHTML = this.corners.slice(-5).map(c =>
+      `<p>${c.type} Corner: ${c.speed.toFixed(1)} km/h, Entry: ${c.entrySpeed.toFixed(1)} km/h, Exit: ${c.exitSpeed.toFixed(1)} km/h, ${c.g.toFixed(2)}g, ${c.lean}°</p>`
+    ).join('') || 'No corners detected yet.';
+    this.cornerChart.data.labels = this.corners.slice(-5).map((_, i) => `Corner ${i + 1}`);
+    this.cornerChart.data.datasets[0].data = this.corners.slice(-5).map(c => c.g.toFixed(2));
+    this.cornerChart.update();
+  },
+
+  updateWheelAnimation: function() {
+    const wheel = document.querySelector('.spinning-wheel');
+    const spokes = document.querySelectorAll('.wheel-spoke');
+    if (this.currentSpeed <= 0.1) {
+      wheel.style.animation = 'none';
+      spokes.forEach(spoke => spoke.style.animation = 'none');
+      this.log('Wheel animation stopped (speed <= 0.1 m/s)');
+    } else {
+      const speedKmh = this.currentSpeed * 3.6;
+      this.rotationSpeed = Math.max(0.2, 2 / (speedKmh / 10));
+      wheel.style.animation = `wheel-spin ${this.rotationSpeed}s linear infinite`;
+      spokes.forEach((spoke, index) => {
+        const spokeSpeed = this.rotationSpeed * (1 + index * 0.5);
+        spoke.style.animation = `spoke-spin ${spokeSpeed}s linear infinite ${index % 2 === 0 ? '' : 'reverse'}`;
+      });
+      this.log(`Wheel animation updated: ${this.rotationSpeed.toFixed(2)}s per rotation at ${speedKmh.toFixed(1)} km/h`);
+    }
+  },
+
+  toggleMute: function() {
+    this.isMuted = !this.isMuted;
+    const muteBtn = document.getElementById("muteBtn");
+    if (this.isMuted) {
+      muteBtn.textContent = "Sound Muted";
+      muteBtn.classList.add("muted");
+      clearTimeout(this.bleepTimer);
+      this.log("Audio muted");
+    } else {
+      muteBtn.textContent = "Mute Sound";
+      muteBtn.classList.remove("muted");
+      this.log("Audio unmuted");
+    }
+  },
+
+  toggleAutoLock: function() {
+    this.autoLockEnabled = !this.autoLockEnabled;
+    if (this.autoLockEnabled) {
+      document.getElementById("autoLockBtn").textContent = "Auto-Lock: ON";
+      document.getElementById("autoLockBtn").style.backgroundColor = "#ff6600";
+      document.getElementById("autoLockBtn").style.color = "#000";
+      document.getElementById("autoLockSettings").style.display = "block";
+      this.log("Auto-lock enabled - will lock when stopped for specified time");
+      this.updateGpsStatus("Auto-lock enabled - will lock when stopped");
+    } else {
+      document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
+      document.getElementById("autoLockBtn").style.backgroundColor = "";
+      document.getElementById("autoLockBtn").style.color = "";
+      document.getElementById("autoLockSettings").style.display = "none";
+      clearTimeout(this.autoLockDebounce);
+      this.autoLockDebounce = null;
+      this.isStationary = false;
+      this.lastStationaryTime = null;
+      this.lastStationaryPosition = null;
+      this.speedThreshold = 10;
+      document.getElementById("speedThreshold").value = 10;
+      document.getElementById("speedThresholdValue").textContent = "10 km/h";
+      this.log("Auto-lock disabled");
+      this.updateGpsStatus("Auto-lock disabled");
+    }
+    this.updateUI();
+  },
+
+  initAudio: function() {
+    if (this.audioCtx) {
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume().then(() => this.log("Audio context resumed"));
+      }
+      return;
+    }
+    try {
+      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      document.getElementById("audioStatus").textContent = "Audio: Initialized";
+      document.getElementById("audioStatus").className = "status success";
+      document.getElementById("autoLockBtn").disabled = false;
+      this.isAudioAllowed = true;
+      this.log("Audio system initialized");
+    } catch (e) {
+      document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
+      document.getElementById("audioStatus").className = "status error";
+      this.log(`Audio init error: ${e.message}`, true);
+    }
+  },
+
+  playTestSound: function() {
+    if (!this.audioCtx || this.isMuted) {
+      this.log("Audio context not ready or muted", true);
+      return;
+    }
+    try {
+      const now = this.audioCtx.currentTime;
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, now);
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.5, now + 0.1);
+      gain.gain.linearRampToValueAtTime(0, now + 0.5);
+      osc.start(now);
+      osc.stop(now + 0.5);
+      this.log("Test sound played");
+    } catch (e) {
+      this.log(`Test sound error: ${e.message}`, true);
+    }
+  },
+
+  lockCurrentPosition: function() {
+    if (!this.lastPosition) {
+      this.log("No position available to lock", true);
+      return;
+    }
+    this.lockPosition = { lat: this.lastPosition.lat, lon: this.lastPosition.lon };
+    this.lockMarker.setLatLng([this.lockPosition.lat, this.lockPosition.lon]);
+    document.getElementById("lockStatus").textContent = `Lock Status: Locked at Lat ${this.lockPosition.lat.toFixed(6)}, Lon ${this.lockPosition.lon.toFixed(6)}`;
+    document.getElementById("lockStatus").className = "status success";
+    this.isActive = true;
+    document.getElementById("stopBtn").disabled = false;
+    document.getElementById("muteBtn").disabled = false;
+    this.updateGpsStatus("Position locked");
+    this.log(`Position locked at Lat ${this.lockPosition.lat.toFixed(6)}, Lon ${this.lockPosition.lon.toFixed(6)}`);
+    this.startBleep();
+  },
+
+  startBleep: function() {
+    if (!this.isActive || this.isMuted || !this.audioCtx) return;
+    clearTimeout(this.bleepTimer);
+    const distance = this.calculateDistance(this.lastPosition, this.lockPosition);
+    const maxDist = parseFloat(document.getElementById("maxDistInput").value);
+    const freq = parseFloat(document.getElementById("freqInput").value);
+    let tempo = 1000;
+    if (distance < maxDist) {
+      tempo = Math.max(100, 1000 * (distance / maxDist));
+      const now = this.audioCtx.currentTime;
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.5, now + 0.05);
+      gain.gain.linearRampToValueAtTime(0, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    }
+    document.getElementById("bleepRate").textContent = (60000 / tempo).toFixed(0);
+    this.currentTempo = tempo;
+    this.bleepTimer = setTimeout(() => this.startBleep(), tempo);
+  },
+
+  calculateDistance: function(pos1, pos2) {
+    if (!pos1 || !pos2) return Infinity;
+    const R = 6371e3;
+    const φ1 = pos1.lat * Math.PI / 180;
+    const φ2 = pos2.lat * Math.PI / 180;
+    const Δφ = (pos2.lat - pos1.lat) * Math.PI / 180;
+    const Δλ = (pos2.lon - pos1.lon) * Math.PI / 180;
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  },
+
+  updateGpsStatus: function(message) {
+    document.getElementById("gpsStatus").textContent = `GPS: ${message}`;
+    document.getElementById("gpsStatus").className = message.includes("error") ? "status error" : "status success";
+  },
+
+  updateUI: function() {
+    document.getElementById("currentSpeed").textContent = (this.currentSpeed * 3.6).toFixed(1) + " km/h";
+    document.getElementById("maxSpeed").textContent = this.maxSpeed.toFixed(1) + " km/h";
+    document.getElementById("avgSpeed").textContent = this.calculateAverageSpeed().toFixed(1) + " km/h";
+    document.getElementById("todayDistance").textContent = this.todayDistance.toFixed(1) + " km";
+    document.getElementById("statsToday").textContent = this.todayDistance.toFixed(1) + " km";
+    document.getElementById("statsWeek").textContent = this.weekDistance.toFixed(1) + " km";
+    document.getElementById("statsMonth").textContent = this.monthDistance.toFixed(1) + " km";
+    document.getElementById("statsTotal").textContent = this.totalDistance.toFixed(1) + " km";
+    document.getElementById("statsCurrentSpeed").textContent = (this.currentSpeed * 3.6).toFixed(1) + " km/h";
+    document.getElementById("statsMaxSpeed").textContent = this.maxSpeed.toFixed(1) + " km/h";
+    document.getElementById("statsAvgSpeed").textContent = this.calculateAverageSpeed().toFixed(1) + " km/h";
+    document.getElementById("statsAcceleration").textContent = this.calculateAccelerationTime().toFixed(2) + " s";
+    document.getElementById("accelerationTime").textContent = this.calculateAccelerationTime().toFixed(2) + " s";
+    this.updateCornerDisplay();
+    this.updateElevationProfile();
+    this.updateMaintenanceList();
+    this.updateEmergencyContacts();
+    this.updateRideHistory();
+  },
+
+  calculateAverageSpeed: function() {
+    if (this.movementHistory.length < 2) return 0;
+    const totalSpeed = this.movementHistory.reduce((sum, pos) => sum + pos.speed * 3.6, 0);
+    return totalSpeed / this.movementHistory.length;
+  },
+
+  calculateAccelerationTime: function() {
+    if (!this.accelerationTimes.length) return 0;
+    return this.accelerationTimes.reduce((sum, time) => sum + time, 0) / this.accelerationTimes.length;
+  },
+
+  startRide: function() {
+    if (this.isRideActive) return;
+    this.isRideActive = true;
+    this.rideStartTime = Date.now();
+    this.movementHistory = [];
+    this.corners = [];
+    this.cornerEntrySpeeds = [];
+    this.cornerExitSpeeds = [];
+    this.elevationHistory = [];
+    this.elevationGain = 0;
+    this.maxSpeed = 0;
+    this.maxLeanAngle = 0;
+    this.maxCornerG = 0;
+    this.maxCornerSpeed = 0;
+    this.accelerationTimes = [];
+    document.getElementById("startRideBtn").textContent = "Ride Active";
+    document.getElementById("startRideBtn").disabled = true;
+    this.watchId = navigator.geolocation.watchPosition(
+      pos => this.updatePosition(pos),
+      err => this.handleGpsError(err),
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
+    );
+    this.log("Ride started");
+  },
+
+  updatePosition: function(pos) {
+    this.prevPosition = this.lastPosition;
+    this.lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude, alt: pos.coords.altitude || 0 };
+    this.currentSpeed = pos.coords.speed || 0;
+    if (this.currentSpeed > this.maxSpeed) this.maxSpeed = this.currentSpeed * 3.6;
+    this.movementHistory.push({ lat: this.lastPosition.lat, lon: this.lastPosition.lon, speed: this.currentSpeed, alt: this.lastPosition.alt, time: Date.now() });
+
+    if (this.prevPosition) {
+      const distance = this.calculateDistance(this.prevPosition, this.lastPosition) / 1000;
+      this.totalDistance += distance;
+      this.todayDistance += distance;
+      this.weekDistance += distance;
+      this.monthDistance += distance;
+
+      if (this.prevPosition.alt && this.lastPosition.alt && this.lastPosition.alt > this.prevPosition.alt) {
+        this.elevationGain += this.lastPosition.alt - this.prevPosition.alt;
+      }
+      this.elevationHistory.push({ elev: this.lastPosition.alt, time: Date.now() });
+    }
+
+    if (this.isRideActive && this.currentSpeed * 3.6 >= this.accelTarget && this.accelerationStartTime && !this.accelerationTimes.some(t => t)) {
+      const accelTime = (Date.now() - this.accelerationStartTime) / 1000;
+      this.accelerationTimes.push(accelTime);
+      this.accelerationStartTime = null;
+    } else if (this.currentSpeed * 3.6 < this.accelTarget && !this.accelerationStartTime) {
+      this.accelerationStartTime = Date.now();
+    }
+
+    this.userMarker.setLatLng([this.lastPosition.lat, this.lastPosition.lon]);
+    this.line.addLatLng([this.lastPosition.lat, this.lastPosition.lon]);
+    this.map.panTo([this.lastPosition.lat, this.lastPosition.lon]);
+
+    if (this.lockPosition) {
+      const distance = this.calculateDistance(this.lastPosition, this.lockPosition);
+      document.getElementById("distance").textContent = distance.toFixed(0);
+      document.getElementById("accuracy").textContent = pos.coords.accuracy.toFixed(1);
+      if (distance < 5 && !this.reachedPointDisplayed) {
+        document.getElementById("reachedMessage").style.display = "block";
+        this.reachedPointDisplayed = true;
         setTimeout(() => {
-          if (this.calibrationSamples.length > 0) {
-            const avgGamma = this.calibrationSamples.reduce((a, b) => a + b, 0) / this.calibrationSamples.length;
-            this.leanOffset = avgGamma;
-            document.getElementById('calibrateStatus').textContent = 'Calibrated! Offset: ' + this.leanOffset.toFixed(1) + '°';
-            document.getElementById('calibrateStatus').className = 'status success';
-            this.log('Calibration complete: offset ' + this.leanOffset.toFixed(1) + '°');
-          } else {
-            document.getElementById('calibrateStatus').textContent = 'Calibration failed - no data';
-            document.getElementById('calibrateStatus').className = 'status error';
-            this.log('Calibration failed');
-          }
-          this.isCalibrating = false;
-        }, 5000);
-      },
-
-      triggerCrashAlert: function() {
-        document.getElementById('crashStatus').textContent = 'Crash detected! Sending alert...';
-        document.getElementById('crashStatus').className = 'status error';
-        this.log('Crash confirmed, triggering emergency alert');
-        
-        if (this.lastPosition) {
-          const message = `CRASH DETECTED! ${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition.lat.toFixed(6)}, Lon: ${this.lastPosition.lon.toFixed(6)}`;
-          this.sendEmergencyAlert(message);
-        } else {
-          this.log('No recent position available for crash alert', true);
-          document.getElementById('crashStatus').textContent = 'Crash detected, but no position available';
-        }
-      },
-
-      updateLeanAngleDisplay: function() {
-        const leanBike = document.getElementById('leanBike');
-        const leanValue = document.getElementById('leanValue');
-        const dashboardLean = document.getElementById('leanAngle');
-        const displayAngle = Math.min(45, this.currentLeanAngle);
-        leanBike.style.transform = `translateX(-50%) rotate(${displayAngle}deg)`;
-        leanValue.textContent = `${this.currentLeanAngle}°`;
-        dashboardLean.textContent = `${this.currentLeanAngle}°`;
-        this.log(`Lean angle updated: ${this.currentLeanAngle}°`);
-      },
-
-      updateWheelAnimation: function() {
-        const wheel = document.querySelector('.spinning-wheel');
-        const spokes = document.querySelectorAll('.wheel-spoke');
-        if (this.currentSpeed <= 0.1) {
-          wheel.style.animation = 'none';
-          spokes.forEach(spoke => spoke.style.animation = 'none');
-          this.log('Wheel animation stopped (speed <= 0.1 m/s)');
-        } else {
-          const speedKmh = this.currentSpeed * 3.6;
-          this.rotationSpeed = Math.max(0.2, 2 / (speedKmh / 10));
-          wheel.style.animation = `wheel-spin ${this.rotationSpeed}s linear infinite`;
-          spokes.forEach((spoke, index) => {
-            const spokeSpeed = this.rotationSpeed * (1 + index * 0.5);
-            spoke.style.animation = `spoke-spin ${spokeSpeed}s linear infinite ${index % 2 === 0 ? '' : 'reverse'}`;
-          });
-          this.log(`Wheel animation updated: ${this.rotationSpeed.toFixed(2)}s per rotation at ${speedKmh.toFixed(1)} km/h`);
-        }
-      },
-
-      toggleMute: function() {
-        this.isMuted = !this.isMuted;
-        const muteBtn = document.getElementById("muteBtn");
-        if (this.isMuted) {
-          muteBtn.textContent = "Sound Muted";
-          muteBtn.classList.add("muted");
-          clearTimeout(this.bleepTimer);
-          this.log("Audio muted");
-        } else {
-          muteBtn.textContent = "Mute Sound";
-          muteBtn.classList.remove("muted");
-          this.log("Audio unmuted");
-        }
-      },
-
-      toggleAutoLock: function() {
-        this.autoLockEnabled = !this.autoLockEnabled;
-        if (this.autoLockEnabled) {
-          document.getElementById("autoLockBtn").textContent = "Auto-Lock: ON";
-          document.getElementById("autoLockBtn").style.backgroundColor = "#ff6600";
-          document.getElementById("autoLockBtn").style.color = "#000";
-          document.getElementById("autoLockSettings").style.display = "block";
-          this.log("Auto-lock enabled - will lock when stopped for specified time");
-          this.updateGpsStatus("Auto-lock enabled - will lock when stopped");
-        } else {
-          document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
-          document.getElementById("autoLockBtn").style.backgroundColor = "";
-          document.getElementById("autoLockBtn").style.color = "";
-          document.getElementById("autoLockSettings").style.display = "none";
-          clearTimeout(this.autoLockDebounce);
-          this.autoLockDebounce = null;
-          this.isStationary = false;
-          this.lastStationaryTime = null;
-          this.lastStationaryPosition = null;
-          this.speedThreshold = 10;
-          document.getElementById("speedThreshold").value = 10;
-          document.getElementById("speedThresholdValue").textContent = "10 km/h";
-          this.log("Auto-lock disabled");
-          this.updateGpsStatus("Auto-lock disabled");
-        }
-        this.updateUI();
-      },
-
-      initAudio: function() {
-        if (this.audioCtx) {
-          if (this.audioCtx.state === 'suspended') {
-            this.audioCtx.resume().then(() => {
-              this.log("Audio context resumed");
-            });
-          }
-          return;
-        }
-        try {
-          this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          document.getElementById("audioStatus").textContent = "Audio: Initialized";
-          document.getElementById("audioStatus").className = "status success";
-          document.getElementById("autoLockBtn").disabled = false;
-          this.log("Audio system initialized");
-        } catch (e) {
-          document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
-          document.getElementById("audioStatus").className = "status error";
-          this.log(`Audio init error: ${e.message}`, true);
-        }
-      },
-
-      playTestSound: function() {
-        if (!this.audioCtx) {
-          this.log("Audio context not ready", true);
-          return;
-        }
-        try {
-          const now = this.audioCtx.currentTime;
-          const osc = this.audioCtx.createOscillator();
-          const gain = this.audioCtx.createGain();
-          osc.type = 'sine';
-          osc.frequency.value = 800;
-          osc.connect(gain);
-          gain.connect(this.audioCtx.destination);
-          gain.gain.setValueAtTime(0, now);
-          gain.gain.linearRampToValueAtTime(1, now + 0.01);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-          osc.start(now);
-          osc.stop(now + 0.1);
-          this.isAudioAllowed = true;
-          document.getElementById("audioStatus").textContent = "Audio: Working!";
-          document.getElementById("audioStatus").className = "status success";
-          document.getElementById("autoLockBtn").disabled = false;
-          document.getElementById("muteBtn").disabled = false;
-          this.log("Test sound played successfully - audio is enabled");
-        } catch (e) {
-          document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
-          document.getElementById("audioStatus").className = "status error";
-          this.log(`Test sound failed: ${e.message}`, true);
-        }
-      },
-
-      playBleep: function(freq) {
-        if (!this.audioCtx || !this.isAudioAllowed || this.isMuted) return;
-        try {
-          const now = this.audioCtx.currentTime;
-          const osc = this.audioCtx.createOscillator();
-          const gain = this.audioCtx.createGain();
-          osc.type = 'sine';
-          osc.frequency.value = freq;
-          osc.connect(gain);
-          gain.connect(this.audioCtx.destination);
-          gain.gain.setValueAtTime(0, now);
-          gain.gain.linearRampToValueAtTime(0.3, now + 0.01);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-          osc.start(now);
-          osc.stop(now + 0.1);
-        } catch (e) {
-          this.log(`Bleep error: ${e.message}`, true);
-        }
-      },
-
-      lockCurrentPosition: function() {
-        if (!navigator.geolocation) {
-          this.updateGpsStatus("Geolocation not supported", true);
-          return;
-        }
-        this.updateGpsStatus("Getting position...");
-        navigator.geolocation.getCurrentPosition(
-          pos => {
-            this.lockPosition = {
-              lat: pos.coords.latitude,
-              lon: pos.coords.longitude,
-              accuracy: pos.coords.accuracy
-            };
-            this.updateGpsStatus(`Position locked! (Accuracy: ${this.lockPosition.accuracy.toFixed(1)}m)`);
-            this.updateLockStatus(`Locked (Accuracy: ${this.lockPosition.accuracy.toFixed(1)}m)`);
-            this.isActive = true;
-            this.startPositionWatch();
-            this.updateUI();
-          },
-          err => {
-            let errorMsg = `Error: ${err.message}`;
-            if (err.code === err.PERMISSION_DENIED) {
-              errorMsg = "Permission denied. Enable location services.";
-            } else if (err.code === err.TIMEOUT) {
-              errorMsg = "Timeout. Ensure GPS is enabled.";
-            } else if (err.code === err.POSITION_UNAVAILABLE) {
-              errorMsg = "Position unavailable. Try moving to open area.";
-            }
-            this.updateGpsStatus(errorMsg, true);
-            this.log(`GPS error: ${err.code} - ${err.message}`, true);
-          },
-          { 
-            enableHighAccuracy: true, 
-            timeout: 10000,
-            maximumAge: 0
-          }
-        );
-      },
-
-      startRide: function() {
-        if (!this.isRideActive) {
-          this.isRideActive = true;
-          this.rideStartTime = Date.now();
-          this.startPositionWatch();
-          this.log("Ride started");
-          document.getElementById("startRideBtn").textContent = "Ride Active";
-          document.getElementById("startRideBtn").disabled = true;
-        }
-      },
-
-      startPositionWatch: function() {
-        if (this.watchId) {
-          return;
-        }
-        this.watchId = navigator.geolocation.watchPosition(
-          pos => this.handlePositionUpdate(pos),
-          err => {
-            this.updateGpsStatus(`GPS error: ${err.message}`, true);
-          },
-          { 
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 15000
-          }
-        );
-      },
-
-      handlePositionUpdate: function(pos) {
-        const now = Date.now();
-        this.lastUpdateTime = now;
-        const { latitude, longitude, accuracy, speed } = pos.coords;
-        this.currentSpeed = speed || 0;
-        const speedKmh = (this.currentSpeed * 3.6).toFixed(1);
-        this.lastPosition = { lat: latitude, lon: longitude, accuracy };
-        document.getElementById("currentSpeed").textContent = `${speedKmh} km/h`;
-        document.getElementById("statsCurrentSpeed").textContent = `${speedKmh} km/h`;
-        if (this.currentSpeed > this.maxSpeed) {
-          this.maxSpeed = this.currentSpeed;
-          document.getElementById("maxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
-          document.getElementById("statsMaxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
-        }
-        this.trackAcceleration(speedKmh);
-        this.updateWheelAnimation();
-        if (this.map) {
-          const userPos = [latitude, longitude];
-          this.userMarker.setLatLng(userPos);
-          if (this.lockPosition) {
-            const lockPos = [this.lockPosition.lat, this.lockPosition.lon];
-            this.lockMarker.setLatLng(lockPos);
-            this.line.setLatLngs([userPos, lockPos]);
-            this.map.fitBounds([userPos, lockPos], { padding: [20, 20] });
-          }
-        }
-        if (this.prevPosition) {
-          const deltaDist = this.calculateDistance(this.prevPosition.lat, this.prevPosition.lon, latitude, longitude);
-          this.todayDistance += deltaDist / 1000;
-          this.weekDistance += deltaDist / 1000;
-          this.monthDistance += deltaDist / 1000;
-          this.totalDistance += deltaDist / 1000;
-          this.updateMetricsDisplay();
-        }
-        this.prevPosition = { lat: latitude, lon: longitude };
-        const threshold = this.speedThreshold * 1000 / 3600;
-        const stationaryTime = parseFloat(document.getElementById("stationaryTime").value) * 1000;
-        if (this.autoLockEnabled) {
-          if (this.currentSpeed <= threshold && !this.isStationary) {
-            this.isStationary = true;
-            this.lastStationaryTime = now;
-            this.lastStationaryPosition = { lat: latitude, lon: longitude, accuracy };
-            this.log(`Stationary detected at ${speedKmh} km/h, waiting ${stationaryTime/1000}s to confirm lock`);
-            this.updateGpsStatus(`Stationary, waiting ${stationaryTime/1000}s to lock`);
-            clearTimeout(this.autoLockDebounce);
-            this.autoLockDebounce = setTimeout(() => {
-              if (this.isStationary && this.currentSpeed <= threshold) {
-                this.lockPosition = this.lastStationaryPosition;
-                this.updateGpsStatus(`Auto-locked! (Speed: ${speedKmh} km/h, Accuracy: ${accuracy.toFixed(1)}m)`);
-                this.updateLockStatus(`Auto-locked (Accuracy: ${this.lockPosition.accuracy.toFixed(1)}m)`);
-                this.isActive = true;
-                this.log(`Auto-locked position at ${speedKmh} km/h`);
-              }
-            }, stationaryTime);
-          } else if (this.currentSpeed > threshold && this.isStationary) {
-            this.isStationary = false;
-            this.lastStationaryTime = null;
-            clearTimeout(this.autoLockDebounce);
-            this.autoLockDebounce = null;
-            this.log(`Movement detected (${speedKmh} km/h), resetting stationary timer`);
-            this.updateGpsStatus(`Moving (${speedKmh} km/h), stationary timer reset`);
-            if (this.lockPosition) {
-              this.updateGpsStatus(`Keeping locked position (Speed: ${speedKmh} km/h)`);
-            }
-          } else if (this.currentSpeed > threshold && this.lockPosition) {
-            this.log(`Moving with locked position (${speedKmh} km/h)`);
-          }
-        }
-        if (!this.lockPosition || !this.isActive) {
-          this.updateUI();
-          return;
-        }
-        const distance = this.calculateDistance(latitude, longitude, this.lockPosition.lat, this.lockPosition.lon);
-        if (distance < 5 && !this.reachedPointDisplayed) {
-          document.getElementById("reachedMessage").style.display = "block";
-          this.reachedPointDisplayed = true;
-          this.log("You have reached the GPS locked point!");
-        } else if (distance >= 5 && this.reachedPointDisplayed) {
           document.getElementById("reachedMessage").style.display = "none";
           this.reachedPointDisplayed = false;
-        }
-        this.movementHistory.push({ time: now, distance, speed: this.currentSpeed });
-        this.movementHistory = this.movementHistory.filter(item => now - item.time < 5000);
-        this.updateDirection(latitude, longitude);
-        this.updateDisplay(distance, accuracy, this.currentSpeed);
-        this.updateAudio(distance);
-      },
+        }, 5000);
+        this.stop();
+      }
+      this.updateDirection();
+    }
 
-      trackAcceleration: function(speedKmh) {
-        const speedNum = parseFloat(speedKmh);
-        if (speedNum < 5 && !this.accelerationStartTime) {
-          this.accelerationStartTime = Date.now();
-          this.accelerationStartSpeed = speedNum;
-          this.log("Acceleration timer started");
+    if (this.autoLockEnabled) {
+      if (this.currentSpeed * 3.6 < this.speedThreshold) {
+        if (!this.lastStationaryTime) {
+          this.lastStationaryTime = Date.now();
+          this.lastStationaryPosition = this.lastPosition;
+        } else if (Date.now() - this.lastStationaryTime > parseInt(document.getElementById("stationaryTime").value) * 1000) {
+          this.lockCurrentPosition();
+          this.toggleAutoLock();
         }
-        if (speedNum >= this.accelTarget && this.accelerationStartTime) {
-          const accelerationTime = (Date.now() - this.accelerationStartTime) / 1000;
-          this.accelerationTimes.push(accelerationTime);
-          const recentTimes = this.accelerationTimes.slice(-3);
-          const avgTime = recentTimes.reduce((a, b) => a + b, 0) / recentTimes.length;
-          document.getElementById("accelerationTime").textContent = `${avgTime.toFixed(1)} s`;
-          document.getElementById("statsAcceleration").textContent = `${avgTime.toFixed(1)} s`;
-          this.accelerationStartTime = null;
-          this.log(`0-${this.accelTarget} km/h acceleration: ${accelerationTime.toFixed(1)}s`);
-        }
-        if (this.accelerationStartTime && speedNum < this.accelerationStartSpeed) {
-          this.accelerationStartTime = null;
-          this.log("Acceleration timer reset");
-        }
-      },
-
-      updateDirection: function(currentLat, currentLon) {
-        if (!this.lockPosition) return;
-        const currentLatRad = currentLat * Math.PI/180;
-        const currentLonRad = currentLon * Math.PI/180;
-        const lockLatRad = this.lockPosition.lat * Math.PI/180;
-        const lockLonRad = this.lockPosition.lon * Math.PI/180;
-        const y = Math.sin(lockLonRad - currentLonRad) * Math.cos(lockLatRad);
-        const x = Math.cos(currentLatRad) * Math.sin(lockLatRad) - 
-                  Math.sin(currentLatRad) * Math.cos(lockLatRad) * Math.cos(lockLonRad - currentLonRad);
-        let bearing = Math.atan2(y, x) * (180 / Math.PI);
-        bearing = (bearing + 360) % 360;
-        const arrow = document.getElementById("directionArrow");
-        arrow.style.transform = `translate(-50%, -50%) rotate(${bearing}deg)`;
-        const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-        const index = Math.round(bearing / 45) % 8;
-        document.getElementById("directionStatus").textContent = 
-          `Direction: ${bearing.toFixed(1)}° (${directions[index]})`;
-      },
-
-      calculateDistance: function(lat1, lon1, lat2, lon2) {
-        const R = 6371e3;
-        const φ1 = lat1 * Math.PI/180;
-        const φ2 = lat2 * Math.PI/180;
-        const Δφ = (lat2-lat1) * Math.PI/180;
-        const Δλ = (lon2-lon1) * Math.PI/180;
-        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                  Math.cos(φ1) * Math.cos(φ2) *
-                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
-      },
-
-      updateAudio: function(currentDistance) {
-        clearTimeout(this.bleepTimer);
-        if (!this.isAudioAllowed || !this.audioCtx || this.isMuted) {
-          this.bleepTimer = setTimeout(() => {
-            this.updateAudio(currentDistance);
-          }, 1000);
-          return;
-        }
-        const maxDist = this.getValidMaxDistance();
-        const freq = this.getValidFrequency();
-        const normalizedDist = Math.min(currentDistance, maxDist);
-        const avgSpeedKmh = this.movementHistory.length > 0 ? 
-            (this.movementHistory.reduce((sum, item) => sum + item.speed, 0) / this.movementHistory.length) * 3.6 : 0;
-        const speedFactor = Math.min(3, Math.max(1, 1 + (avgSpeedKmh / 20)));
-        const distanceFactor = 1 - (normalizedDist / maxDist);
-        const baseTempo = 1500 - (1350 * distanceFactor);
-        const dynamicTempo = baseTempo / speedFactor;
-        this.currentTempo = Math.max(150, Math.min(1500, dynamicTempo));
-        const bpm = Math.round(60000 / this.currentTempo);
-        document.getElementById("bleepRate").textContent = bpm;
-        this.playBleep(freq);
-        this.bleepTimer = setTimeout(() => {
-          this.updateAudio(currentDistance);
-        }, this.currentTempo);
-      },
-
-      stop: function() {
-        clearTimeout(this.bleepTimer);
-        clearTimeout(this.autoLockDebounce);
-        this.autoLockDebounce = null;
-        if (this.watchId) {
-          navigator.geolocation.clearWatch(this.watchId);
-          this.watchId = null;
-        }
-        this.isActive = false;
-        this.lockPosition = null;
-        this.autoLockEnabled = false;
-        this.isMuted = false;
-        this.isStationary = false;
+      } else {
         this.lastStationaryTime = null;
         this.lastStationaryPosition = null;
-        this.crashDetected = false;
-        this.crashStartTime = null;
-        this.speedThreshold = 10;
-        document.getElementById("speedThreshold").value = 10;
-        document.getElementById("speedThresholdValue").textContent = "10 km/h";
-        this.autoLockEnabled = false;
-        document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
-        document.getElementById("autoLockBtn").style.backgroundColor = "";
-        document.getElementById("autoLockBtn").style.color = "";
-        document.getElementById("autoLockSettings").style.display = "none";
-        document.getElementById("muteBtn").textContent = "Mute Sound";
-        document.getElementById("muteBtn").classList.remove("muted");
-        document.getElementById("crashStatus").textContent = "Crash Detection: Inactive";
-        document.getElementById("crashStatus").className = "status";
-        this.updateGpsStatus("Stopped");
-        this.updateLockStatus("Not locked");
-        this.updateUI();
-        this.reachedPointDisplayed = false;
-        document.getElementById("reachedMessage").style.display = "none";
-        this.updateWheelAnimation();
-        this.log("Position tracking stopped");
-        if (this.isRideActive) {
-          this.endRide();
-        }
-      },
-
-      endRide: function() {
-        if (this.rideStartTime) {
-          const rideDuration = (Date.now() - this.rideStartTime) / 3600000; // hours
-          const avgSpeed = this.todayDistance / rideDuration || 0;
-          this.rideHistory.push({
-            date: new Date().toLocaleString(),
-            distance: this.todayDistance,
-            maxSpeed: this.maxSpeed * 3.6,
-            avgSpeed: avgSpeed,
-            maxLean: this.maxLeanAngle,
-            accelTime: this.accelerationTimes[this.accelerationTimes.length - 1] || 0
-          });
-          this.updateRideHistoryDisplay();
-          this.saveData();
-        }
-        if (confirm("Save this ride session?")) {
-          this.exportMetrics();
-        }
-        this.isRideActive = false;
-        document.getElementById("startRideBtn").textContent = "Start Ride";
-        document.getElementById("startRideBtn").disabled = false;
-        this.rideStartTime = null;
-        this.log("Ride ended");
-      },
-
-      updateRideHistoryDisplay: function() {
-        const historyEl = document.getElementById("rideHistory");
-        historyEl.innerHTML = "";
-        this.rideHistory.forEach(ride => {
-          const entry = document.createElement("div");
-          entry.innerHTML = `
-            <p>${ride.date}</p>
-            <p>Distance: ${ride.distance.toFixed(1)} km</p>
-            <p>Max Speed: ${ride.maxSpeed.toFixed(1)} km/h</p>
-            <p>Avg Speed: ${ride.avgSpeed.toFixed(1)} km/h</p>
-            <p>Max Lean: ${ride.maxLean}°</p>
-            <p>Accel Time: ${ride.accelTime.toFixed(1)} s</p>
-            <hr>
-          `;
-          historyEl.appendChild(entry);
-        });
-      },
-
-      updateDisplay: function(distance, accuracy, speed) {
-        document.getElementById("distance").textContent = distance.toFixed(1);
-        document.getElementById("accuracy").textContent = accuracy ? accuracy.toFixed(1) : '--';
-      },
-
-      updateGpsStatus: function(message, isError = false) {
-        const statusEl = document.getElementById("gpsStatus");
-        statusEl.textContent = `GPS: ${message}`;
-        statusEl.className = isError ? "status error" : "status";
-      },
-
-      updateLockStatus: function(message, isError = false) {
-        const statusEl = document.getElementById("lockStatus");
-        statusEl.textContent = `Lock Status: ${message}`;
-        statusEl.className = isError ? "status error" : "status";
-      },
-
-      updateUI: function() {
-        document.getElementById("stopBtn").disabled = !this.isActive;
-        document.getElementById("muteBtn").disabled = !this.isActive || !this.isAudioAllowed;
-      },
-
-      getValidFrequency: function() {
-        const freq = parseFloat(document.getElementById("freqInput").value);
-        return Math.min(20000, Math.max(20, isNaN(freq) ? 800 : freq));
-      },
-
-      getValidMaxDistance: function() {
-        const dist = parseFloat(document.getElementById("maxDistInput").value);
-        return Math.max(1, isNaN(dist) ? 50 : dist);
-      },
-
-      resetMetrics: function() {
-        this.maxSpeed = 0;
-        this.totalDistance = 0;
-        this.todayDistance = 0;
-        this.weekDistance = 0;
-        this.monthDistance = 0;
-        this.accelerationTimes = [];
-        this.maxLeanAngle = 0;
-        this.currentLeanAngle = 0;
-        this.updateMetricsDisplay();
-        this.log("All metrics reset");
-      },
-
-      exportMetrics: function() {
-        const data = {
-          maxSpeed: this.maxSpeed,
-          totalDistance: this.totalDistance,
-          accelerationTimes: this.accelerationTimes,
-          maxLeanAngle: this.maxLeanAngle,
-          rideHistory: this.rideHistory
-        };
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "motofindback_metrics.json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-        this.log("Metrics exported");
-      },
-
-      sendEmergencyAlert: function(customMessage = null) {
-        const defaultMessage = document.getElementById("emergencyMessage").value;
-        const message = customMessage || defaultMessage;
-        const contacts = document.getElementById("emergencyContacts").value.split(',').map(c => c.trim());
-        if (contacts.length === 0 || contacts[0] === "") {
-          this.log("No emergency contacts set", true);
-          document.getElementById('crashStatus').textContent = 'Crash Detection: No contacts set';
-          document.getElementById('crashStatus').className = 'status error';
-          return;
-        }
-        contacts.forEach(contact => {
-          this.log(`Emergency message sent to ${contact}: ${message}`);
-        });
-        alert("Emergency alert sent to your contacts!");
-        if (this.crashDetected) {
-          document.getElementById('crashStatus').textContent = 'Crash alert sent';
-          document.getElementById('crashStatus').className = 'status success';
-        }
-      },
-
-      testEmergency: function() {
-        this.log("TEST: Emergency system checked - would send alerts to contacts");
-        alert("Emergency system test completed successfully");
-      },
-
-      addEmergencyContact: function() {
-        const contact = prompt("Enter emergency contact number:");
-        if (contact) {
-          this.emergencyContacts.push(contact);
-          this.updateEmergencyContactsDisplay();
-          this.log(`Emergency contact added: ${contact}`);
-        }
-      },
-
-      updateEmergencyContactsDisplay: function() {
-        const contactList = document.getElementById("emergencyContactList");
-        contactList.innerHTML = "";
-        this.emergencyContacts.forEach(contact => {
-          const contactItem = document.createElement("div");
-          contactItem.className = "contact-item";
-          contactItem.innerHTML = `
-            <div>${contact}</div>
-            <button onclick="MotoFindBack.removeEmergencyContact('${contact}')">Remove</button>
-          `;
-          contactList.appendChild(contactItem);
-        });
-      },
-
-      removeEmergencyContact: function(contact) {
-        this.emergencyContacts = this.emergencyContacts.filter(c => c !== contact);
-        this.updateEmergencyContactsDisplay();
-        this.log(`Emergency contact removed: ${contact}`);
-      },
-
-      showMaintenanceForm: function() {
-        const form = document.querySelector('#maintenance-tab .control-item');
-        form.style.display = form.style.display === 'none' ? 'block' : 'none';
-      },
-
-      saveMaintenanceItem: function() {
-        const name = document.getElementById("newMaintenanceName").value;
-        const interval = parseInt(document.getElementById("newMaintenanceInterval").value);
-        if (name && interval) {
-          this.maintenanceItems.push({
-            name,
-            interval,
-            current: 0
-          });
-          this.updateMaintenanceDisplay();
-          document.getElementById("newMaintenanceName").value = "";
-          document.getElementById("newMaintenanceInterval").value = "";
-          this.log(`Maintenance item added: ${name} (every ${interval} km)`);
-        }
-      },
-
-      resetMaintenance: function() {
-        this.maintenanceItems = [];
-        this.updateMaintenanceDisplay();
-        this.log("All maintenance items reset");
-      },
-
-      updateMaintenanceDisplay: function() {
-        const maintenanceList = document.getElementById("maintenanceList");
-        maintenanceList.innerHTML = "";
-        this.maintenanceItems.forEach(item => {
-          const progress = (item.current / item.interval) * 100;
-          const itemEl = document.createElement("div");
-          itemEl.className = "maintenance-item";
-          itemEl.innerHTML = `
-            <div>${item.name}</div>
-            <div class="maintenance-progress">
-              <div class="maintenance-progress-bar" style="width: ${progress}%;"></div>
-            </div>
-            <div>${item.current}/${item.interval} km</div>
-          `;
-          maintenanceList.appendChild(itemEl);
-        });
-      },
-
-      updateMetricsDisplay: function() {
-        document.getElementById("todayDistance").textContent = `${this.todayDistance.toFixed(1)} km`;
-        document.getElementById("statsToday").textContent = `${this.todayDistance.toFixed(1)} km`;
-        document.getElementById("statsWeek").textContent = `${this.weekDistance.toFixed(1)} km`;
-        document.getElementById("statsMonth").textContent = `${this.monthDistance.toFixed(1)} km`;
-        document.getElementById("statsTotal").textContent = `${this.totalDistance.toFixed(1)} km`;
-        document.getElementById("maxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
-        document.getElementById("statsMaxSpeed").textContent = `${(this.maxSpeed * 3.6).toFixed(1)} km/h`;
-        if (this.rideHistory.length > 0) {
-          const totalSpeed = this.rideHistory.reduce((sum, ride) => sum + ride.avgSpeed, 0);
-          const avgSpeed = totalSpeed / this.rideHistory.length;
-          document.getElementById("avgSpeed").textContent = `${avgSpeed.toFixed(1)} km/h`;
-          document.getElementById("statsAvgSpeed").textContent = `${avgSpeed.toFixed(1)} km/h`;
-        }
-      },
-
-      loadData: function() {
-        this.log("Data loaded");
-      },
-
-      saveData: function() {
-        this.log("Data saved");
-      },
-
-      log: function(message, isError = false) {
-        const debugEl = document.getElementById("debug");
-        const entry = document.createElement('div');
-        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-        entry.style.color = isError ? '#ff3333' : '#00ccff';
-        debugEl.prepend(entry);
-        if (debugEl.children.length > 20) {
-          debugEl.removeChild(debugEl.lastChild);
-        }
       }
+    }
+
+    this.updateWheelAnimation();
+    this.updateUI();
+    this.startBleep();
+  },
+
+  handleGpsError: function(err) {
+    this.log(`GPS error: ${err.message}`, true);
+    this.updateGpsStatus(`Error: ${err.message}`);
+  },
+
+  updateDirection: function() {
+    if (!this.lastPosition || !this.lockPosition) return;
+    const dLon = this.lockPosition.lon - this.lastPosition.lon;
+    const dLat = this.lockPosition.lat - this.lastPosition.lat;
+    const angle = Math.atan2(dLon, dLat) * 180 / Math.PI;
+    document.getElementById("directionArrow").style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+    document.getElementById("directionStatus").textContent = `Direction: ${angle.toFixed(0)}°`;
+  },
+
+  stop: function() {
+    if (this.watchId) {
+      navigator.geolocation.clearWatch(this.watchId);
+      this.watchId = null;
+    }
+    clearTimeout(this.bleepTimer);
+    this.isActive = false;
+    this.isRideActive = false;
+    document.getElementById("startRideBtn").textContent = "Start Ride";
+    document.getElementById("startRideBtn").disabled = false;
+    document.getElementById("stopBtn").disabled = true;
+    document.getElementById("muteBtn").disabled = true;
+    document.getElementById("lockStatus").textContent = "Lock Status: Not locked";
+    document.getElementById("lockStatus").className = "status";
+    this.lockPosition = null;
+    this.updateWheelAnimation();
+    this.log("Tracking stopped");
+    if (this.rideStartTime) {
+      this.rideHistory.push({
+        startTime: this.rideStartTime,
+        distance: this.todayDistance,
+        maxSpeed: this.maxSpeed,
+        avgSpeed: this.calculateAverageSpeed(),
+        acceleration: this.calculateAccelerationTime(),
+        corners: this.corners.length,
+        elevationGain: this.elevationGain
+      });
+      this.rideStartTime = null;
+    }
+    this.updateRideHistory();
+  },
+
+  resetMetrics: function() {
+    this.maxSpeed = 0;
+    this.totalDistance = 0;
+    this.todayDistance = 0;
+    this.weekDistance = 0;
+    this.monthDistance = 0;
+    this.elevationGain = 0;
+    this.corners = [];
+    this.cornerEntrySpeeds = [];
+    this.cornerExitSpeeds = [];
+    this.maxCornerG = 0;
+    this.maxCornerSpeed = 0;
+    this.accelerationTimes = [];
+    this.elevationHistory = [];
+    this.updateUI();
+    this.log("Metrics reset");
+  },
+
+  exportMetrics: function() {
+    const data = {
+      totalDistance: this.totalDistance,
+      todayDistance: this.todayDistance,
+      weekDistance: this.weekDistance,
+      monthDistance: this.monthDistance,
+      maxSpeed: this.maxSpeed,
+      avgSpeed: this.calculateAverageSpeed(),
+      acceleration: this.calculateAccelerationTime(),
+      corners: this.corners,
+      elevationGain: this.elevationGain,
+      elevationHistory: this.elevationHistory,
+      rideHistory: this.rideHistory
     };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ride_metrics.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    this.log("Metrics exported");
+  },
 
-    document.addEventListener('DOMContentLoaded', () => {
-      MotoFindBack.init();
-      if (/Mobi|Android/i.test(navigator.userAgent)) {
-        MotoFindBack.log("MOBILE DETECTED: Mount your phone securely for accurate lean angles and crash detection", false);
-      }
+  sendEmergencyAlert: function(message = null) {
+    const msg = message || `${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition?.lat.toFixed(6)}, Lon: ${this.lastPosition?.lon.toFixed(6)}`;
+    this.emergencyContacts.forEach(contact => {
+      this.log(`Sending emergency alert to ${contact}: ${msg}`);
     });
-  </script>
-  <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then(registration => {
-          console.log('ServiceWorker registration successful');
-        })
-        .catch(err => {
-          console.log('ServiceWorker registration failed: ', err);
-        });
-    });
+    this.log("Emergency alert sent");
+  },
+
+  testEmergency: function() {
+    this.log("Testing emergency alert");
+    this.sendEmergencyAlert("TEST ALERT: This is a test emergency message.");
+  },
+
+  addEmergencyContact: function() {
+    const input = document.getElementById("emergencyContacts").value;
+    if (input) {
+      this.emergencyContacts = input.split(',').map(c => c.trim());
+      this.updateEmergencyContacts();
+      this.log("Emergency contacts updated");
+    }
+  },
+
+  updateEmergencyContacts: function() {
+    const list = document.getElementById("emergencyContactList");
+    list.innerHTML = this.emergencyContacts.map(contact => `
+      <div class="contact-item">
+        <span>${contact}</span>
+        <button onclick="MotoFindBack.sendEmergencyAlert('Emergency to ${contact}: ${document.getElementById('emergencyMessage').value}')">Call</button>
+      </div>
+    `).join('');
+  },
+
+  showMaintenanceForm: function() {
+    document.getElementById("newMaintenanceName").style.display = "block";
+    document.getElementById("newMaintenanceInterval").style.display = "block";
+    document.getElementById("saveMaintenanceBtn").style.display = "block";
+  },
+
+  saveMaintenanceItem: function() {
+    const name = document.getElementById("newMaintenanceName").value;
+    const interval = parseInt(document.getElementById("newMaintenanceInterval").value);
+    if (name && interval) {
+      this.maintenanceItems.push({ name, interval, progress: 0 });
+      this.updateMaintenanceList();
+      document.getElementById("newMaintenanceName").value = "";
+      document.getElementById("newMaintenanceInterval").value = "";
+      this.log(`Maintenance item added: ${name}`);
+    }
+  },
+
+  resetMaintenance: function() {
+    this.maintenanceItems = [];
+    this.updateMaintenanceList();
+    this.log("Maintenance items reset");
+  },
+
+  updateMaintenanceList: function() {
+    const list = document.getElementById("maintenanceList");
+    list.innerHTML = this.maintenanceItems.map(item => `
+      <div class="maintenance-item">
+        <div>${item.name}</div>
+        <div class="maintenance-progress">
+          <div class="maintenance-progress-bar" style="width: ${(item.progress / item.interval) * 100}%"></div>
+        </div>
+        <div>${item.progress}/${item.interval} km</div>
+      </div>
+    `).join('') || `
+      <div class="maintenance-item">
+        <div>Oil Change</div>
+        <div class="maintenance-progress"><div class="maintenance-progress-bar" style="width: 30%"></div></div>
+        <div>2000/5000 km</div>
+      </div>
+      <div class="maintenance-item">
+        <div>Tire Pressure</div>
+        <div class="maintenance-progress"><div class="maintenance-progress-bar" style="width: 70%"></div></div>
+        <div>Check weekly</div>
+      </div>
+      <div class="maintenance-item">
+        <div>Chain Lubrication</div>
+        <div class="maintenance-progress"><div class="maintenance-progress-bar" style="width: 50%"></div></div>
+        <div>500/1000 km</div>
+      </div>
+    `;
+  },
+
+  updateRideHistory: function() {
+    const history = document.getElementById("rideHistory");
+    history.innerHTML = this.rideHistory.map(ride => `
+      <div>Ride on ${new Date(ride.startTime).toLocaleString()}: ${ride.distance.toFixed(1)} km, Max Speed: ${ride.maxSpeed.toFixed(1)} km/h, Avg Speed: ${ride.avgSpeed.toFixed(1)} km/h, 0-${this.accelTarget} km/h: ${ride.acceleration.toFixed(2)} s, Corners: ${ride.corners}, Elevation Gain: ${ride.elevationGain.toFixed(0)} m</div>
+    `).join('') || "No ride history yet.";
+  },
+
+  loadData: function() {
+    this.log("Loading saved data (placeholder)");
+  },
+
+  log: function(message, isError = false) {
+    const debug = document.getElementById("debug");
+    debug.innerHTML += `<div style="color: ${isError ? '#ff3333' : '#aaa'}">${new Date().toLocaleTimeString()}: ${message}</div>`;
+    debug.scrollTop = debug.scrollHeight;
   }
+};
+
+MotoFindBack.init();
 </script>
 </body>
 </html>

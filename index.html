@@ -742,33 +742,33 @@
           No ride history yet. </div>
       </div>
     </div>
-  <div class="tab-content" id="emergency-tab">
-  <div class="panel emergency-panel">
-    <h2>Emergency Features</h2>
-    <div class="control-group"> <button id="emergencyBtn" class="emergency-btn">EMERGENCY
-        ALERT</button> </div>
-    <div id="crashStatus" class="status">Crash Detection: Inactive</div>
-    <div class="control-group">
-      <div class="control-item"> <label for="emergencyMessage">Emergency
-          Message</label><br>
-        <textarea id="emergencyMessage" rows="3" style="width: 100%;">I need help! My current location is: </textarea>
+    <div class="tab-content" id="emergency-tab">
+      <div class="panel emergency-panel">
+        <h2>Emergency Features</h2>
+        <div class="control-group"> <button id="emergencyBtn" class="emergency-btn">EMERGENCY
+            ALERT</button> </div>
+        <div id="crashStatus" class="status">Crash Detection: Inactive</div>
+        <div class="control-group">
+          <div class="control-item"> <label for="emergencyMessage">Emergency
+              Message</label><br>
+            <textarea id="emergencyMessage" rows="3" style="width: 100%;">I need help! My current location is: </textarea>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="control-item"> <label for="emergencyContacts">Emergency
+              Contacts (comma separated)</label><br>
+            <input id="emergencyContacts" value="" placeholder="+1234567890,+0987654321"
+              style="width: 100%;"
+              type="text">
+          </div>
+        </div>
+        <h3>Quick Contact</h3>
+        <div class="emergency-contacts" id="emergencyContactList"> </div>
+        <div class="control-group"> <button id="testEmergencyBtn" class="warning-btn">Test
+            Emergency</button> <button id="addContactBtn" class="secondary-btn">Add
+            Contact</button> </div>
       </div>
     </div>
- <div class="control-group">
-  <div class="control-item"> <label for="emergencyContacts">Emergency
-      Contacts (Phone numbers, comma separated)</label><br>
-    <input id="emergencyContacts" value="" placeholder="+1234567890,+0987654321"
-      style="width: 100%;"
-      type="text">
-  </div>
-</div>
-    <h3>Quick Contact</h3>
-    <div class="emergency-contacts" id="emergencyContactList"> </div>
-    <div class="control-group"> <button id="testEmergencyBtn" class="warning-btn">Test
-        Emergency</button> <button id="addContactBtn" class="secondary-btn">Add
-        Contact</button> </div>
-  </div>
-</div>
     <div class="tab-content" id="maintenance-tab">
       <div class="panel">
         <h2>Maintenance Alerts</h2>
@@ -1717,40 +1717,37 @@ stopRide: function() {
     this.log("Metrics exported");
   },
 
-sendEmergencyAlert: function(message = null) {
-  const msg = message || `${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition?.lat.toFixed(6)}, Lon: ${this.lastPosition?.lon.toFixed(6)}`;
-  this.emergencyContacts.forEach(contact => {
-    // Use SMS - much more reliable
-    const smsUrl = `sms:${contact}?body=${encodeURIComponent(msg)}`;
-    window.location.href = smsUrl;
-    this.log(`Opening SMS to ${contact}: ${msg}`);
-  });
-  this.log("Emergency SMS messages opened");
-},
+  sendEmergencyAlert: function(message = null) {
+    const msg = message || `${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition?.lat.toFixed(6)}, Lon: ${this.lastPosition?.lon.toFixed(6)}`;
+    this.emergencyContacts.forEach(contact => {
+      this.log(`Sending emergency alert to ${contact}: ${msg}`);
+    });
+    this.log("Emergency alert sent");
+  },
 
-testEmergency: function() {
-  this.log("Testing emergency alert");
-  this.sendEmergencyAlert("TEST ALERT: This is a test emergency message.");
-},
+  testEmergency: function() {
+    this.log("Testing emergency alert");
+    this.sendEmergencyAlert("TEST ALERT: This is a test emergency message.");
+  },
 
-addEmergencyContact: function() {
-  const input = document.getElementById("emergencyContacts").value;
-  if (input) {
-    this.emergencyContacts = input.split(',').map(c => c.trim());
-    this.updateEmergencyContacts();
-    this.log("Emergency contacts updated");
-  }
-},
+  addEmergencyContact: function() {
+    const input = document.getElementById("emergencyContacts").value;
+    if (input) {
+      this.emergencyContacts = input.split(',').map(c => c.trim());
+      this.updateEmergencyContacts();
+      this.log("Emergency contacts updated");
+    }
+  },
 
-updateEmergencyContacts: function() {
-  const list = document.getElementById("emergencyContactList");
-  list.innerHTML = this.emergencyContacts.map(contact => `
-    <div class="contact-item">
-      <span>${contact}</span>
-      <button onclick="MotoFindBack.sendEmergencyAlert('Emergency to ${contact}: ${document.getElementById('emergencyMessage').value}')">SMS</button>
-    </div>
-  `).join('');
-},
+  updateEmergencyContacts: function() {
+    const list = document.getElementById("emergencyContactList");
+    list.innerHTML = this.emergencyContacts.map(contact => `
+      <div class="contact-item">
+        <span>${contact}</span>
+        <button onclick="MotoFindBack.sendEmergencyAlert('Emergency to ${contact}: ${document.getElementById('emergencyMessage').value}')">Call</button>
+      </div>
+    `).join('');
+  },
 
   showMaintenanceForm: function() {
     document.getElementById("newMaintenanceName").style.display = "block";

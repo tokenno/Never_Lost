@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spin - Motorcycle GPS Locator</title>
-    <!-- Leaflet Map CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <style>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spin - Motorcycle GPS Locator</title>
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
     :root {
       --primary-color: #ff6600;
       --secondary-color: #333;
@@ -88,9 +88,7 @@
     }
     
     @keyframes wheel-dash {
-      to {
-        stroke-dashoffset: -10;
-      }
+      to { stroke-dashoffset: -10; }
     }
     
     @keyframes spoke-spin {
@@ -152,7 +150,7 @@
       margin: 10px 0;
     }
     
-    input, button, select {
+    input, button, select, textarea {
       margin: 0.5em;
       padding: 0.7em 1em;
       font-size: 1em;
@@ -365,7 +363,7 @@
       bottom: 0;
       left: 50%;
       transform: translateX(-50%);
-      transition: transform 0.1s ease; /* Faster transition for lean angle */
+      transition: transform 0.1s ease;
     }
     
     .lean-scale {
@@ -526,6 +524,10 @@
       position: relative;
     }
     
+    #newMaintenanceName, #newMaintenanceInterval, #saveMaintenanceBtn {
+      display: none;
+    }
+    
     @media (max-width: 768px) {
       .dashboard {
         grid-template-columns: 1fr;
@@ -545,174 +547,214 @@
       }
     }
   </style>
-  </head>
-  <body>
-    <div class="app-header">
-      <h1 class="app-title">Spin</h1>
-      <div class="wheel-container">
-        <svg class="spinning-wheel" viewBox="0 0 100 100">
-          <circle class="wheel-outer" cx="50" cy="50" r="40"></circle>
-          <circle class="wheel-inner" cx="50" cy="50" r="25"></circle>
-          <line class="wheel-spoke spoke-1" x1="50" y1="50" x2="75" y2="50"></line>
-          <line class="wheel-spoke spoke-2" x1="50" y1="50" x2="50" y2="25"></line>
-          <line class="wheel-spoke spoke-3" x1="50" y1="50" x2="30" y2="70"></line>
-          <circle class="wheel-pulse" cx="50" cy="50" r="8"></circle> </svg> </div>
+</head>
+<body>
+  <div class="app-header">
+    <h1 class="app-title">Spin</h1>
+    <div class="wheel-container">
+      <svg class="spinning-wheel" viewBox="0 0 100 100">
+        <circle class="wheel-outer" cx="50" cy="50" r="40" />
+        <circle class="wheel-inner" cx="50" cy="50" r="25" />
+        <line class="wheel-spoke spoke-1" x1="50" y1="50" x2="75" y2="50" />
+        <line class="wheel-spoke spoke-2" x1="50" y1="50" x2="50" y2="25" />
+        <line class="wheel-spoke spoke-3" x1="50" y1="50" x2="30" y2="70" />
+        <circle class="wheel-pulse" cx="50" cy="50" r="8" />
+      </svg>
     </div>
-    <div class="dashboard">
-  <div class="dashboard-item">
-    <div class="dashboard-label">Current Speed</div>
-    <div class="dashboard-value" id="currentSpeed">-- km/h</div>
   </div>
-  <div class="dashboard-item">
-    <div class="dashboard-label">Max Speed</div>
-    <div class="dashboard-value" id="maxSpeed">-- km/h</div>
-  </div>
-  <div class="dashboard-item">
-    <div class="dashboard-label">Average Speed</div>
-    <div class="dashboard-value" id="avgSpeed">-- km/h</div>
-  </div>
-  <div class="dashboard-item">
-    <div class="dashboard-label">Current Lean Angle</div>
-    <div class="dashboard-value" id="leanAngle">--°</div>
-  </div>
-  <div class="dashboard-item">
-    <div class="dashboard-label">Today's Distance</div>
-    <div class="dashboard-value" id="todayDistance">-- km</div>
-  </div>
-  <div class="dashboard-item">
-    <div class="dashboard-label">Elevation Gain</div>
-    <div class="dashboard-value" id="elevationGain">-- m</div>
-  </div>
-  <div class="dashboard-item">
-    <div class="dashboard-label">Max Cornering Speed</div>
-    <div class="dashboard-value" id="maxCornerSpeed">-- km/h</div>
-  </div>
-  <div class="dashboard-item">
-    <div class="dashboard-label">Max Corner G</div>
-    <div class="dashboard-value" id="maxCornerG">-- g</div>
-  </div>
-    <div class="tabs">
-      <div class="tab active" data-tab="navigation">Navigation</div>
-      <div class="tab" data-tab="metrics">Ride Metrics</div>
-      <div class="tab" data-tab="emergency">Emergency</div>
-      <div class="tab" data-tab="maintenance">Maintenance</div>
+
+  <div class="dashboard">
+    <div class="dashboard-item">
+      <div class="dashboard-label">Current Speed</div>
+      <div class="dashboard-value" id="currentSpeed">-- km/h</div>
     </div>
-    <div class="tab-content active" id="navigation-tab">
-      <div class="panel">
-        <h2>GPS Navigation</h2>
-        <p class="warning">TAP "TEST AUDIO &amp; LOCK" FIRST!</p>
-        <div class="control-group"> <button id="testBtn" class="primary-btn">Test
-            Audio &amp; Lock</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
-            Sensors</button> <button id="autoLockBtn" class="secondary-btn" disabled="disabled">Auto-Lock
-            Mode</button> <button id="muteBtn" class="secondary-btn" disabled="disabled">Mute
-            Sound</button>
-          <button id="stopGpsLockBtn" class="secondary-btn" disabled="disabled">Stop
-            GPS Lock</button>
-        </div>
-        <div id="autoLockSettings" style="display: none;">
-          <div class="control-group">
-            <div class="control-item"> <label for="stationaryTime">Stationary
-                Confirmation Time</label>
-              <div> <input id="stationaryTime" value="30" min="5" max="60" type="range">
-                <span id="stationaryTimeValue" class="slider-label">30 sec</span>
-              </div>
-            </div>
-            <div class="control-item"> <label for="speedThreshold">Speed
-                Threshold (km/h)</label>
-              <div> <input id="speedThreshold" value="10" min="5" max="20" type="range">
-                <span id="speedThresholdValue" class="slider-label">10 km/h</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div id="calibrateStatus" class="status">Sensors not calibrated</div>
-        <div id="lockStatus" class="status">Lock Status: Not locked</div>
-        <div id="audioStatus" class="status">Audio: Not initialized</div>
-        <div id="gpsStatus" class="status">GPS: Ready</div>
-        <div id="reachedMessage" class="reached-message" style="display: none;">You
-          have reached GPS locked point!</div>
-      </div>
-      <div class="panel">
-        <h2>Position Map</h2>
-        <div id="map"></div>
-      </div>
-      <div class="panel"> <button class="collapsible">Direction Indicator ▼</button>
-        <div class="collapsible-content">
-          <div class="direction-container">
-            <div id="directionArrow"></div>
-            <div class="direction-circle"></div>
-          </div>
-          <div id="directionStatus" class="direction-status">Direction: --</div>
-        </div>
-        <button class="collapsible">Sonar Parameters ▼</button>
-        <div class="collapsible-content">
-          <div class="control-group">
-            <div class="control-item"> <label for="freqInput">Bleep Freq (Hz)</label><br>
-              <input id="freqInput" value="800" min="20" max="20000" type="number">
-            </div>
-            <div class="control-item"> <label for="maxDistInput">Max Distance
-                (m)</label><br>
-              <input id="maxDistInput" value="50" min="1" max="500" type="range">
-              <span id="maxDistValue">50</span> m </div>
-          </div>
-        </div>
-        <button class="collapsible">Data Output ▼</button>
-        <div class="collapsible-content">
-          <div class="control-group">
-            <div class="control-item"> <label>Distance</label><br>
-              <span id="distance">--</span> m </div>
-            <div class="control-item"> <label>Accuracy</label><br>
-              <span id="accuracy">--</span> m </div>
-            <div class="control-item"> <label>BPM</label><br>
-              <span id="bleepRate">--</span> </div>
-          </div>
-        </div>
-      </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Speed</div>
+      <div class="dashboard-value" id="maxSpeed">-- km/h</div>
     </div>
-    <div class="tab-content" id="metrics-tab">
-      <div class="panel">
-        <h2>Ride Metrics</h2>
-        <div class="control-group"> <button id="startRideBtn" class="primary-btn">Start
-            Ride</button> <button id="stopRideBtn" class="secondary-btn" disabled="disabled">Stop
-            Ride</button> <button id="resetMetricsBtn" class="secondary-btn">Reset
-            Metrics</button> <button id="exportMetricsBtn" class="secondary-btn">Export
-            Data</button>
-        </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Average Speed</div>
+      <div class="dashboard-value" id="avgSpeed">-- km/h</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Current Lean Angle</div>
+      <div class="dashboard-value" id="leanAngle">--°</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Today's Distance</div>
+      <div class="dashboard-value" id="todayDistance">-- km</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Elevation Gain</div>
+      <div class="dashboard-value" id="elevationGain">-- m</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Cornering Speed</div>
+      <div class="dashboard-value" id="maxCornerSpeed">-- km/h</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Corner G</div>
+      <div class="dashboard-value" id="maxCornerG">-- g</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Avg Corner Entry Speed</div>
+      <div class="dashboard-value" id="avgCornerEntrySpeed">-- km/h</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">0-100 km/h</div>
+      <div class="dashboard-value" id="accelerationTime">-- s</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="navigation">Navigation</div>
+    <div class="tab" data-tab="metrics">Ride Metrics</div>
+    <div class="tab" data-tab="emergency">Emergency</div>
+    <div class="tab" data-tab="maintenance">Maintenance</div>
+  </div>
+
+  <div class="tab-content active" id="navigation-tab">
+    <div class="panel">
+      <h2>GPS Navigation</h2>
+      <p class="warning">TAP "TEST AUDIO & LOCK" FIRST!</p>
+
+      <div class="control-group">
+        <button id="testBtn" class="primary-btn">Test Audio & Lock</button>
+        <button id="calibrateBtn" class="secondary-btn">Calibrate Sensors</button>
+        <button id="autoLockBtn" class="secondary-btn" disabled>Auto-Lock Mode</button>
+        <button id="muteBtn" class="secondary-btn" disabled>Mute Sound</button>
+        <button id="stopGpsLockBtn" class="secondary-btn" disabled>Stop GPS Lock</button>
+      </div>
+      
+      <div id="autoLockSettings" style="display: none;">
         <div class="control-group">
-          <div class="control-item"> <label for="accelTarget">Acceleration
-              Target (km/h)</label><br>
-            <input id="accelTarget" value="100" min="10" max="200" type="number">
+          <div class="control-item">
+            <label for="stationaryTime">Stationary Confirmation Time</label>
+            <div>
+              <input type="range" id="stationaryTime" value="30" min="5" max="60" />
+              <span id="stationaryTimeValue" class="slider-label">30 sec</span>
+            </div>
+          </div>
+          <div class="control-item">
+            <label for="speedThreshold">Speed Threshold (km/h)</label>
+            <div>
+              <input type="range" id="speedThreshold" value="10" min="5" max="20" />
+              <span id="speedThresholdValue" class="slider-label">10 km/h</span>
+            </div>
           </div>
         </div>
-        <div class="lean-container">
-          <div class="lean-scale">
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-          </div>
-          <div class="lean-bike" id="leanBike"></div>
-          <div class="lean-value" id="leanValue">0°</div>
+      </div>
+      
+      <div id="calibrateStatus" class="status">Sensors not calibrated</div>
+      <div id="lockStatus" class="status">Lock Status: Not locked</div>
+      <div id="audioStatus" class="status">Audio: Not initialized</div>
+      <div id="gpsStatus" class="status">GPS: Ready</div>
+      <div id="reachedMessage" class="reached-message" style="display: none;">You have reached GPS locked point!</div>
+    </div>
+
+    <div class="panel">
+      <h2>Position Map</h2>
+      <div id="map"></div>
+    </div>
+
+    <div class="panel">
+      <button class="collapsible">Direction Indicator ▼</button>
+      <div class="collapsible-content">
+        <div class="direction-container">
+          <div id="directionArrow"></div>
+          <div class="direction-circle"></div>
         </div>
+        <div id="directionStatus" class="direction-status">Direction: --</div>
+      </div>
+
+      <button class="collapsible">Sonar Parameters ▼</button>
+      <div class="collapsible-content">
+        <div class="control-group">
+          <div class="control-item">
+            <label for="freqInput">Bleep Freq (Hz)</label><br>
+            <input type="number" id="freqInput" value="800" min="20" max="20000" />
+          </div>
+          <div class="control-item">
+            <label for="maxDistInput">Max Distance (m)</label><br>
+            <input type="range" id="maxDistInput" value="50" min="1" max="500" />
+            <span id="maxDistValue">50</span> m
+          </div>
+        </div>
+      </div>
+
+      <button class="collapsible">Data Output ▼</button>
+      <div class="collapsible-content">
+        <div class="control-group">
+          <div class="control-item">
+            <label>Distance</label><br>
+            <span id="distance">--</span> m
+          </div>
+          <div class="control-item">
+            <label>Accuracy</label><br>
+            <span id="accuracy">--</span> m
+          </div>
+          <div class="control-item">
+            <label>BPM</label><br>
+            <span id="bleepRate">--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="metrics-tab">
+    <div class="panel">
+      <h2>Ride Metrics</h2>
+      
+      <div class="control-group">
+        <button id="startRideBtn" class="primary-btn">Start Ride</button>
+        <button id="stopRideBtn" class="secondary-btn" disabled>Stop Ride</button>
+        <button id="resetMetricsBtn" class="secondary-btn">Reset Metrics</button>
+        <button id="exportMetricsBtn" class="secondary-btn">Export Data</button>
+      </div>
+
+      <div class="control-group">
+        <div class="control-item">
+          <label for="accelTarget">Acceleration Target (km/h)</label><br>
+          <input type="number" id="accelTarget" value="100" min="10" max="200" />
+        </div>
+      </div>
+      
+      <div class="lean-container">
+        <div class="lean-scale">
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+        </div>
+        <div class="lean-bike" id="leanBike"></div>
+        <div class="lean-value" id="leanValue">0°</div>
+      </div>
+
+      <div class="corner-analysis">
         <h3>Cornering Analysis</h3>
         <p>Current Corner G: <span id="currentCornerG">0 g</span></p>
-        <p>Max Corner Speed: <span id="currentMaxCornerSpeed">0 km/h</span></p>
+        <p>Max Corner Speed: <span id="maxCornerSpeed">0 km/h</span></p>
         <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
         <canvas id="cornerChart" width="100%" height="150"></canvas>
         <div id="cornerList">No corners detected yet.</div>
       </div>
+
       <div class="elevation-profile">
         <h3>Elevation Profile</h3>
         <canvas id="elevationCanvas" width="100%" height="150"></canvas>
         <p>Total Elevation Gain: <span id="totalElevationGain">0 m</span></p>
+        <p>Max Elevation: <span id="maxElevation">0 m</span></p>
+        <p>Min Elevation: <span id="minElevation">0 m</span></p>
       </div>
+      
       <div class="control-group">
         <div class="control-item">
           <h3>Distance Statistics</h3>
@@ -721,6 +763,7 @@
           <div>This Month: <span id="statsMonth">0 km</span></div>
           <div>Total: <span id="statsTotal">0 km</span></div>
         </div>
+        
         <div class="control-item">
           <h3>Speed Statistics</h3>
           <div>Current: <span id="statsCurrentSpeed">0 km/h</span></div>
@@ -729,148 +772,161 @@
           <div>0-100 km/h: <span id="statsAcceleration">-- s</span></div>
         </div>
       </div>
+      
       <div class="control-item">
         <h3>Ride History</h3>
         <div id="rideHistory" style="max-height: 200px; overflow-y: auto; text-align: left; padding: 10px; background: rgba(40,40,40,0.7); border-radius: 5px;">
-          No ride history yet. </div>
+          No ride history yet.
+        </div>
       </div>
     </div>
+  </div>
+
   <div class="tab-content" id="emergency-tab">
-  <div class="panel emergency-panel">
-    <h2>Emergency Features</h2>
-    <div class="control-group"> <button id="emergencyBtn" class="emergency-btn">EMERGENCY
-        ALERT</button> </div>
-    <div id="crashStatus" class="status">Crash Detection: Inactive</div>
-    <div class="control-group">
-      <div class="control-item"> <label for="emergencyMessage">Emergency
-          Message</label><br>
-        <textarea id="emergencyMessage" rows="3" style="width: 100%;">I need help! My current location is: </textarea>
+    <div class="panel emergency-panel">
+      <h2>Emergency Features</h2>
+      
+      <div class="control-group">
+        <button id="emergencyBtn" class="emergency-btn">EMERGENCY ALERT</button>
       </div>
-    </div>
- <div class="control-group">
-  <div class="control-item"> <label for="emergencyContacts">Emergency
-      Contacts (Phone numbers, comma separated)</label><br>
-    <input id="emergencyContacts" value="" placeholder="+1234567890,+0987654321"
-      style="width: 100%;"
-      type="text">
-  </div>
-</div>
-    <h3>Quick Contact</h3>
-    <div class="emergency-contacts" id="emergencyContactList"> </div>
-    <div class="control-group"> <button id="testEmergencyBtn" class="warning-btn">Test
-        Emergency</button> <button id="addContactBtn" class="secondary-btn">Add
-        Contact</button> </div>
-  </div>
-</div>
-    <div class="tab-content" id="maintenance-tab">
-      <div class="panel">
-        <h2>Maintenance Alerts</h2>
-        <div class="control-group"> <button id="addMaintenanceBtn" class="primary-btn">Add
-            Maintenance Item</button> <button id="resetMaintenanceBtn" class="secondary-btn">Reset
-            All</button> </div>
-        <div id="maintenanceList">
-          <div class="maintenance-item">
-            <div>Oil Change</div>
-            <div class="maintenance-progress">
-              <div class="maintenance-progress-bar" style="width: 30%;"></div>
-            </div>
-            <div>2000/5000 km</div>
-          </div>
-          <div class="maintenance-item">
-            <div>Tire Pressure</div>
-            <div class="maintenance-progress">
-              <div class="maintenance-progress-bar" style="width: 70%;"></div>
-            </div>
-            <div>Check weekly</div>
-          </div>
-          <div class="maintenance-item">
-            <div>Chain Lubrication</div>
-            <div class="maintenance-progress">
-              <div class="maintenance-progress-bar" style="width: 50%;"></div>
-            </div>
-            <div>500/1000 km</div>
-          </div>
-        </div>
-        <div class="control-group">
-          <div class="control-item">
-            <h3>Add New Maintenance Item</h3>
-            <input id="newMaintenanceName" placeholder="Item name" type="text">
-            <input id="newMaintenanceInterval" placeholder="Interval (km)" type="number">
-            <button id="saveMaintenanceBtn" class="secondary-btn">Save</button>
-          </div>
+      
+      <div id="crashStatus" class="status">Crash Detection: Inactive</div>
+      
+      <div class="control-group">
+        <div class="control-item">
+          <label for="emergencyMessage">Emergency Message</label><br>
+          <textarea id="emergencyMessage" rows="3" style="width: 100%;">I need help! My current location is: </textarea>
         </div>
       </div>
+      
+      <div class="control-group">
+        <div class="control-item">
+          <label for="emergencyContacts">Emergency Contacts (comma-separated phone numbers)</label><br>
+          <input type="text" id="emergencyContacts" value="" placeholder="+1234567890,+0987654321" style="width: 100%;" />
+        </div>
+        <div class="control-item">
+          <label for="messengerContacts">Messenger Contacts (comma-separated Facebook Page IDs/usernames)</label><br>
+          <input type="text" id="messengerContacts" value="" placeholder="yourpage,friendusername" style="width: 100%;" />
+        </div>
+      </div>
+      
+      <h3>Quick Contact</h3>
+      <div class="emergency-contacts" id="emergencyContactList">
+      </div>
+      
+      <div class="control-group">
+        <button id="testEmergencyBtn" class="warning-btn">Test Emergency</button>
+        <button id="addContactBtn" class="secondary-btn">Add Contact</button>
+        <button id="sendMessengerBtn" class="secondary-btn">Send via Messenger</button>
+      </div>
     </div>
+  </div>
+
+  <div class="tab-content" id="maintenance-tab">
     <div class="panel">
-      <h2 class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-        Help Guide ▼ </h2>
-      <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
-        <h1>Spin</h1>
-        <h2>Purpose:</h2>
-        Motorcycle-focused GPS navigation with ride metrics, emergency features,
-        and maintenance tracking. The spinning wheel in the header rotates to
-        reflect your current speed, spinning faster as you ride faster.
-        <h2>Navigation Tab</h2>
-        <strong>GPS Navigation:</strong> Lock your position and navigate back
-        with audio cues.<br>
-        <strong>Calibrate Sensors:</strong> Place phone on bike in riding
-        position and tap to set baseline for lean angle and crash detection.<br>
-        <strong>Auto-Lock Mode:</strong> Automatically locks position when
-        motorcycle is stationary.<br>
-        <strong>Direction Indicator:</strong> Visual compass pointing to locked
-        position.<br>
-        <strong>Sonar Parameters:</strong> Adjust audio feedback frequency and
-        range.
-        <h2>Metrics Tab</h2>
-        <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and
-        lean angles with real-time updates.<br>
-        <strong>Cornering Analysis:</strong> Detects corners using GPS curvature
-        and lean angle, calculates cornering G and speeds.<br>
-        <strong>Elevation Gain:</strong> Tracks altitude changes using GPS data,
-        with a profile chart.<br>
-        <strong>Lean Angle Indicator:</strong> Visual display of motorcycle lean
-        during corners, updated rapidly for responsiveness.<br>
-        <strong>Distance Statistics:</strong> Daily, weekly, monthly, and total
-        distance tracking.<br>
-        <strong>Acceleration Timer:</strong> Measures 0-100 km/h acceleration.
-        <h2>Emergency Tab</h2>
-        <strong>Emergency Alert:</strong> Send your location to emergency
-        contacts manually.<br>
-        <strong>Crash Detection:</strong> Automatically sends location to
-        contacts if bike is detected lying flat for 5 seconds.<br>
-        <strong>Quick Contacts:</strong> Pre-set emergency contacts for quick
-        access.<br>
-        <strong>Custom Message:</strong> Edit the emergency message with your
-        details.
-        <h2>Maintenance Tab</h2>
-        <strong>Maintenance Alerts:</strong> Track service intervals based on
-        mileage.<br>
-        <strong>Progress Indicators:</strong> Visual progress bars for each
-        maintenance item.<br>
-        <strong>Custom Items:</strong> Add your own maintenance tasks and
-        intervals.
-        <h2>Quick Start</h2>
-        1. Mount phone securely and tap "Calibrate Sensors" to set lean angle
-        and crash detection baseline.<br>
-        2. Set emergency contacts in the Emergency tab.<br>
-        3. Tap "Test Audio &amp; Lock" to initialize the app.<br>
-        4. Use the Navigation tab to lock your parking position.<br>
-        5. Check the Metrics tab during your ride for performance data; watch
-        the header wheel spin with your speed.<br>
-        6. Add maintenance schedules in the Maintenance tab.
-        <h2>Tips</h2>
-        - For accurate lean angles and crash detection, mount your phone
-        securely on the motorcycle and calibrate sensors.<br>
-        - Set up emergency contacts before your first ride to enable crash
-        detection alerts.<br>
-        - Regular maintenance alerts help keep your motorcycle in top condition.<br>
-        - Export your ride data to track your riding habits over time. </div>
+      <h2>Maintenance Alerts</h2>
+      
+      <div class="control-group">
+        <button id="addMaintenanceBtn" class="primary-btn">Add Maintenance Item</button>
+        <button id="resetMaintenanceBtn" class="secondary-btn">Reset All</button>
+      </div>
+      
+      <div id="maintenanceList">
+        <div class="maintenance-item">
+          <div>Oil Change</div>
+          <div class="maintenance-progress">
+            <div class="maintenance-progress-bar" style="width: 30%;"></div>
+          </div>
+          <div>2000/5000 km</div>
+        </div>
+        
+        <div class="maintenance-item">
+          <div>Tire Pressure</div>
+          <div class="maintenance-progress">
+            <div class="maintenance-progress-bar" style="width: 70%;"></div>
+          </div>
+          <div>Check weekly</div>
+        </div>
+        
+        <div class="maintenance-item">
+          <div>Chain Lubrication</div>
+          <div class="maintenance-progress">
+            <div class="maintenance-progress-bar" style="width: 50%;"></div>
+          </div>
+          <div>500/1000 km</div>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <div class="control-item">
+          <h3>Add New Maintenance Item</h3>
+          <input type="text" id="newMaintenanceName" placeholder="Item name" />
+          <input type="number" id="newMaintenanceInterval" placeholder="Interval (km)" />
+          <button id="saveMaintenanceBtn" class="secondary-btn">Save</button>
+        </div>
+      </div>
     </div>
-    <div id="debug"></div>
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
+  </div>
+
+  <div class="panel">
+    <h2 class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+      Help Guide ▼
+    </h2>
+    <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
+      <h1>Spin</h1>
+      <h2>Purpose:</h2>
+      Motorcycle-focused GPS navigation with ride metrics, emergency features, and maintenance tracking. The spinning wheel in the header rotates to reflect your current speed, spinning faster as you ride faster.
+
+      <h2>Navigation Tab</h2>
+      <strong>GPS Navigation:</strong> Lock your position and navigate back with audio cues using "Test Audio & Lock". Stop the GPS lock with "Stop GPS Lock".<br>
+      <strong>Calibrate Sensors:</strong> Place phone on bike in riding position and tap to set baseline for lean angle and crash detection.<br>
+      <strong>Auto-Lock Mode:</strong> Automatically locks position when motorcycle is stationary.<br>
+      <strong>Direction Indicator:</strong> Visual compass pointing to locked position.<br>
+      <strong>Sonar Parameters:</strong> Adjust audio feedback frequency and range.
+
+      <h2>Metrics Tab</h2>
+      <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and lean angles with real-time updates. Start a ride with "Start Ride" and end it with "Stop Ride".<br>
+      <strong>Cornering Analysis:</strong> Detects corners using GPS curvature and lean angle, calculates cornering G and speeds.<br>
+      <strong>Elevation Gain:</strong> Tracks altitude changes using GPS data, with a profile chart.<br>
+      <strong>Lean Angle Indicator:</strong> Visual display of motorcycle lean during corners, updated rapidly for responsiveness.<br>
+      <strong>Distance Statistics:</strong> Daily, weekly, monthly, and total distance tracking.<br>
+      <strong>Acceleration Timer:</strong> Measures 0-100 km/h acceleration.
+
+      <h2>Emergency Tab</h2>
+      <strong>Emergency Alert:</strong> Send your location to emergency contacts (phone or Messenger) manually via "EMERGENCY ALERT".<br>
+      <strong>Messenger Alert:</strong> Send a pre-filled message via Facebook Messenger to specified Page IDs or usernames using "Send via Messenger".<br>
+      <strong>Crash Detection:</strong> Automatically sends location to all contacts (phone and Messenger) if bike is detected lying flat for 5 seconds.<br>
+      <strong>Quick Contacts:</strong> Pre-set phone numbers and Messenger contacts (Facebook Page IDs or usernames) for quick access.<br>
+      <strong>Custom Message:</strong> Edit the emergency message with your details.
+
+      <h2>Maintenance Tab</h2>
+      <strong>Maintenance Alerts:</strong> Track service intervals based on mileage.<br>
+      <strong>Progress Indicators:</strong> Visual progress bars for each maintenance item.<br>
+      <strong>Custom Items:</strong> Add your own maintenance tasks and intervals.
+
+      <h2>Quick Start</h2>
+      1. Mount phone securely and tap "Calibrate Sensors" to set lean angle and crash detection baseline.<br>
+      2. Set emergency contacts (phone numbers and Messenger IDs) in the Emergency tab.<br>
+      3. Tap "Test Audio & Lock" in the Navigation tab to lock your parking position.<br>
+      4. Start a ride in the Metrics tab to track performance; watch the header wheel spin with your speed.<br>
+      5. Stop the ride in the Metrics tab to save data, or stop the GPS lock in the Navigation tab to end navigation.<br>
+      6. Add maintenance schedules in the Maintenance tab.
+
+      <h2>Tips</h2>
+      - For accurate lean angles and crash detection, mount your phone securely on the motorcycle and calibrate sensors.<br>
+      - Set up emergency contacts before your first ride to enable crash detection alerts.<br>
+      - For Messenger alerts, use a Facebook Page ID/username or friend’s username (must be a friend on Facebook).<br>
+      - Regular maintenance alerts help keep your motorcycle in top condition.<br>
+      - Export your ride data to track your riding habits over time.
+    </div>
+  </div>
+
+  <div id="debug"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script>
 const MotoFindBack = {
   audioCtx: null,
   watchId: null,
@@ -936,48 +992,34 @@ const MotoFindBack = {
     debug.scrollTop = debug.scrollHeight;
   },
 
- init: async function() {
-  // Request device orientation permissions for iOS
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    try {
-      const permission = await DeviceOrientationEvent.requestPermission();
-      if (permission === 'granted') {
-        this.log("Device orientation permission granted");
-      } else {
-        this.log("Device orientation permission denied", true);
-      }
-    } catch (e) {
-      this.log(`Device orientation permission error: ${e.message}`, true);
+  init: async function() {
+    this.initMap();
+    this.canvas = document.getElementById('elevationCanvas');
+    if (!this.canvas) {
+      this.log("Error: elevationCanvas element not found", true);
+      return;
     }
-  }
-  
-  this.initMap();
-  this.canvas = document.getElementById('elevationCanvas');
-  if (!this.canvas) {
-    this.log("Error: elevationCanvas element not found", true);
-    return;
-  }
-  this.cornerChart = new Chart(document.getElementById('cornerChart').getContext('2d'), {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        label: 'Corner G-Force',
-        data: [],
-        borderColor: '#00ccff',
-        backgroundColor: 'rgba(0, 204, 255, 0.2)',
-        fill: true,
-        tension: 0.4
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: { beginAtZero: true, title: { display: true, text: 'G-Force (g)' } },
-        x: { title: { display: true, text: 'Corner Number' } }
+    this.cornerChart = new Chart(document.getElementById('cornerChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Corner G-Force',
+          data: [],
+          borderColor: '#00ccff',
+          backgroundColor: 'rgba(0, 204, 255, 0.2)',
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true, title: { display: true, text: 'G-Force (g)' } },
+          x: { title: { display: true, text: 'Corner Number' } }
+        }
       }
-    }
-  });
+    });
     this.setupEventListeners();
     this.setupTabs();
     this.setupCollapsibles();
@@ -1016,113 +1058,49 @@ const MotoFindBack = {
     }
   },
 
-  updateElevationProfile: function() {
-    if (!this.canvas) {
-      this.log("Error: canvas not initialized", true);
-      return;
-    }
-    const ctx = this.canvas.getContext('2d');
-    if (!ctx) {
-      this.log("Error: Unable to get 2D context for elevationCanvas", true);
-      return;
-    }
-    this.canvas.width = this.canvas.parentElement.offsetWidth;
-    const w = this.canvas.width;
-    const h = this.canvas.height;
-    ctx.clearRect(0, 0, w, h);
+  initMap: function() {
+    this.map = L.map('map', { zoomControl: true }).setView([51.505, -0.09], 15);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(this.map);
 
-    if (this.elevationHistory.length < 2) {
-      this.log("Not enough elevation data to plot");
-      return;
-    }
+    const userIcon = L.divIcon({ className: 'user-marker', html: '📍', iconSize: [24, 24] });
+    const lockIcon = L.divIcon({ className: 'lock-marker', html: '🔒', iconSize: [24, 24] });
+    this.userMarker = L.marker([0, 0], { icon: userIcon }).addTo(this.map);
+    this.lockMarker = L.marker([0, 0], { icon: lockIcon }).addTo(this.map);
+    this.line = L.polyline([], { color: '#ff6600', weight: 2 }).addTo(this.map);
 
-    const smoothedElevations = [];
-    for (let i = 0; i < this.elevationHistory.length; i++) {
-      const start = Math.max(0, i - 1);
-      const end = Math.min(this.elevationHistory.length - 1, i + 1);
-      const avgElev = this.elevationHistory.slice(start, end + 1)
-        .reduce((sum, p) => sum + p.elev, 0) / (end - start + 1);
-      smoothedElevations.push(avgElev);
-    }
-
-    const minElev = Math.min(...smoothedElevations);
-    const maxElev = Math.max(...smoothedElevations);
-    const range = maxElev - minElev || 1;
-
-    ctx.beginPath();
-    ctx.moveTo(0, h);
-    smoothedElevations.forEach((elev, i) => {
-      const x = (i / (smoothedElevations.length - 1)) * w;
-      const y = h - ((elev - minElev) / range * h * 0.8);
-      ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = 'var(--accent-color)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    document.getElementById('totalElevationGain').textContent = this.elevationGain.toFixed(0) + ' m';
-    document.getElementById('elevationGain').textContent = this.elevationGain.toFixed(0) + ' m';
-    document.getElementById('maxElevation').textContent = maxElev.toFixed(0) + ' m';
-    document.getElementById('minElevation').textContent = minElev.toFixed(0) + ' m';
-  },
-
- initMap: function() {
-  this.map = L.map('map', { zoomControl: true }).setView([51.505, -0.09], 15);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    maxZoom: 19
-  }).addTo(this.map);
-
-  const userIcon = L.divIcon({ className: 'user-marker', html: '📍', iconSize: [24, 24] });
-  const lockIcon = L.divIcon({ className: 'lock-marker', html: '🔒', iconSize: [24, 24] });
-  this.userMarker = L.marker([0, 0], { icon: userIcon }).addTo(this.map);
-  this.lockMarker = L.marker([0, 0], { icon: lockIcon }).addTo(this.map);
-  this.line = L.polyline([], { color: '#ff6600', weight: 2 }).addTo(this.map);
-
-  // Force map to redraw after initialization
-  setTimeout(() => {
-    this.map.invalidateSize();
-    this.log("Map initialized and redrawn");
-  }, 100);
-
-  // Redraw map when Navigation tab is shown
-  document.querySelector('.tab[data-tab="navigation"]').addEventListener('click', () => {
     setTimeout(() => {
       this.map.invalidateSize();
-      this.log("Map redrawn on Navigation tab activation");
+      this.log("Map initialized and redrawn");
     }, 100);
-  });
-},
-  
-setupTabs: function() {
-  const tabs = document.querySelectorAll('.tab');
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
-      // Redraw map when Navigation tab is activated
-      if (tab.dataset.tab === 'navigation' && this.map) {
-        setTimeout(() => {
-          this.map.invalidateSize();
-          this.log("Map redrawn on Navigation tab switch");
-        }, 100);
-      }
+
+    document.querySelector('.tab[data-tab="navigation"]').addEventListener('click', () => {
+      setTimeout(() => {
+        this.map.invalidateSize();
+        this.log("Map redrawn on Navigation tab activation");
+      }, 100);
     });
-  });
-},
-  
-  calculateCornerG: function(speedMs, leanAngle) {
-  if (speedMs <= 0 || leanAngle <= 0) return 0;
-  
-  const speedKmh = speedMs * 3.6;
-  const leanRad = leanAngle * Math.PI / 180;
-  
-  // Basic cornering G-force calculation
-  const gForce = Math.tan(leanRad);
-  return Math.min(2.0, gForce); // Cap at reasonable value
-},
+  },
+
+  setupTabs: function() {
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+        if (tab.dataset.tab === 'navigation' && this.map) {
+          setTimeout(() => {
+            this.map.invalidateSize();
+            this.log("Map redrawn on Navigation tab switch");
+          }, 100);
+        }
+      });
+    });
+  },
 
   setupCollapsibles: function() {
     const coll = document.getElementsByClassName("collapsible");
@@ -1136,731 +1114,578 @@ setupTabs: function() {
   },
 
   setupEventListeners: function() {
-document.getElementById("testBtn").addEventListener("click", () => {
-  this.initAudio();
-  this.playTestSound();
-  if (this.isAudioAllowed) {
-    this.lockCurrentPosition();
-    document.getElementById("stopGpsLockBtn").disabled = false;
-  }
-});
+    document.getElementById("testBtn").addEventListener("click", () => {
+      this.initAudio();
+      this.playTestSound();
+      if (this.isAudioAllowed) {
+        this.lockCurrentPosition();
+        document.getElementById("stopGpsLockBtn").disabled = false;
+      }
+    });
     document.getElementById("calibrateBtn").addEventListener("click", () => this.calibrateSensors());
     document.getElementById("autoLockBtn").addEventListener("click", () => this.toggleAutoLock());
     document.getElementById("muteBtn").addEventListener("click", () => this.toggleMute());
-document.getElementById("stopGpsLockBtn").addEventListener("click", () => this.stop());
-document.getElementById("stopRideBtn").addEventListener("click", () => this.stopRide());
+    document.getElementById("stopGpsLockBtn").addEventListener("click", () => this.stop());
     document.getElementById("startRideBtn").addEventListener("click", () => this.startRide());
+    document.getElementById("stopRideBtn").addEventListener("click", () => this.stopRide());
     document.getElementById("resetMetricsBtn").addEventListener("click", () => this.resetMetrics());
     document.getElementById("exportMetricsBtn").addEventListener("click", () => this.exportMetrics());
     document.getElementById("emergencyBtn").addEventListener("click", () => this.sendEmergencyAlert());
     document.getElementById("testEmergencyBtn").addEventListener("click", () => this.testEmergency());
     document.getElementById("addContactBtn").addEventListener("click", () => this.addEmergencyContact());
+    document.getElementById("sendMessengerBtn").addEventListener("click", () => this.sendMessengerAlert());
     document.getElementById("addMaintenanceBtn").addEventListener("click", () => this.showMaintenanceForm());
     document.getElementById("resetMaintenanceBtn").addEventListener("click", () => this.resetMaintenance());
     document.getElementById("saveMaintenanceBtn").addEventListener("click", () => this.saveMaintenanceItem());
   },
 
-initDeviceOrientation: function() {
-  if (window.DeviceOrientationEvent) {
-    window.addEventListener('deviceorientation', (event) => {
-      if (this.isCalibrating) {
-        this.calibrationSamples.push(event.gamma || 0);
-        return;
-      }
-      
-      // Handle gamma (lean angle)
-      if (event.gamma !== null) {
-        const rawLean = event.gamma - this.leanOffset;
-        this.currentLeanAngle = Math.round(Math.abs(rawLean));
-        
-        // Update display immediately
-        this.updateLeanAngleDisplay();
-        
-        // Update max lean angle
-        if (this.currentLeanAngle > this.maxLeanAngle) {
-          this.maxLeanAngle = this.currentLeanAngle;
-        }
-        
-        // Calculate cornering G-force
-        const speedMs = this.currentSpeed;
-        this.currentCornerG = this.calculateCornerG(speedMs, this.currentLeanAngle);
-        
-        // Detect corners
-        if (this.lastPosition) {
-          this.detectCorner(
-            this.lastPosition.lat, 
-            this.lastPosition.lon, 
-            speedMs * 3.6, 
-            this.currentLeanAngle, 
-            this.currentCornerG
-          );
-        }
-      }
-      
-      // Handle beta (crash detection)
-      if (event.beta !== null && !this.crashDetected) {
-        const betaAbs = Math.abs(event.beta);
-        if (betaAbs > 70) {
-          if (!this.crashStartTime) {
-            this.crashStartTime = Date.now();
-            document.getElementById('crashStatus').textContent = 'Possible crash detected... Confirming';
-            document.getElementById('crashStatus').className = 'status warning';
-            this.log('Possible crash detected, confirming for 5 seconds');
-          }
-          if (Date.now() - this.crashStartTime > 5000) {
-            this.crashDetected = true;
-            this.triggerCrashAlert();
-          }
-        } else if (this.crashStartTime) {
-          this.crashStartTime = null;
-          document.getElementById('crashStatus').textContent = 'Crash Detection: Inactive';
-          document.getElementById('crashStatus').className = 'status';
-          this.log('Crash condition cleared');
-        }
-      }
-    });
-    
-    this.log("Device orientation initialized");
-  } else {
-    this.log("Device orientation not supported", true);
-    document.getElementById('crashStatus').textContent = 'Crash Detection: Not supported';
-    document.getElementById('crashStatus').className = 'status error';
-  }
-},
-
-  calibrateSensors: function() {
-    this.isCalibrating = true;
-    this.calibrationSamples = [];
-    document.getElementById('calibrateStatus').textContent = 'Calibrating... Keep phone steady for 5 seconds.';
-    this.log('Starting sensor calibration');
-    setTimeout(() => {
-      if (this.calibrationSamples.length > 0) {
-        const avgGamma = this.calibrationSamples.reduce((a, b) => a + b, 0) / this.calibrationSamples.length;
-        this.leanOffset = avgGamma;
-        document.getElementById('calibrateStatus').textContent = 'Calibrated! Offset: ' + this.leanOffset.toFixed(1) + '°';
-        document.getElementById('calibrateStatus').className = 'status success';
-        this.log('Calibration complete: offset ' + this.leanOffset.toFixed(1) + '°');
-      } else {
-        document.getElementById('calibrateStatus').textContent = 'Calibration failed - no data';
-        document.getElementById('calibrateStatus').className = 'status error';
-        this.log('Calibration failed');
-      }
-      this.isCalibrating = false;
-    }, 5000);
+  initAudio: function() {
+    if (!this.audioCtx) {
+      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      document.getElementById("audioStatus").textContent = "Audio: Initialized";
+      document.getElementById("audioStatus").className = "status success";
+      this.isAudioAllowed = true;
+      this.log("Audio context initialized");
+    }
   },
 
-  triggerCrashAlert: function() {
-    document.getElementById('crashStatus').textContent = 'Crash detected! Sending alert...';
-    document.getElementById('crashStatus').className = 'status error';
-    this.log('Crash confirmed, triggering emergency alert');
-    if (this.lastPosition) {
-      const message = `CRASH DETECTED! ${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition.lat.toFixed(6)}, Lon: ${this.lastPosition.lon.toFixed(6)}`;
-      this.sendEmergencyAlert(message);
+  playTestSound: function() {
+    if (this.audioCtx && !this.isMuted) {
+      const oscillator = this.audioCtx.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(440, this.audioCtx.currentTime);
+      oscillator.connect(this.audioCtx.destination);
+      oscillator.start();
+      oscillator.stop(this.audioCtx.currentTime + 0.5);
+      this.log("Test sound played");
+    }
+  },
+
+  playBleep: function() {
+    if (this.audioCtx && !this.isMuted && this.isActive) {
+      const now = Date.now();
+      if (now - this.lastBleedTime >= this.currentTempo) {
+        const freq = parseFloat(document.getElementById("freqInput").value) || 800;
+        const oscillator = this.audioCtx.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+        oscillator.connect(this.audioCtx.destination);
+        oscillator.start();
+        oscillator.stop(this.audioCtx.currentTime + 0.1);
+        this.lastBleedTime = now;
+        this.bleepTimer = setTimeout(() => this.playBleep(), this.currentTempo);
+      }
+    }
+  },
+
+  calculateTempo: function(distance) {
+    const maxDist = parseFloat(document.getElementById("maxDistInput").value) || 50;
+    return Math.max(100, Math.min(1000, (distance / maxDist) * 1000));
+  },
+
+  calculateDistance: function(lat1, lon1, lat2, lon2) {
+    const R = 6371e3;
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c / 1000; // Distance in kilometers
+  },
+
+  calculateBearing: function(lat1, lon1, lat2, lon2) {
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+    const θ = Math.atan2(y, x);
+    return (θ * 180 / Math.PI + 360) % 360;
+  },
+
+  lockCurrentPosition: function() {
+    if (navigator.geolocation) {
+      this.watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          this.isActive = true;
+          if (!this.lockPosition) {
+            this.lockPosition = {
+              lat: position.coords.latitude,
+              lon: position.coords.longitude
+            };
+            document.getElementById("lockStatus").textContent = `Lock Status: Locked at Lat ${this.lockPosition.lat.toFixed(6)}, Lon ${this.lockPosition.lon.toFixed(6)}`;
+            document.getElementById("lockStatus").className = "status success";
+            this.log("Position locked at: " + JSON.stringify(this.lockPosition));
+            if (this.map) {
+              this.map.setView([this.lockPosition.lat, this.lockPosition.lon], 15);
+              this.map.invalidateSize();
+              this.log("Map centered on locked position");
+            }
+          }
+          this.updatePosition(position);
+        },
+        (error) => {
+          document.getElementById("gpsStatus").textContent = `GPS Error: ${error.message}`;
+          document.getElementById("gpsStatus").className = "status error";
+          this.log("GPS Error: " + error.message, true);
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      );
     } else {
-      this.log('No recent position available for crash alert', true);
-      document.getElementById('crashStatus').textContent = 'Crash detected, but no position available';
+      document.getElementById("gpsStatus").textContent = "GPS: Not supported";
+      document.getElementById("gpsStatus").className = "status error";
+      this.log("Geolocation not supported", true);
     }
   },
 
-updateLeanAngleDisplay: function() {
-  const leanBike = document.getElementById('leanBike');
-  const leanValue = document.getElementById('leanValue');
-  const dashboardLean = document.getElementById('leanAngle');
-  
-  if (leanBike && leanValue && dashboardLean) {
-    const displayAngle = Math.min(45, this.currentLeanAngle);
-    leanBike.style.transform = `translateX(-50%) rotate(${displayAngle}deg)`;
-    leanValue.textContent = `${this.currentLeanAngle}°`;
-    dashboardLean.textContent = `${this.currentLeanAngle}°`;
-    this.log(`Lean angle updated: ${this.currentLeanAngle}°`);
-  } else {
-    this.log("Error: Lean angle elements not found", true);
-  }
-},
-    calculateBearing: function(lat1, lon1, lat2, lon2) {
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const lat1Rad = lat1 * Math.PI / 180;
-  const lat2Rad = lat2 * Math.PI / 180;
-  
-  const y = Math.sin(dLon) * Math.cos(lat2Rad);
-  const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - 
-            Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
-  
-  let bearing = Math.atan2(y, x) * 180 / Math.PI;
-  return (bearing + 360) % 360;
-},
+  updatePosition: function(position) {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+    this.lastPosition = { lat, lon, accuracy: position.coords.accuracy || 0, altitude: position.coords.altitude || 0 };
+    this.currentSpeed = position.coords.speed || 0;
 
-updateDirectionArrow: function(bearing) {
-  const arrow = document.getElementById("directionArrow");
-  if (arrow) {
-    arrow.style.transform = `translate(-50%, -50%) rotate(${bearing}deg)`;
-  }
-},
+    if (this.userMarker && this.map) {
+      this.userMarker.setLatLng([lat, lon]);
+      this.map.panTo([lat, lon]);
+      this.log(`Map updated: User marker moved to Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}`);
+    } else {
+      this.log("Error: userMarker or map not initialized", true);
+    }
 
-calculateTempo: function(distance) {
-  const maxDist = parseFloat(document.getElementById("maxDistInput").value);
-  return Math.max(100, 1000 * (distance / maxDist));
-},
+    if (this.isActive && this.lockPosition && this.lockMarker && this.line) {
+      this.lockMarker.setLatLng([this.lockPosition.lat, this.lockPosition.lon]);
+      this.line.setLatLngs([[lat, lon], [this.lockPosition.lat, this.lockPosition.lon]]);
+      this.log(`Map updated: Lock marker at Lat: ${this.lockPosition.lat.toFixed(6)}, Lon: ${this.lockPosition.lon.toFixed(6)}, polyline drawn`);
+    }
 
-playBleep: function() {
-  if (!this.isActive || this.isMuted || !this.audioCtx) return;
-  
-  const distance = this.calculateDistance(this.lastPosition, this.lockPosition);
-  const maxDist = parseFloat(document.getElementById("maxDistInput").value);
-  const freq = parseFloat(document.getElementById("freqInput").value);
-  
-  if (distance < maxDist) {
-    const now = this.audioCtx.currentTime;
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
-    
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, now);
-    osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
-    
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.5, now + 0.05);
-    gain.gain.linearRampToValueAtTime(0, now + 0.2);
-    
-    osc.start(now);
-    osc.stop(now + 0.2);
-  }
-},
+    if (this.isRideActive) {
+      this.movementHistory.push({ lat, lon, speed: this.currentSpeed, time: Date.now(), elev: position.coords.altitude || 0 });
+      if (this.movementHistory.length > 1) {
+        const last = this.movementHistory[this.movementHistory.length - 2];
+        const dist = this.calculateDistance(last.lat, last.lon, lat, lon);
+        this.todayDistance += dist;
+        this.weekDistance += dist;
+        this.monthDistance += dist;
+        this.totalDistance += dist;
+        if (position.coords.altitude && last.elev) {
+          const elevDiff = position.coords.altitude - last.elev;
+          if (elevDiff > 0) this.elevationGain += elevDiff;
+        }
+      }
+      this.maxSpeed = Math.max(this.maxSpeed, this.currentSpeed * 3.6);
+      this.checkAcceleration();
+    }
 
-checkAcceleration: function() {
-  const speedKmh = this.currentSpeed * 3.6;
-  
-  if (speedKmh < 5 && this.accelerationStartTime) {
-    // Reset if speed drops too low
-    this.accelerationStartTime = null;
-    this.accelerationStartSpeed = 0;
-  } else if (!this.accelerationStartTime && speedKmh >= 5) {
-    // Start acceleration timing
-    this.accelerationStartTime = Date.now();
-    this.accelerationStartSpeed = speedKmh;
-  } else if (this.accelerationStartTime && speedKmh >= this.accelTarget) {
-    // Record acceleration time when target speed is reached
-    const accelerationTime = (Date.now() - this.accelerationStartTime) / 1000;
-    this.accelerationTimes.push(accelerationTime);
-    this.accelerationStartTime = null;
-    this.accelerationStartSpeed = 0;
-    this.log(`Acceleration 0-${this.accelTarget} km/h: ${accelerationTime.toFixed(2)}s`);
-  }
-},
-
-checkAutoLock: function() {
-  if (!this.autoLockEnabled || !this.lastPosition) return;
-  
-  const speedKmh = this.currentSpeed * 3.6;
-  const stationaryTime = parseInt(document.getElementById("stationaryTime").value) * 1000;
-  
-  if (speedKmh <= this.speedThreshold) {
-    if (!this.isStationary) {
-      this.isStationary = true;
-      this.lastStationaryTime = Date.now();
-      this.lastStationaryPosition = { ...this.lastPosition };
-      this.log(`Stationary detected at ${speedKmh.toFixed(1)} km/h`);
-    } else if (Date.now() - this.lastStationaryTime > stationaryTime) {
-      if (!this.lockPosition && this.lastStationaryPosition) {
-        this.lockPosition = { ...this.lastStationaryPosition };
-        document.getElementById("lockStatus").textContent = `Auto-Locked at Lat ${this.lockPosition.lat.toFixed(6)}, Lon ${this.lockPosition.lon.toFixed(6)}`;
-        document.getElementById("lockStatus").className = "status success";
-        this.log("Auto-lock activated - position locked");
-        this.startBleep();
+    if (this.isActive && this.lockPosition) {
+      const distance = this.calculateDistance(lat, lon, this.lockPosition.lat, this.lockPosition.lon);
+      document.getElementById("distance").textContent = distance.toFixed(1);
+      document.getElementById("accuracy").textContent = position.coords.accuracy.toFixed(1);
+      const bearing = this.calculateBearing(lat, lon, this.lockPosition.lat, this.lockPosition.lon);
+      this.updateDirectionArrow(bearing);
+      document.getElementById("directionStatus").textContent = `Direction: ${bearing.toFixed(1)}°`;
+      if (!this.isMuted) {
+        const tempo = this.calculateTempo(distance);
+        this.currentTempo = tempo;
+        document.getElementById("bleepRate").textContent = (60000 / tempo).toFixed(0);
+        this.playBleep();
+      }
+      if (distance < 5 && !this.reachedPointDisplayed) {
+        document.getElementById("reachedMessage").style.display = "block";
+        this.reachedPointDisplayed = true;
       }
     }
-  } else {
-    if (this.isStationary) {
-      this.isStationary = false;
-      this.lastStationaryTime = null;
-      this.lastStationaryPosition = null;
-      this.log("No longer stationary - moving");
-    }
-  }
-},
 
-  detectCorner: function(lat, lon, speedKmh, leanAngle, cornerG) {
-    if (!lat || !lon || this.movementHistory.length < 3 || leanAngle < 5) return;
-    const recent = this.movementHistory.slice(-3);
-    const avgBearingChange = recent.reduce((sum, item, idx) => {
-      if (idx === 0) return sum;
-      const dLon = recent[idx].lon - recent[idx - 1].lon;
-      const dLat = recent[idx].lat - recent[idx - 1].lat;
-      return sum + Math.atan2(dLon, dLat) * 180 / Math.PI;
-    }, 0) / 2;
-    if (Math.abs(avgBearingChange) > 2 && cornerG > 0.2) {
-      const cornerType = leanAngle > 30 ? 'Tight' : leanAngle > 15 ? 'Medium' : 'Sweeping';
-      const corner = {
-        startLat: recent[0].lat,
-        startLon: recent[0].lon,
-        speed: parseFloat(speedKmh),
-        entrySpeed: parseFloat(recent[0].speed * 3.6),
-        exitSpeed: parseFloat(speedKmh),
-        g: cornerG,
-        lean: leanAngle,
-        type: cornerType,
-        time: Date.now()
-      };
-      this.corners.push(corner);
-      this.cornerEntrySpeeds.push(corner.entrySpeed);
-      this.cornerExitSpeeds.push(corner.exitSpeed);
-      if (speedKmh > this.maxCornerSpeed) this.maxCornerSpeed = parseFloat(speedKmh);
-      if (cornerG > this.maxCornerG) this.maxCornerG = cornerG;
-      this.updateCornerDisplay();
+    this.updateWheelAnimation();
+    this.checkAutoLock();
+    this.updateUI();
+
+    if (this.map) {
+      this.map.invalidateSize();
     }
   },
 
-  updateCornerDisplay: function() {
-    document.getElementById('currentCornerG').textContent = this.currentCornerG.toFixed(2) + ' g';
-    document.getElementById('maxCornerSpeed').textContent = this.maxCornerSpeed.toFixed(1) + ' km/h';
-    document.getElementById('maxCornerG').textContent = this.maxCornerG.toFixed(2) + ' g';
-    const avgLean = this.corners.reduce((sum, c) => sum + c.lean, 0) / Math.max(1, this.corners.length);
-    document.getElementById('avgCornerLean').textContent = avgLean.toFixed(1) + '°';
-    const avgEntrySpeed = this.cornerEntrySpeeds.reduce((sum, s) => sum + s, 0) / Math.max(1, this.cornerEntrySpeeds.length);
-    document.getElementById('avgCornerEntrySpeed').textContent = avgEntrySpeed.toFixed(1) + ' km/h';
-    const cornerList = document.getElementById('cornerList');
-    cornerList.innerHTML = this.corners.slice(-5).map(c =>
-      `<p>${c.type} Corner: ${c.speed.toFixed(1)} km/h, Entry: ${c.entrySpeed.toFixed(1)} km/h, Exit: ${c.exitSpeed.toFixed(1)} km/h, ${c.g.toFixed(2)}g, ${c.lean}°</p>`
-    ).join('') || 'No corners detected yet.';
-    this.cornerChart.data.labels = this.corners.slice(-5).map((_, i) => `Corner ${i + 1}`);
-    this.cornerChart.data.datasets[0].data = this.corners.slice(-5).map(c => c.g.toFixed(2));
-    this.cornerChart.update();
+  stop: function() {
+    if (this.isActive) {
+      this.isActive = false;
+      this.lockPosition = null;
+      this.lastPosition = null;
+      this.reachedPointDisplayed = false;
+      document.getElementById("reachedMessage").style.display = "none";
+      document.getElementById("lockStatus").textContent = "Lock Status: Not locked";
+      document.getElementById("lockStatus").className = "status";
+      document.getElementById("stopGpsLockBtn").disabled = true;
+      document.getElementById("muteBtn").disabled = true;
+      clearTimeout(this.bleepTimer);
+      this.updateGpsStatus("GPS lock stopped");
+      this.log("GPS lock stopped");
+      if (this.line) this.line.setLatLngs([]);
+      if (this.lockMarker) this.lockMarker.setLatLng([0, 0]);
+      if (this.userMarker) this.userMarker.setLatLng([0, 0]);
+      if (this.map) {
+        this.map.setView([0, 0], 2);
+        this.map.invalidateSize();
+        this.log("Map reset after stopping GPS lock");
+      }
+      if (this.watchId) {
+        navigator.geolocation.clearWatch(this.watchId);
+        this.watchId = null;
+        this.log("Geolocation watch cleared");
+      }
+    }
+  },
+
+  updateDirectionArrow: function(bearing) {
+    const arrow = document.getElementById("directionArrow");
+    if (arrow) {
+      arrow.style.transform = `translate(-50%, -50%) rotate(${bearing}deg)`;
+    }
   },
 
   updateWheelAnimation: function() {
     const wheel = document.querySelector('.spinning-wheel');
-    const spokes = document.querySelectorAll('.wheel-spoke');
-    if (this.currentSpeed <= 0.1) {
-      wheel.style.animation = 'none';
-      spokes.forEach(spoke => spoke.style.animation = 'none');
-      this.log('Wheel animation stopped (speed <= 0.1 m/s)');
-    } else {
-      const speedKmh = this.currentSpeed * 3.6;
-      this.rotationSpeed = Math.max(0.2, 2 / (speedKmh / 10));
-      wheel.style.animation = `wheel-spin ${this.rotationSpeed}s linear infinite`;
-      spokes.forEach((spoke, index) => {
-        const spokeSpeed = this.rotationSpeed * (1 + index * 0.5);
-        spoke.style.animation = `spoke-spin ${spokeSpeed}s linear infinite ${index % 2 === 0 ? '' : 'reverse'}`;
-      });
-      this.log(`Wheel animation updated: ${this.rotationSpeed.toFixed(2)}s per rotation at ${speedKmh.toFixed(1)} km/h`);
-    }
-  },
-
-  toggleMute: function() {
-    this.isMuted = !this.isMuted;
-    const muteBtn = document.getElementById("muteBtn");
-    if (this.isMuted) {
-      muteBtn.textContent = "Sound Muted";
-      muteBtn.classList.add("muted");
-      clearTimeout(this.bleepTimer);
-      this.log("Audio muted");
-    } else {
-      muteBtn.textContent = "Mute Sound";
-      muteBtn.classList.remove("muted");
-      this.log("Audio unmuted");
+    if (wheel) {
+      const speed = this.currentSpeed * 3.6;
+      const rotationSpeed = Math.min(speed / 10, 5);
+      wheel.style.animationDuration = rotationSpeed > 0 ? `${1 / rotationSpeed}s` : '3s';
     }
   },
 
   toggleAutoLock: function() {
     this.autoLockEnabled = !this.autoLockEnabled;
-    if (this.autoLockEnabled) {
-      document.getElementById("autoLockBtn").textContent = "Auto-Lock: ON";
-      document.getElementById("autoLockBtn").style.backgroundColor = "#ff6600";
-      document.getElementById("autoLockBtn").style.color = "#000";
-      document.getElementById("autoLockSettings").style.display = "block";
-      this.log("Auto-lock enabled - will lock when stopped for specified time");
-      this.updateGpsStatus("Auto-lock enabled - will lock when stopped");
-    } else {
-      document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
-      document.getElementById("autoLockBtn").style.backgroundColor = "";
-      document.getElementById("autoLockBtn").style.color = "";
-      document.getElementById("autoLockSettings").style.display = "none";
+    document.getElementById("autoLockBtn").classList.toggle('primary-btn', this.autoLockEnabled);
+    document.getElementById("autoLockBtn").classList.toggle('secondary-btn', !this.autoLockEnabled);
+    document.getElementById("autoLockSettings").style.display = this.autoLockEnabled ? 'block' : 'none';
+    this.log(`Auto-lock ${this.autoLockEnabled ? 'enabled' : 'disabled'}`);
+    if (!this.autoLockEnabled) {
       clearTimeout(this.autoLockDebounce);
-      this.autoLockDebounce = null;
       this.isStationary = false;
       this.lastStationaryTime = null;
       this.lastStationaryPosition = null;
-      this.speedThreshold = 10;
-      document.getElementById("speedThreshold").value = 10;
-      document.getElementById("speedThresholdValue").textContent = "10 km/h";
-      this.log("Auto-lock disabled");
-      this.updateGpsStatus("Auto-lock disabled");
-    }
-    this.updateUI();
-  },
-
-  initAudio: function() {
-    if (this.audioCtx) {
-      if (this.audioCtx.state === 'suspended') {
-        this.audioCtx.resume().then(() => this.log("Audio context resumed"));
-      }
-      return;
-    }
-    try {
-      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      document.getElementById("audioStatus").textContent = "Audio: Initialized";
-      document.getElementById("audioStatus").className = "status success";
-      document.getElementById("autoLockBtn").disabled = false;
-      this.isAudioAllowed = true;
-      this.log("Audio system initialized");
-    } catch (e) {
-      document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
-      document.getElementById("audioStatus").className = "status error";
-      this.log(`Audio init error: ${e.message}`, true);
     }
   },
 
-  playTestSound: function() {
-    if (!this.audioCtx || this.isMuted) {
-      this.log("Audio context not ready or muted", true);
-      return;
-    }
-    try {
-      const now = this.audioCtx.currentTime;
-      const osc = this.audioCtx.createOscillator();
-      const gain = this.audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(800, now);
-      osc.connect(gain);
-      gain.connect(this.audioCtx.destination);
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.5, now + 0.1);
-      gain.gain.linearRampToValueAtTime(0, now + 0.5);
-      osc.start(now);
-      osc.stop(now + 0.5);
-      this.log("Test sound played");
-    } catch (e) {
-      this.log(`Test sound error: ${e.message}`, true);
-    }
-  },
-
-lockCurrentPosition: function() {
-  if (navigator.geolocation) {
-    this.watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        this.isActive = true;
-        if (!this.lockPosition) {
-          this.lockPosition = {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude
-          };
-          document.getElementById("lockStatus").textContent = `Lock Status: Locked at Lat ${this.lockPosition.lat.toFixed(6)}, Lon ${this.lockPosition.lon.toFixed(6)}`;
+  checkAutoLock: function() {
+    if (this.autoLockEnabled && this.currentSpeed * 3.6 < this.speedThreshold) {
+      if (!this.isStationary) {
+        this.isStationary = true;
+        this.lastStationaryTime = Date.now();
+        this.lastStationaryPosition = this.lastPosition;
+      } else {
+        const stationaryTime = parseInt(document.getElementById("stationaryTime").value) * 1000;
+        if (Date.now() - this.lastStationaryTime >= stationaryTime) {
+          this.lockPosition = this.lastStationaryPosition;
+          document.getElementById("lockStatus").textContent = `Lock Status: Auto-locked at Lat ${this.lockPosition.lat.toFixed(6)}, Lon ${this.lockPosition.lon.toFixed(6)}`;
           document.getElementById("lockStatus").className = "status success";
-          this.log("Position locked at: " + JSON.stringify(this.lockPosition));
-          // Center map on locked position
+          document.getElementById("stopGpsLockBtn").disabled = false;
+          this.isActive = true;
+          this.log("Auto-locked position: " + JSON.stringify(this.lockPosition));
           if (this.map) {
             this.map.setView([this.lockPosition.lat, this.lockPosition.lon], 15);
             this.map.invalidateSize();
-            this.log("Map centered on locked position");
           }
         }
-        this.updatePosition(position);
-      },
-      (error) => {
-        document.getElementById("gpsStatus").textContent = `GPS Error: ${error.message}`;
-        document.getElementById("gpsStatus").className = "status error";
-        this.log("GPS Error: " + error.message, true);
-      },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-    );
-  } else {
-    document.getElementById("gpsStatus").textContent = "GPS: Not supported";
-    document.getElementById("gpsStatus").className = "status error";
-    this.log("Geolocation not supported", true);
-  }
-},
-
-  startBleep: function() {
-    if (!this.isActive || this.isMuted || !this.audioCtx) return;
-    clearTimeout(this.bleepTimer);
-    const distance = this.calculateDistance(this.lastPosition, this.lockPosition);
-    const maxDist = parseFloat(document.getElementById("maxDistInput").value);
-    const freq = parseFloat(document.getElementById("freqInput").value);
-    let tempo = 1000;
-    if (distance < maxDist) {
-      tempo = Math.max(100, 1000 * (distance / maxDist));
-      const now = this.audioCtx.currentTime;
-      const osc = this.audioCtx.createOscillator();
-      const gain = this.audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now);
-      osc.connect(gain);
-      gain.connect(this.audioCtx.destination);
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.5, now + 0.05);
-      gain.gain.linearRampToValueAtTime(0, now + 0.2);
-      osc.start(now);
-      osc.stop(now + 0.2);
+      }
+    } else {
+      this.isStationary = false;
+      this.lastStationaryTime = null;
+      this.lastStationaryPosition = null;
     }
-    document.getElementById("bleepRate").textContent = (60000 / tempo).toFixed(0);
-    this.currentTempo = tempo;
-    this.bleepTimer = setTimeout(() => this.startBleep(), tempo);
   },
 
-  calculateDistance: function(pos1, pos2) {
-    if (!pos1 || !pos2) return Infinity;
-    const R = 6371e3;
-    const φ1 = pos1.lat * Math.PI / 180;
-    const φ2 = pos2.lat * Math.PI / 180;
-    const Δφ = (pos2.lat - pos1.lat) * Math.PI / 180;
-    const Δλ = (pos2.lon - pos1.lon) * Math.PI / 180;
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-              Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+  toggleMute: function() {
+    this.isMuted = !this.isMuted;
+    document.getElementById("muteBtn").textContent = this.isMuted ? "Unmute Sound" : "Mute Sound";
+    document.getElementById("muteBtn").classList.toggle('muted', this.isMuted);
+    if (this.isMuted) {
+      clearTimeout(this.bleepTimer);
+      this.log("Sound muted");
+    } else {
+      this.playBleep();
+      this.log("Sound unmuted");
+    }
   },
 
-  updateGpsStatus: function(message) {
-    document.getElementById("gpsStatus").textContent = `GPS: ${message}`;
-    document.getElementById("gpsStatus").className = message.includes("error") ? "status error" : "status success";
+  updateGpsStatus: function(status) {
+    document.getElementById("gpsStatus").textContent = `GPS: ${status}`;
+    document.getElementById("gpsStatus").className = "status";
   },
 
-updateUI: function() {
-  document.getElementById("currentSpeed").textContent = (this.currentSpeed * 3.6).toFixed(1) + " km/h";
-  document.getElementById("maxSpeed").textContent = this.maxSpeed.toFixed(1) + " km/h";
-  document.getElementById("avgSpeed").textContent = this.calculateAverageSpeed().toFixed(1) + " km/h";
-  document.getElementById("todayDistance").textContent = this.todayDistance.toFixed(1) + " km";
-  document.getElementById("statsToday").textContent = this.todayDistance.toFixed(1) + " km";
-  document.getElementById("statsWeek").textContent = this.weekDistance.toFixed(1) + " km";
-  document.getElementById("statsMonth").textContent = this.monthDistance.toFixed(1) + " km";
-  document.getElementById("statsTotal").textContent = this.totalDistance.toFixed(1) + " km";
-  document.getElementById("statsCurrentSpeed").textContent = (this.currentSpeed * 3.6).toFixed(1) + " km/h";
-  document.getElementById("statsMaxSpeed").textContent = this.maxSpeed.toFixed(1) + " km/h";
-  document.getElementById("statsAvgSpeed").textContent = this.calculateAverageSpeed().toFixed(1) + " km/h";
-  document.getElementById("statsAcceleration").textContent = this.calculateAccelerationTime().toFixed(2) + " s";
-  document.getElementById("accelerationTime").textContent = this.calculateAccelerationTime().toFixed(2) + " s";
-  document.getElementById("startRideBtn").disabled = this.isRideActive;
-  document.getElementById("stopRideBtn").disabled = !this.isRideActive;
-  document.getElementById("stopGpsLockBtn").disabled = !this.isActive;
-  document.getElementById("muteBtn").disabled = !this.isActive;
-  this.updateCornerDisplay();
-  this.updateElevationProfile();
-  this.updateMaintenanceList();
-  this.updateEmergencyContacts();
-  this.updateRideHistory();
-},
-  
-  calculateAverageSpeed: function() {
-    if (this.movementHistory.length < 2) return 0;
-    const totalSpeed = this.movementHistory.reduce((sum, pos) => sum + pos.speed * 3.6, 0);
-    return totalSpeed / this.movementHistory.length;
+  initDeviceOrientation: function() {
+    window.addEventListener('deviceorientation', (event) => {
+      if (this.isCalibrating) {
+        this.calibrationSamples.push(event.beta);
+        if (this.calibrationSamples.length >= 10) {
+          this.leanOffset = this.calibrationSamples.reduce((a, b) => a + b, 0) / this.calibrationSamples.length;
+          this.isCalibrating = false;
+          document.getElementById("calibrateStatus").textContent = "Sensors calibrated";
+          document.getElementById("calibrateStatus").className = "status success";
+          this.log("Sensors calibrated with offset: " + this.leanOffset);
+          this.calibrationSamples = [];
+          document.getElementById("autoLockBtn").disabled = false;
+        }
+      } else {
+        this.currentLeanAngle = Math.abs(event.beta - this.leanOffset);
+        this.updateLeanIndicator();
+        this.checkCornering();
+        this.checkCrash(event.beta);
+      }
+    });
   },
 
-  calculateAccelerationTime: function() {
-    if (!this.accelerationTimes.length) return 0;
-    return this.accelerationTimes.reduce((sum, time) => sum + time, 0) / this.accelerationTimes.length;
+  calibrateSensors: function() {
+    this.isCalibrating = true;
+    this.calibrationSamples = [];
+    document.getElementById("calibrateStatus").textContent = "Calibrating... please hold device steady";
+    document.getElementById("calibrateStatus").className = "status warning";
+    this.log("Sensor calibration started");
   },
 
-startRide: function() {
-  this.isRideActive = true;
-  this.rideStartTime = new Date();
-  this.movementHistory = [];
-  this.elevationHistory = [];
-  this.corners = [];
-  this.cornerEntrySpeeds = [];
-  this.cornerExitSpeeds = [];
-  this.maxCornerSpeed = 0;
-  this.maxCornerG = 0;
-  this.maxLeanAngle = 0;
-  this.elevationGain = 0;
-  this.accelerationStartTime = null;
-  this.accelerationTimes = [];
-  document.getElementById("startRideBtn").disabled = true;
-  document.getElementById("stopRideBtn").disabled = false;
-  this.log("Ride started");
-  this.updateRideHistory();
-},
+  updateLeanIndicator: function() {
+    const leanBike = document.getElementById("leanBike");
+    const leanValue = document.getElementById("leanValue");
+    if (leanBike && leanValue) {
+      const maxLean = 45;
+      const normalizedLean = Math.min(Math.max(this.currentLeanAngle, -maxLean), maxLean);
+      const translateX = (normalizedLean / maxLean) * 80;
+      leanBike.style.transform = `translateX(${translateX}px)`;
+      leanValue.textContent = `${this.currentLeanAngle.toFixed(1)}°`;
+      document.getElementById("leanAngle").textContent = `${this.currentLeanAngle.toFixed(1)}°`;
+      this.maxLeanAngle = Math.max(this.maxLeanAngle, this.currentLeanAngle);
+    }
+  },
 
-updatePosition: function(position) {
-  const lat = position.coords.latitude;
-  const lon = position.coords.longitude;
-  this.lastPosition = { lat, lon, accuracy: position.coords.accuracy || 0, altitude: position.coords.altitude || 0 };
-  this.currentSpeed = position.coords.speed || 0;
+  checkCornering: function() {
+    if (this.currentLeanAngle > 10 && this.currentSpeed > 2) {
+      const gForce = (this.currentSpeed * this.currentSpeed) / (9.81 * Math.tan(this.currentLeanAngle * Math.PI / 180));
+      this.currentCornerG = Math.min(gForce, 2);
+      document.getElementById("currentCornerG").textContent = `${this.currentCornerG.toFixed(2)} g`;
+      this.maxCornerG = Math.max(this.maxCornerG, this.currentCornerG);
+      document.getElementById("maxCornerG").textContent = `${this.maxCornerG.toFixed(2)} g`;
+      this.maxCornerSpeed = Math.max(this.maxCornerSpeed, this.currentSpeed * 3.6);
+      document.getElementById("maxCornerSpeed").textContent = `${this.maxCornerSpeed.toFixed(1)} km/h`;
 
-  // Update map elements
-  if (this.userMarker && this.map) {
-    this.userMarker.setLatLng([lat, lon]);
-    this.map.panTo([lat, lon]); // Center map on current position
-    this.log(`Map updated: User marker moved to Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}`);
-  } else {
-    this.log("Error: userMarker or map not initialized", true);
-  }
+      if (this.corners.length === 0 || this.corners[this.corners.length - 1].exitTime) {
+        this.corners.push({
+          entrySpeed: this.currentSpeed * 3.6,
+          maxG: this.currentCornerG,
+          maxLean: this.currentLeanAngle,
+          startTime: Date.now()
+        });
+        this.cornerEntrySpeeds.push(this.currentSpeed * 3.6);
+      }
+      this.updateCornerChart();
+    } else if (this.corners.length > 0 && !this.corners[this.corners.length - 1].exitTime) {
+      this.corners[this.corners.length - 1].exitTime = Date.now();
+      this.corners[this.corners.length - 1].exitSpeed = this.currentSpeed * 3.6;
+      this.cornerExitSpeeds.push(this.currentSpeed * 3.6);
+      this.updateCornerList();
+    }
+  },
 
-  if (this.isActive && this.lockPosition && this.lockMarker && this.line) {
-    this.lockMarker.setLatLng([this.lockPosition.lat, this.lockPosition.lon]);
-    this.line.setLatLngs([[lat, lon], [this.lockPosition.lat, this.lockPosition.lon]]);
-    this.log(`Map updated: Lock marker at Lat: ${this.lockPosition.lat.toFixed(6)}, Lon: ${this.lockPosition.lon.toFixed(6)}, polyline drawn`);
-  }
+  updateCornerChart: function() {
+    this.cornerChart.data.labels = this.corners.map((_, i) => `Corner ${i + 1}`);
+    this.cornerChart.data.datasets[0].data = this.corners.map(c => c.maxG);
+    this.cornerChart.update();
+  },
 
-  if (this.isRideActive) {
-    this.movementHistory.push({ lat, lon, speed: this.currentSpeed, time: Date.now(), elev: position.coords.altitude || 0 });
-    if (this.movementHistory.length > 1) {
-      const last = this.movementHistory[this.movementHistory.length - 2];
-      const dist = this.calculateDistance(last.lat, last.lon, lat, lon);
-      this.todayDistance += dist;
-      this.weekDistance += dist;
-      this.monthDistance += dist;
-      this.totalDistance += dist;
-      if (position.coords.altitude && last.elev) {
-        const elevDiff = position.coords.altitude - last.elev;
-        if (elevDiff > 0) this.elevationGain += elevDiff;
+  updateCornerList: function() {
+    const cornerList = document.getElementById("cornerList");
+    cornerList.innerHTML = this.corners.map((c, i) => 
+      `Corner ${i + 1}: Max G ${c.maxG.toFixed(2)} g, Lean ${c.maxLean.toFixed(1)}°, Entry ${c.entrySpeed.toFixed(1)} km/h, Exit ${c.exitSpeed ? c.exitSpeed.toFixed(1) : '--'} km/h`
+    ).join('<br>');
+    const avgLean = this.corners.reduce((sum, c) => sum + c.maxLean, 0) / (this.corners.length || 1);
+    document.getElementById("avgCornerLean").textContent = `${avgLean.toFixed(1)}°`;
+    const avgEntrySpeed = this.cornerEntrySpeeds.reduce((sum, s) => sum + s, 0) / (this.cornerEntrySpeeds.length || 1);
+    document.getElementById("avgCornerEntrySpeed").textContent = `${avgEntrySpeed.toFixed(1)} km/h`;
+  },
+
+  checkCrash: function(beta) {
+    if (Math.abs(beta - this.leanOffset) > 70) {
+      if (!this.crashStartTime) {
+        this.crashStartTime = Date.now();
+      } else if (Date.now() - this.crashStartTime > 5000) {
+        this.crashDetected = true;
+        document.getElementById("crashStatus").textContent = "Crash Detected!";
+        document.getElementById("crashStatus").className = "status error";
+        this.log("Crash detected!");
+        if (this.emergencyContacts.length > 0) {
+          this.sendEmergencyAlert(`Crash detected! Location: Lat ${this.lastPosition?.lat.toFixed(6)}, Lon ${this.lastPosition?.lon.toFixed(6)}`);
+        }
+      }
+    } else {
+      this.crashStartTime = null;
+      if (this.crashDetected) {
+        this.crashDetected = false;
+        document.getElementById("crashStatus").textContent = "Crash Detection: Inactive";
+        document.getElementById("crashStatus").className = "status";
+        this.log("Crash detection reset");
       }
     }
-    this.maxSpeed = Math.max(this.maxSpeed, this.currentSpeed * 3.6);
-    this.checkAcceleration();
-  }
-
-  if (this.isActive && this.lockPosition) {
-    const distance = this.calculateDistance(lat, lon, this.lockPosition.lat, this.lockPosition.lon);
-    document.getElementById("distance").textContent = distance.toFixed(1);
-    document.getElementById("accuracy").textContent = position.coords.accuracy.toFixed(1);
-    const bearing = this.calculateBearing(lat, lon, this.lockPosition.lat, this.lockPosition.lon);
-    this.updateDirectionArrow(bearing);
-    document.getElementById("directionStatus").textContent = `Direction: ${bearing.toFixed(1)}°`;
-    if (!this.isMuted) {
-      const tempo = this.calculateTempo(distance);
-      this.currentTempo = tempo;
-      document.getElementById("bleepRate").textContent = (60000 / tempo).toFixed(0);
-      this.playBleep();
-    }
-    if (distance < 5 && !this.reachedPointDisplayed) {
-      document.getElementById("reachedMessage").style.display = "block";
-      this.reachedPointDisplayed = true;
-    }
-  }
-
-  this.updateWheelAnimation();
-  this.checkAutoLock();
-  this.updateUI();
-
-  // Ensure map is redrawn
-  if (this.map) {
-    this.map.invalidateSize();
-  }
-},
-
-  handleGpsError: function(err) {
-    this.log(`GPS error: ${err.message}`, true);
-    this.updateGpsStatus(`Error: ${err.message}`);
   },
 
-  updateDirection: function() {
-    if (!this.lastPosition || !this.lockPosition) return;
-    const dLon = this.lockPosition.lon - this.lastPosition.lon;
-    const dLat = this.lockPosition.lat - this.lastPosition.lat;
-    const angle = Math.atan2(dLon, dLat) * 180 / Math.PI;
-    document.getElementById("directionArrow").style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
-    document.getElementById("directionStatus").textContent = `Direction: ${angle.toFixed(0)}°`;
+  checkAcceleration: function() {
+    if (!this.accelerationStartTime && this.currentSpeed * 3.6 < 5) {
+      this.accelerationStartTime = Date.now();
+      this.accelerationStartSpeed = this.currentSpeed * 3.6;
+    } else if (this.accelerationStartTime && this.currentSpeed * 3.6 >= this.accelTarget) {
+      const timeTaken = (Date.now() - this.accelerationStartTime) / 1000;
+      this.accelerationTimes.push(timeTaken);
+      document.getElementById("accelerationTime").textContent = `${timeTaken.toFixed(2)} s`;
+      document.getElementById("statsAcceleration").textContent = `${timeTaken.toFixed(2)} s`;
+      this.accelerationStartTime = null;
+      this.log(`0-${this.accelTarget} km/h in ${timeTaken.toFixed(2)} s`);
+    }
   },
 
-stop: function() {
-  if (this.isActive) {
-    this.isActive = false;
-    this.lockPosition = null;
-    this.lastPosition = null;
-    this.reachedPointDisplayed = false;
-    document.getElementById("reachedMessage").style.display = "none";
-    document.getElementById("lockStatus").textContent = "Lock Status: Not locked";
-    document.getElementById("lockStatus").className = "status";
-    document.getElementById("stopGpsLockBtn").disabled = true;
-    document.getElementById("muteBtn").disabled = true;
-    clearTimeout(this.bleepTimer);
-    this.updateGpsStatus("GPS lock stopped");
-    this.log("GPS lock stopped");
-    if (this.line) this.line.setLatLngs([]);
-    if (this.lockMarker) this.lockMarker.setLatLng([0, 0]);
-    if (this.userMarker) this.userMarker.setLatLng([0, 0]);
-    if (this.map) {
-      this.map.setView([0, 0], 2); // Reset map view
-      this.map.invalidateSize();
-      this.log("Map reset after stopping GPS lock");
-    }
-    if (this.watchId) {
-      navigator.geolocation.clearWatch(this.watchId);
-      this.watchId = null;
-      this.log("Geolocation watch cleared");
-    }
-  }
-},
-
-stopRide: function() {
-  if (this.isRideActive) {
-    if (this.rideStartTime) {
-      const ride = {
-        startTime: this.rideStartTime,
-        distance: this.todayDistance,
-        maxSpeed: this.maxSpeed,
-        avgSpeed: this.calculateAverageSpeed(),
-        acceleration: this.calculateAccelerationTime(),
-        corners: this.corners.length,
-        elevationGain: this.elevationGain
-      };
-      this.rideHistory.push(ride);
-      this.saveData();
-      this.rideStartTime = null;
-    }
-    this.isRideActive = false;
+  startRide: function() {
+    this.isRideActive = true;
+    this.rideStartTime = Date.now();
     this.movementHistory = [];
     this.elevationHistory = [];
     this.corners = [];
     this.cornerEntrySpeeds = [];
     this.cornerExitSpeeds = [];
-    this.maxCornerSpeed = 0;
-    this.maxCornerG = 0;
-    this.maxLeanAngle = 0;
+    this.maxSpeed = 0;
     this.elevationGain = 0;
-    document.getElementById("stopRideBtn").disabled = true;
+    this.maxCornerG = 0;
+    this.maxCornerSpeed = 0;
+    document.getElementById("startRideBtn").disabled = true;
+    document.getElementById("stopRideBtn").disabled = false;
+    this.log("Ride started");
+    if (!this.isActive) {
+      this.lockCurrentPosition();
+    }
+  },
+
+  stopRide: function() {
+    this.isRideActive = false;
     document.getElementById("startRideBtn").disabled = false;
+    document.getElementById("stopRideBtn").disabled = true;
+    this.log("Ride stopped");
+    const rideData = {
+      startTime: this.rideStartTime,
+      endTime: Date.now(),
+      distance: this.todayDistance,
+      maxSpeed: this.maxSpeed,
+      elevationGain: this.elevationGain,
+      avgSpeed: this.movementHistory.length > 0 ? 
+        (this.movementHistory.reduce((sum, m) => sum + m.speed * 3.6, 0) / this.movementHistory.length).toFixed(1) : 0,
+      corners: this.corners.length,
+      maxCornerG: this.maxCornerG,
+      maxCornerSpeed: this.maxCornerSpeed
+    };
+    this.rideHistory.push(rideData);
+    this.saveData();
     this.updateRideHistory();
-    this.updateCornerDisplay();
-    this.updateElevationProfile();
-    this.log("Ride stopped and metrics reset");
-  }
-},
+  },
 
   resetMetrics: function() {
-    this.maxSpeed = 0;
-    this.totalDistance = 0;
     this.todayDistance = 0;
     this.weekDistance = 0;
     this.monthDistance = 0;
+    this.totalDistance = 0;
+    this.maxSpeed = 0;
     this.elevationGain = 0;
+    this.maxCornerG = 0;
+    this.maxCornerSpeed = 0;
     this.corners = [];
     this.cornerEntrySpeeds = [];
     this.cornerExitSpeeds = [];
-    this.maxCornerG = 0;
-    this.maxCornerSpeed = 0;
-    this.accelerationTimes = [];
-    this.elevationHistory = [];
     this.rideHistory = [];
-    this.saveData();
+    this.movementHistory = [];
+    this.elevationHistory = [];
     this.updateUI();
-    this.log("Metrics and ride history reset");
+    this.updateCornerChart();
+    this.updateCornerList();
+    this.updateRideHistory();
+    this.saveData();
+    this.log("Metrics reset");
   },
 
   exportMetrics: function() {
     const data = {
       totalDistance: this.totalDistance,
-      todayDistance: this.todayDistance,
       weekDistance: this.weekDistance,
       monthDistance: this.monthDistance,
-      maxSpeed: this.maxSpeed,
-      avgSpeed: this.calculateAverageSpeed(),
-      acceleration: this.calculateAccelerationTime(),
+      rideHistory: this.rideHistory,
       corners: this.corners,
-      elevationGain: this.elevationGain,
-      elevationHistory: this.elevationHistory,
-      rideHistory: this.rideHistory
+      elevationHistory: this.elevationHistory
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'ride_metrics.json';
+    a.download = `ride_data_${new Date().toISOString()}.json`;
     a.click();
     URL.revokeObjectURL(url);
     this.log("Metrics exported");
+  },
+
+  updateUI: function() {
+    document.getElementById("currentSpeed").textContent = `${(this.currentSpeed * 3.6).toFixed(1)} km/h`;
+    document.getElementById("maxSpeed").textContent = `${this.maxSpeed.toFixed(1)} km/h`;
+    document.getElementById("todayDistance").textContent = `${this.todayDistance.toFixed(2)} km`;
+    document.getElementById("elevationGain").textContent = `${this.elevationGain.toFixed(1)} m`;
+    document.getElementById("statsToday").textContent = `${this.todayDistance.toFixed(2)} km`;
+    document.getElementById("statsWeek").textContent = `${this.weekDistance.toFixed(2)} km`;
+    document.getElementById("statsMonth").textContent = `${this.monthDistance.toFixed(2)} km`;
+    document.getElementById("statsTotal").textContent = `${this.totalDistance.toFixed(2)} km`;
+    document.getElementById("statsCurrentSpeed").textContent = `${(this.currentSpeed * 3.6).toFixed(1)} km/h`;
+    document.getElementById("statsMaxSpeed").textContent = `${this.maxSpeed.toFixed(1)} km/h`;
+    const avgSpeed = this.movementHistory.length > 0 ? 
+      (this.movementHistory.reduce((sum, m) => sum + m.speed * 3.6, 0) / this.movementHistory.length).toFixed(1) : 0;
+    document.getElementById("statsAvgSpeed").textContent = `${avgSpeed} km/h`;
+    this.updateElevationProfile();
+  },
+
+  updateElevationProfile: function() {
+    if (this.canvas && this.elevationHistory.length > 0) {
+      const ctx = this.canvas.getContext('2d');
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      const maxElev = Math.max(...this.elevationHistory, 0);
+      const minElev = Math.min(...this.elevationHistory, 0);
+      const range = maxElev - minElev || 1;
+      ctx.beginPath();
+      ctx.moveTo(0, this.canvas.height);
+      this.elevationHistory.forEach((elev, i) => {
+        const x = (i / (this.elevationHistory.length - 1)) * this.canvas.width;
+        const y = this.canvas.height - ((elev - minElev) / range) * this.canvas.height;
+        ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#00ccff';
+      ctx.stroke();
+      document.getElementById("totalElevationGain").textContent = `${this.elevationGain.toFixed(1)} m`;
+      document.getElementById("maxElevation").textContent = `${maxElev.toFixed(1)} m`;
+      document.getElementById("minElevation").textContent = `${minElev.toFixed(1)} m`;
+    }
+  },
+
+  sendEmergencyAlert: function(message = null) {
+    const msg = message || `${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition?.lat.toFixed(6)}, Lon: ${this.lastPosition?.lon.toFixed(6)}`;
+    const phoneContacts = document.getElementById('emergencyContacts').value.split(',').map(c => c.trim()).filter(c => c);
+    const messengerContacts = document.getElementById('messengerContacts').value.split(',').map(c => c.trim()).filter(c => c);
+    
+    phoneContacts.forEach(contact => {
+      if (contact.startsWith('+')) {
+        this.log(`Sending SMS alert to ${contact}: ${msg}`);
+        window.open(`sms:${contact}?body=${encodeURIComponent(msg)}`, '_blank');
+      }
+    });
+    
+    messengerContacts.forEach(contact => {
+      const link = `https://m.me/${contact}?text=${encodeURIComponent(msg)}`;
+      this.log(`Opening Messenger for ${contact}: ${link}`);
+      window.open(link, '_blank');
+    });
+    
+    if (phoneContacts.length === 0 && messengerContacts.length === 0) {
+      this.log("No emergency contacts configured", true);
+      alert("Please add phone numbers or Messenger contacts in the Emergency tab.");
+    } else {
+      this.log("Emergency alert sent to configured contacts");
+    }
   },
 
 sendEmergencyAlert: function(message = null) {

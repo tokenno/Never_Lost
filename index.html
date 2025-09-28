@@ -519,13 +519,7 @@
       text-align: left;
     }
     
-    .elevation-profile {
-      height: 150px;
-      background: #333;
-      border-radius: 5px;
-      margin: 10px 0;
-      position: relative;
-    }
+ 
       
       /* Triple-tap overlay styles */
 .triple-tap-overlay {
@@ -686,6 +680,29 @@
 
 .session-actions button:hover {
   background: #666;
+}
+      
+      .elevation-profile-container {
+  margin: 10px 0;
+  padding: 10px;
+  background: rgba(50, 50, 50, 0.5);
+  border-radius: 5px;
+}
+
+.elevation-profile {
+  height: 120px;
+  width: 100%;
+  background: #333;
+  border-radius: 5px;
+  margin: 10px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.elevation-profile canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
 .session-notes {
@@ -907,13 +924,13 @@
           <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
           <div id="cornerList">No corners detected yet.</div>
         </div>
-        <div class="elevation-profile">
-          <h3>Elevation Profile</h3>
-          <canvas id="elevationCanvas" width="100%" height="150"></canvas>
-          <p>Total Elevation Gain: <span id="totalElevationGain">0 m</span></p>
-        </div>
-      <BR>
-        <BR>
+  <div class="elevation-profile-container">
+  <h3>Elevation Profile</h3>
+  <div class="elevation-profile">
+    <canvas id="elevationCanvas"></canvas>
+  </div>
+  <p>Total Elevation Gain: <span id="totalElevationGain">0 m</span></p>
+</div>
         <div class="control-group">
           <div class="control-item">
             <h3>Distance Statistics</h3>
@@ -931,8 +948,7 @@
             <div>0-100 km/h: <span id="statsAcceleration">-- s</span></div>
           </div>
         </div>
-          <BR>
-        <BR>
+       
         <!-- Add to Metrics tab -->
 <div class="panel">
   <h3>Engine Sound Analysis</h3>
@@ -2691,52 +2707,90 @@ updateWheelAnimation: function() {
   }
 },
 
-  updateElevationProfile: function() {
-    if (!this.canvas) {
-      this.log("Error: canvas not initialized", true);
-      return;
-    }
-    const ctx = this.canvas.getContext('2d'); // Get context here
-    if (!ctx) {
-      this.log("Error: Unable to get 2D context for elevationCanvas", true);
-      return;
-    }
-    this.canvas.width = this.canvas.parentElement.offsetWidth; // Reset width to handle resizing
-    const w = this.canvas.width;
-    const h = this.canvas.height;
-    ctx.clearRect(0, 0, w, h);
+ updateElevationProfile: function() {
+  if (!this.canvas) {
+    this.log("Error: elevationCanvas element not found", true);
+    return;
+  }
+  
+  const ctx = this.canvas.getContext('2d');
+  if (!ctx) {
+    this.log("Error: Unable to get 2D context for elevationCanvas", true);
+    return;
+  }
+  
+  // Get the container dimensions
+  const container = this.canvas.parentElement;
+  this.canvas.width = container.clientWidth;
+  this.canvas.height = container.clientHeight;
+  
+  const w = this.canvas.width;
+  const h = this.canvas.height;
+  
+  // Clear canvas with dark background
+  ctx.fillStyle = '#222';
+  ctx.fillRect(0, 0, w, h);
+  
+  if (this.elevationHistory.length < 2) {
+    // Draw placeholder message
+    ctx.fillStyle = '#666';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Not enough elevation data', w / 2, h / 2);
+    this.log("Not enough elevation data to plot");
+    return;
+  }
 
-    if (this.elevationHistory.length < 2) {
-      this.log("Not enough elevation data to plot");
-      return;
-    }
+  // Smooth the elevation data
+  const smoothedElevations = [];
+  for (let i = 0; i < this.elevationHistory.length; i++) {
+    const start = Math.max(0, i - 1);
+    const end = Math.min(this.elevationHistory.length - 1, i + 1);
+    const avgElev = this.elevationHistory.slice(start, end + 1)
+      .reduce((sum, p) => sum + p.elev, 0) / (end - start + 1);
+    smoothedElevations.push(avgElev);
+  }
 
-    const smoothedElevations = [];
-    for (let i = 0; i < this.elevationHistory.length; i++) {
-      const start = Math.max(0, i - 1);
-      const end = Math.min(this.elevationHistory.length - 1, i + 1);
-      const avgElev = this.elevationHistory.slice(start, end + 1)
-        .reduce((sum, p) => sum + p.elev, 0) / (end - start + 1);
-      smoothedElevations.push(avgElev);
-    }
+  const minElev = Math.min(...smoothedElevations);
+  const maxElev = Math.max(...smoothedElevations);
+  const range = maxElev - minElev || 1;
 
-    const minElev = Math.min(...smoothedElevations);
-    const maxElev = Math.max(...smoothedElevations);
-    const range = maxElev - minElev || 1;
+  // Draw the elevation line
+  ctx.beginPath();
+  ctx.moveTo(0, h - 10); // Leave some padding at bottom
+  
+  smoothedElevations.forEach((elev, i) => {
+    const x = (i / (smoothedElevations.length - 1)) * w;
+    const y = h - 10 - ((elev - minElev) / range * (h - 20)); // Padding top and bottom
+    ctx.lineTo(x, y);
+  });
+  
+  ctx.strokeStyle = 'var(--accent-color)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
 
-    ctx.beginPath();
-    ctx.moveTo(0, h);
-    smoothedElevations.forEach((elev, i) => {
-      const x = (i / (smoothedElevations.length - 1)) * w;
-      const y = h - ((elev - minElev) / range * h * 0.8);
-      ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = 'var(--accent-color)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+  // Add gradient fill under the line
+  ctx.lineTo(w, h - 10);
+  ctx.lineTo(0, h - 10);
+  ctx.closePath();
+  
+  const gradient = ctx.createLinearGradient(0, 0, 0, h);
+  gradient.addColorStop(0, 'rgba(0, 204, 255, 0.3)');
+  gradient.addColorStop(1, 'rgba(0, 204, 255, 0.1)');
+  ctx.fillStyle = gradient;
+  ctx.fill();
 
-    document.getElementById('totalElevationGain').textContent = this.elevationGain.toFixed(0) + ' m';
-    document.getElementById('elevationGain').textContent = this.elevationGain.toFixed(0) + ' m';
+  // Add scale markers
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, h - 10);
+  ctx.lineTo(w, h - 10);
+  ctx.stroke();
+
+  // Update elevation stats
+  document.getElementById('totalElevationGain').textContent = this.elevationGain.toFixed(0) + ' m';
+  document.getElementById('elevationGain').textContent = this.elevationGain.toFixed(0) + ' m';
     document.getElementById('maxElevation').textContent = maxElev.toFixed(0) + ' m';
     document.getElementById('minElevation').textContent = minElev.toFixed(0) + ' m';
   },

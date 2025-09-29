@@ -1989,21 +1989,44 @@ updateFrequencyVisualization: function() {
   const height = this.frequencyCanvas.height;
   const bufferLength = this.audioAnalysis.frequencyData.length;
   
-  this.frequencyCtx.fillStyle = 'rgb(0, 0, 0)';
+  // White background
+  this.frequencyCtx.fillStyle = 'rgb(255, 255, 255)';
   this.frequencyCtx.fillRect(0, 0, width, height);
   
-  const barWidth = (width / bufferLength) * 2.5;
-  let barHeight;
+  // Draw smooth orange waveform
+  this.frequencyCtx.lineWidth = 2;
+  this.frequencyCtx.strokeStyle = 'rgb(255, 100, 0)';
+  this.frequencyCtx.beginPath();
+  
+  const sliceWidth = width / bufferLength;
   let x = 0;
   
   for (let i = 0; i < bufferLength; i++) {
-    barHeight = this.audioAnalysis.frequencyData[i] / 2;
+    const v = this.audioAnalysis.frequencyData[i] / 255;
+    const y = height - (v * height);
     
-    this.frequencyCtx.fillStyle = 'rgb(' + Math.floor(barHeight + 100) + ',50,50)';
-    this.frequencyCtx.fillRect(x, height - barHeight, barWidth, barHeight);
+    if (i === 0) {
+      this.frequencyCtx.moveTo(x, y);
+    } else {
+      this.frequencyCtx.lineTo(x, y);
+    }
     
-    x += barWidth + 1;
+    x += sliceWidth;
   }
+  
+  this.frequencyCtx.stroke();
+  
+  // Fill under the waveform with orange gradient
+  this.frequencyCtx.lineTo(width, height);
+  this.frequencyCtx.lineTo(0, height);
+  this.frequencyCtx.closePath();
+  
+  const fillGradient = this.frequencyCtx.createLinearGradient(0, 0, 0, height);
+  fillGradient.addColorStop(0, 'rgba(255, 100, 0, 0.6)');
+  fillGradient.addColorStop(1, 'rgba(255, 150, 0, 0.2)');
+  
+  this.frequencyCtx.fillStyle = fillGradient;
+  this.frequencyCtx.fill();
 },
 
 frequencyToRPM: function(frequency) {

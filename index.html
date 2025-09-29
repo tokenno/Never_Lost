@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spin - Motorcycle GPS Locator</title>
     <!-- Leaflet Map CSS -->
@@ -759,37 +759,32 @@
     }
   </style>
   </head>
-  <body>
-    <!-- Triple Tap Overlay -->
-<div class="triple-tap-overlay" id="tripleTapOverlay">
-  <div class="enlarged-wheel">
-    <svg viewBox="0 0 100 100">
-      <circle class="wheel-outer" cx="50" cy="50" r="40" />
-      <circle class="wheel-inner" cx="50" cy="50" r="25" />
-      <line class="wheel-spoke spoke-1" x1="50" y1="50" x2="75" y2="50" />
-      <line class="wheel-spoke spoke-2" x1="50" y1="50" x2="50" y2="25" />
-      <line class="wheel-spoke spoke-3" x1="50" y1="50" x2="30" y2="70" />
-      <circle class="wheel-pulse" cx="50" cy="50" r="8" />
-    </svg>
-  </div>
-  
-  <div class="overlay-stats">
-    <div class="overlay-stat-item">
-      Average Speed: <span class="overlay-stat-value" id="overlayAvgSpeed">-- km/h</span>
+  <body> <!-- Triple Tap Overlay -->
+    <div class="triple-tap-overlay" id="tripleTapOverlay">
+      <div class="enlarged-wheel">
+        <svg viewBox="0 0 100 100">
+          <circle class="wheel-outer" cx="50" cy="50" r="40"></circle>
+          <circle class="wheel-inner" cx="50" cy="50" r="25"></circle>
+          <line class="wheel-spoke spoke-1" x1="50" y1="50" x2="75" y2="50"></line>
+          <line class="wheel-spoke spoke-2" x1="50" y1="50" x2="50" y2="25"></line>
+          <line class="wheel-spoke spoke-3" x1="50" y1="50" x2="30" y2="70"></line>
+          <circle class="wheel-pulse" cx="50" cy="50" r="8"></circle> </svg> </div>
+      <div class="overlay-stats">
+        <div class="overlay-stat-item"> Average Speed: <span class="overlay-stat-value"
+            id="overlayAvgSpeed">--
+            km/h</span> </div>
+        <div class="overlay-stat-item"> Current Lean: <span class="overlay-stat-value"
+            id="overlayLeanAngle">--°</span>
+        </div>
+        <div class="overlay-stat-item"> Max Lean: <span class="overlay-stat-value"
+            id="overlayMaxLean">--°</span>
+        </div>
+        <div class="overlay-stat-item"> Current Speed: <span class="overlay-stat-value"
+            id="overlayCurrentSpeed">--
+            km/h</span> </div>
+      </div>
+      <div class="overlay-close-hint">Tap anywhere to close</div>
     </div>
-    <div class="overlay-stat-item">
-      Current Lean: <span class="overlay-stat-value" id="overlayLeanAngle">--°</span>
-    </div>
-    <div class="overlay-stat-item">
-      Max Lean: <span class="overlay-stat-value" id="overlayMaxLean">--°</span>
-    </div>
-    <div class="overlay-stat-item">
-      Current Speed: <span class="overlay-stat-value" id="overlayCurrentSpeed">-- km/h</span>
-    </div>
-  </div>
-  
-  <div class="overlay-close-hint">Tap anywhere to close</div>
-</div>
     <div class="app-header">
       <h1 class="app-title">Spin</h1>
       <div class="wheel-container">
@@ -840,282 +835,258 @@
       </div>
     </div>
     <div class="tabs">
-       <div class="tab active" data-tab="metrics">Metrics</div>
+      <div class="tab active" data-tab="metrics">Metrics</div>
       <div class="tab" data-tab="navigation">Nav</div>
       <div class="tab" data-tab="emergency">SOS</div>
       <div class="tab" data-tab="maintenance">Upkeep</div>
     </div>
-      
-    
     <div class="tab-content active" id="metrics-tab">
       <div class="panel">
         <h2>Ride Metrics</h2>
         <!-- Add to Metrics tab, near the top -->
-<div class="panel">
-  <h3>Ride Session Management</h3>
-  
-  <div class="control-group">
-    <button id="startSessionBtn" class="primary-btn" onclick="MotoFindBack.startNewSession()">
-      🏁 Start New Session
-    </button>
-     <button id="startRideBtn" class="primary-btn">Start Ride</button>
-    <button id="saveSessionBtn" class="secondary-btn" onclick="MotoFindBack.saveCurrentSession()">
-      💾 Save Session
-    </button>
-    <button id="quickSaveBtn" class="secondary-btn" onclick="MotoFindBack.quickSaveSession()">
-      ⚡ Quick Save
-    </button>
-    <button id="exportSessionBtn" class="secondary-btn" onclick="MotoFindBack.exportSession()">
-      📤 Export Current
-    </button>
-  </div>
-  
-  <div id="sessionInfo" class="session-info" style="display: none;">
-    <h4>Current Session</h4>
-    <div class="session-stats">
-      <div>Name: <span id="sessionName">--</span></div>
-      <div>Duration: <span id="sessionDuration">--</span></div>
-      <div>Distance: <span id="sessionDistance">--</span></div>
-      <div>Max Speed: <span id="sessionMaxSpeed">--</span></div>
-      <div>Corners: <span id="sessionCorners">--</span></div>
-    </div>
-  </div>
-</div>
-
-<!-- Session History Panel -->
-<div class="panel">
-  <h3>Session History</h3>
-  <div id="sessionHistoryList" class="session-history">
-    <div style="text-align: center; color: #aaa; padding: 20px;">
-      No saved sessions yet
-    </div>
-  </div>
-</div>
+        <div class="panel">
+          <h3>Ride Session Management</h3>
+          <div class="control-group"> <button id="startSessionBtn" class="primary-btn"
+              onclick="MotoFindBack.startNewSession()">
+              🏁 Start New Session </button> <button id="startRideBtn" class="primary-btn">Start
+              Ride</button> <button id="saveSessionBtn" class="secondary-btn" onclick="MotoFindBack.saveCurrentSession()">
+              💾 Save Session </button> <button id="quickSaveBtn" class="secondary-btn"
+              onclick="MotoFindBack.quickSaveSession()">
+              ⚡ Quick Save </button> <button id="exportSessionBtn" class="secondary-btn"
+              onclick="MotoFindBack.exportSession()">
+              📤 Export Current </button> </div>
+          <div id="sessionInfo" class="session-info" style="display: none;">
+            <h4>Current Session</h4>
+            <div class="session-stats">
+              <div>Name: <span id="sessionName">--</span></div>
+              <div>Duration: <span id="sessionDuration">--</span></div>
+              <div>Distance: <span id="sessionDistance">--</span></div>
+              <div>Max Speed: <span id="sessionMaxSpeed">--</span></div>
+              <div>Corners: <span id="sessionCorners">--</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- Session History Panel -->
+        <div class="panel">
+          <h3>Session History</h3>
+          <div id="sessionHistoryList" class="session-history">
+            <div style="text-align: center; color: #aaa; padding: 20px;"> No
+              saved sessions yet </div>
+          </div>
+        </div>
         <!-- Add this after the Session Management panel -->
-<div class="panel">
-  <h3>📊 General Statistics (All Sessions)</h3>
-  
-  <div class="dashboard">
-    <div class="dashboard-item">
-      <div class="dashboard-label">Total Distance</div>
-      <div class="dashboard-value" id="statsTotalDistance">0 km</div>
-    </div>
-    <div class="dashboard-item">
-      <div class="dashboard-label">Max Speed</div>
-      <div class="dashboard-value" id="statsMaxSpeedAll">0 km/h</div>
-    </div>
-    <div class="dashboard-item">
-      <div class="dashboard-label">Max Lean Angle</div>
-      <div class="dashboard-value" id="statsMaxLeanAll">0°</div>
-    </div>
-    <div class="dashboard-item">
-      <div class="dashboard-label">Max Elevation Gain</div>
-      <div class="dashboard-value" id="statsMaxElevationAll">0 m</div>
-    </div>
-    <div class="dashboard-item">
-      <div class="dashboard-label">Max Corner Speed</div>
-      <div class="dashboard-value" id="statsMaxCornerSpeedAll">0 km/h</div>
-    </div>
-    <div class="dashboard-item">
-      <div class="dashboard-label">Max Corner G</div>
-      <div class="dashboard-value" id="statsMaxCornerGAll">0 g</div>
-    </div>
-    <div class="dashboard-item">
-      <div class="dashboard-label">Best 0-60 km/h</div>
-      <div class="dashboard-value" id="statsBest0to60">-- s</div>
-    </div>
-    <div class="dashboard-item">
-      <div class="dashboard-label">Best 0-100 km/h</div>
-      <div class="dashboard-value" id="statsBest0to100">-- s</div>
-    </div>
-  </div>
-  
-  <div class="control-group" style="margin-top: 15px;">
-    <button onclick="MotoFindBack.updateGeneralStatistics()" class="secondary-btn">Refresh Stats</button>
-    <button onclick="MotoFindBack.exportAllStatistics()" class="secondary-btn">Export All Data</button>
-    <button onclick="MotoFindBack.clearAllStatistics()" class="secondary-btn" style="background: var(--error-color);">Clear All Data</button>
-  </div>
-</div>
-         <button id="resetMetricsBtn" class="secondary-btn">Reset
-            Metrics</button> <button id="exportMetricsBtn" class="secondary-btn">Export
-            Data</button> </div>
-        <div class="control-group">
-          <div class="control-item"> <label for="accelTarget">Acceleration
-              Target (km/h)</label><br>
-            <input id="accelTarget" value="100" min="10" max="200" type="number">
+        <div class="panel">
+          <h3>📊 General Statistics (All Sessions)</h3>
+          <div class="dashboard">
+            <div class="dashboard-item">
+              <div class="dashboard-label">Total Distance</div>
+              <div class="dashboard-value" id="statsTotalDistance">0 km</div>
+            </div>
+            <div class="dashboard-item">
+              <div class="dashboard-label">Max Speed</div>
+              <div class="dashboard-value" id="statsMaxSpeedAll">0 km/h</div>
+            </div>
+            <div class="dashboard-item">
+              <div class="dashboard-label">Max Lean Angle</div>
+              <div class="dashboard-value" id="statsMaxLeanAll">0°</div>
+            </div>
+            <div class="dashboard-item">
+              <div class="dashboard-label">Max Elevation Gain</div>
+              <div class="dashboard-value" id="statsMaxElevationAll">0 m</div>
+            </div>
+            <div class="dashboard-item">
+              <div class="dashboard-label">Max Corner Speed</div>
+              <div class="dashboard-value" id="statsMaxCornerSpeedAll">0 km/h</div>
+            </div>
+            <div class="dashboard-item">
+              <div class="dashboard-label">Max Corner G</div>
+              <div class="dashboard-value" id="statsMaxCornerGAll">0 g</div>
+            </div>
+            <div class="dashboard-item">
+              <div class="dashboard-label">Best 0-60 km/h</div>
+              <div class="dashboard-value" id="statsBest0to60">-- s</div>
+            </div>
+            <div class="dashboard-item">
+              <div class="dashboard-label">Best 0-100 km/h</div>
+              <div class="dashboard-value" id="statsBest0to100">-- s</div>
+            </div>
           </div>
+          <div class="control-group" style="margin-top: 15px;"> <button onclick="MotoFindBack.updateGeneralStatistics()"
+              class="secondary-btn">Refresh
+              Stats</button> <button onclick="MotoFindBack.exportAllStatistics()"
+              class="secondary-btn">Export
+              All Data</button> <button onclick="MotoFindBack.clearAllStatistics()"
+              class="secondary-btn"
+              style="background: var(--error-color);">Clear
+              All Data</button> </div>
         </div>
-        <div class="lean-container">
-          <div class="lean-scale">
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-            <div class="lean-mark"></div>
-          </div>
-          <div class="lean-bike" id="leanBike"></div>
-          <div class="lean-value" id="leanValue">0°</div>
-        </div>
-        <div class="corner-analysis">
-          <h3>Cornering Analysis</h3>
-          <p>Current Corner G: <span id="currentCornerG">0 g</span></p>
-          <p>Max Corner Speed: <span id="currentMaxCornerSpeed">0 km/h</span></p>
-          <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
-          <div id="cornerList">No corners detected yet.</div>
-        </div>
-  <div class="elevation-profile-container">
-  <h3>Elevation Profile</h3>
-  <div class="elevation-profile">
-    <canvas id="elevationCanvas"></canvas>
-  </div>
-  <p>Total Elevation Gain: <span id="totalElevationGain">0 m</span></p>
-</div>
-        <div class="control-group">
-          <div class="control-item">
-            <h3>Distance Statistics</h3>
-            
-            <div>Today: <span id="statsToday">0 km</span></div>
-            <div>This Week: <span id="statsWeek">0 km</span></div>
-            <div>This Month: <span id="statsMonth">0 km</span></div>
-            <div>Total: <span id="statsTotal">0 km</span></div>
-          </div>
-          <div class="control-item">
-            <h3>Speed Statistics</h3>
-            <div>Current: <span id="statsCurrentSpeed">0 km/h</span></div>
-            <div>Average: <span id="statsAvgSpeed">0 km/h</span></div>
-            <div>Max: <span id="statsMaxSpeed">0 km/h</span></div>
-            <div>0-100 km/h: <span id="statsAcceleration">-- s</span></div>
-          </div>
-        </div>
-       
-        <!-- Add to Metrics tab -->
-<div class="panel">
-  <h3>Engine Sound Analysis</h3>
-  
-  <div class="control-group">
-    <button id="startEngineAnalysis" class="primary-btn">Start Engine Analysis</button>
-    <button id="calibrateEngine" class="secondary-btn">Calibrate Engine</button>
-  </div>
-  
-  <div class="dashboard">
-    <div class="dashboard-item">
-      <div class="dashboard-label">Engine RPM</div>
-      <div class="dashboard-value" id="engineRPM">--</div>
-    </div>
-    <div class="dashboard-item">
-      <div class="dashboard-label">Estimated Gear</div>
-      <div class="dashboard-value" id="engineGear">--</div>
-    </div>
-    <div class="dashboard-item">
-      <div class="dashboard-label">Engine Health</div>
-      <div class="dashboard-value" id="engineHealth">--</div>
-    </div>
-    <div class="dashboard-item">
-      <div class="dashboard-label">Sound Level</div>
-      <div class="dashboard-value" id="engineVolume">-- dB</div>
-    </div>
-  </div>
-
-  <div class="control-group">
-    <div class="control-item">
-      <h4>Shift Analysis</h4>
-      <div>Total Shifts: <span id="totalShifts">0</span></div>
-      <div>Last Shift Quality: <span id="lastShiftQuality">--</span></div>
-      <div>Avg Shift RPM: <span id="avgShiftRPM">--</span></div>
-    </div>
-  </div>
-  <!-- Replace the calibration section with this -->
-<div class="control-item">
-  <h4>Impulse Response Calibration</h4>
-  
-  <div class="control-group">
-    <button id="startRecordingBtn" class="primary-btn" onclick="MotoFindBack.startRecordingCalibration()">
-      🎤 Record Engine Sample
-    </button>
-    <button class="secondary-btn" onclick="MotoFindBack.stopRecordingCalibration()">
-      Stop Recording
-    </button>
-  </div>
-  
-  <div class="recording-instructions">
-    <p><strong>How to calibrate:</strong></p>
-    <ol style="text-align: left; font-size: 0.9em; color: #ccc;">
-      <li>Start engine analysis</li>
-      <li>Click "Record Engine Sample"</li>
-      <li>Rev engine steadily for 3 seconds</li>
-      <li>System will auto-analyze your engine sound</li>
-    </ol>
-  </div>
-  
-  <div class="calibration-info">
-    <div>Bike Profile: <span id="bikeProfileName">Uncalibrated</span></div>
-    <div>Calibration: <span id="calibrationStatus">Not calibrated</span></div>
-    <div>Detected Range: <span id="detectedRange">--</span></div>
-    <div>Calibration Factor: <span id="calibrationMultiplier">--</span></div>
-  </div>
-</div>
-
-<!-- Add manual override section -->
-<div class="control-item">
-  <h4>Manual Calibration Override</h4>
-  
-  <label>Reference RPM: <span id="referenceRpmValue">0</span></label>
-  <input type="range" id="referenceRpm" min="1000" max="12000" step="100" value="5000"
-         oninput="MotoFindBack.updateReferenceRPM(this.value)">
-  
-  <label>Volume Threshold: <span id="volumeThresholdValue">20</span> dB</label>
-  <input type="range" id="volumeThreshold" min="1" max="50" step="1" value="20"
-         oninput="MotoFindBack.updateVolumeThreshold(this.value)">
-  
-  <button onclick="MotoFindBack.applyManualCalibration()" class="secondary-btn">
-    Apply Manual Calibration
-  </button>
-</div>
-  <div class="control-item">
-  <h4>Debug Info</h4>
-  <div>Microphone Status: <span id="micStatus">Not Started</span></div>
-  <div>Dominant Frequency: <span id="debugFreq">0</span> Hz</div>
-  <div>Max Volume: <span id="debugVolume">0</span></div>
-  <div>Total Energy: <span id="debugEnergy">0</span></div>
-  <button onclick="MotoFindBack.stopEngineAnalysis()" class="secondary-btn">Stop Analysis</button>
-</div>
-  <!-- Real-time frequency visualization -->
-  <div class="control-item">
-    <h4>Sound Spectrum</h4>
-    <canvas id="frequencyCanvas" width="100%" height="100" style="background: #222; border-radius: 5px;"></canvas>
-  </div>
-</div>
-            <div class="panel">
-          <h3>Cornering Analysis</h3>
-          <!-- Add this canvas for the corner chart --> <canvas id="cornerChart"
-            width="100%"
-            height="200"></canvas>
-          <!-- Your existing corner analysis content -->
-          <p>Current Corner G: <span id="currentCornerG">0 g</span></p>
-          <p>Max Corner Speed: <span id="currentMaxCornerSpeed">0 km/h</span></p>
-          <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
-          <p>Avg Corner Entry Speed: <span id="avgCornerEntrySpeed">0 km/h</span></p>
-          <div id="cornerList">No corners detected yet.</div>
-        </div>  
-        <div class="control-item">
-          <h3>Ride History</h3>
-          <div id="rideHistory" style="max-height: 200px; overflow-y: auto; text-align: left; padding: 10px; background: rgba(40,40,40,0.7); border-radius: 5px;">
-            No ride history yet. </div>
+        <button id="resetMetricsBtn" class="secondary-btn">Reset Metrics</button>
+        <button id="exportMetricsBtn" class="secondary-btn">Export Data</button>
+      </div>
+      <div class="control-group">
+        <div class="control-item"> <label for="accelTarget">Acceleration Target
+            (km/h)</label><br>
+          <input id="accelTarget" value="100" min="10" max="200" type="number">
         </div>
       </div>
-   
-    
+      <div class="lean-container">
+        <div class="lean-scale">
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+          <div class="lean-mark"></div>
+        </div>
+        <div class="lean-bike" id="leanBike"></div>
+        <div class="lean-value" id="leanValue">0°</div>
+      </div>
+      <div class="corner-analysis">
+        <h3>Cornering Analysis</h3>
+        <p>Current Corner G: <span id="currentCornerG">0 g</span></p>
+        <p>Max Corner Speed: <span id="currentMaxCornerSpeed">0 km/h</span></p>
+        <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
+        <div id="cornerList">No corners detected yet.</div>
+      </div>
+      <div class="elevation-profile-container">
+        <h3>Elevation Profile</h3>
+        <div class="elevation-profile"> <canvas id="elevationCanvas"></canvas>
+        </div>
+        <p>Total Elevation Gain: <span id="totalElevationGain">0 m</span></p>
+      </div>
+      <div class="control-group">
+        <div class="control-item">
+          <h3>Distance Statistics</h3>
+          <div>Today: <span id="statsToday">0 km</span></div>
+          <div>This Week: <span id="statsWeek">0 km</span></div>
+          <div>This Month: <span id="statsMonth">0 km</span></div>
+          <div>Total: <span id="statsTotal">0 km</span></div>
+        </div>
+        <div class="control-item">
+          <h3>Speed Statistics</h3>
+          <div>Current: <span id="statsCurrentSpeed">0 km/h</span></div>
+          <div>Average: <span id="statsAvgSpeed">0 km/h</span></div>
+          <div>Max: <span id="statsMaxSpeed">0 km/h</span></div>
+          <div>0-100 km/h: <span id="statsAcceleration">-- s</span></div>
+        </div>
+      </div>
+      <!-- Add to Metrics tab -->
+      <div class="panel">
+        <h3>Engine Sound Analysis</h3>
+        <div class="control-group"> <button id="startEngineAnalysis" class="primary-btn">Start
+            Engine Analysis</button> <button id="calibrateEngine" class="secondary-btn">Calibrate
+            Engine</button> </div>
+        <div class="dashboard">
+          <div class="dashboard-item">
+            <div class="dashboard-label">Engine RPM</div>
+            <div class="dashboard-value" id="engineRPM">--</div>
+          </div>
+          <div class="dashboard-item">
+            <div class="dashboard-label">Estimated Gear</div>
+            <div class="dashboard-value" id="engineGear">--</div>
+          </div>
+          <div class="dashboard-item">
+            <div class="dashboard-label">Engine Health</div>
+            <div class="dashboard-value" id="engineHealth">--</div>
+          </div>
+          <div class="dashboard-item">
+            <div class="dashboard-label">Sound Level</div>
+            <div class="dashboard-value" id="engineVolume">-- dB</div>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="control-item">
+            <h4>Shift Analysis</h4>
+            <div>Total Shifts: <span id="totalShifts">0</span></div>
+            <div>Last Shift Quality: <span id="lastShiftQuality">--</span></div>
+            <div>Avg Shift RPM: <span id="avgShiftRPM">--</span></div>
+          </div>
+        </div>
+        <!-- Replace the calibration section with this -->
+        <div class="control-item">
+          <h4>Impulse Response Calibration</h4>
+          <div class="control-group"> <button id="startRecordingBtn" class="primary-btn"
+              onclick="MotoFindBack.startRecordingCalibration()">
+              🎤 Record Engine Sample </button> <button class="secondary-btn"
+              onclick="MotoFindBack.stopRecordingCalibration()">
+              Stop Recording </button> </div>
+          <div class="recording-instructions">
+            <p><strong>How to calibrate:</strong></p>
+            <ol style="text-align: left; font-size: 0.9em; color: #ccc;">
+              <li>Start engine analysis</li>
+              <li>Click "Record Engine Sample"</li>
+              <li>Rev engine steadily for 3 seconds</li>
+              <li>System will auto-analyze your engine sound</li>
+            </ol>
+          </div>
+          <div class="calibration-info">
+            <div>Bike Profile: <span id="bikeProfileName">Uncalibrated</span></div>
+            <div>Calibration: <span id="calibrationStatus">Not calibrated</span></div>
+            <div>Detected Range: <span id="detectedRange">--</span></div>
+            <div>Calibration Factor: <span id="calibrationMultiplier">--</span></div>
+          </div>
+        </div>
+        <!-- Add manual override section -->
+        <div class="control-item">
+          <h4>Manual Calibration Override</h4>
+          <label>Reference RPM: <span id="referenceRpmValue">0</span></label> <input
+            id="referenceRpm"
+            min="1000"
+            max="12000"
+            step="100"
+            value="5000"
+            oninput="MotoFindBack.updateReferenceRPM(this.value)"
+            type="range">
+          <label>Volume Threshold: <span id="volumeThresholdValue">20</span> dB</label>
+          <input id="volumeThreshold" min="1" max="50" step="1" value="20" oninput="MotoFindBack.updateVolumeThreshold(this.value)"
+            type="range">
+          <button onclick="MotoFindBack.applyManualCalibration()" class="secondary-btn">
+            Apply Manual Calibration </button>
+        </div>
+        <div class="control-item">
+          <h4>Debug Info</h4>
+          <div>Microphone Status: <span id="micStatus">Not Started</span></div>
+          <div>Dominant Frequency: <span id="debugFreq">0</span> Hz</div>
+          <div>Max Volume: <span id="debugVolume">0</span></div>
+          <div>Total Energy: <span id="debugEnergy">0</span></div>
+          <button onclick="MotoFindBack.stopEngineAnalysis()" class="secondary-btn">Stop
+            Analysis</button>
+        </div>
+        <!-- Real-time frequency visualization -->
+        <div class="control-item">
+          <h4>Sound Spectrum</h4>
+          <canvas id="frequencyCanvas" width="100%" height="100" style="background: #222; border-radius: 5px;"></canvas>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Cornering Analysis</h3>
+        <!-- Add this canvas for the corner chart --> <canvas id="cornerChart"
+          width="100%"
+          height="200"></canvas>
+        <!-- Your existing corner analysis content -->
+        <p>Current Corner G: <span id="currentCornerG">0 g</span></p>
+        <p>Max Corner Speed: <span id="currentMaxCornerSpeed">0 km/h</span></p>
+        <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
+        <p>Avg Corner Entry Speed: <span id="avgCornerEntrySpeed">0 km/h</span></p>
+        <div id="cornerList">No corners detected yet.</div>
+      </div>
+      <div class="control-item">
+        <h3>Ride History</h3>
+        <div id="rideHistory" style="max-height: 200px; overflow-y: auto; text-align: left; padding: 10px; background: rgba(40,40,40,0.7); border-radius: 5px;">
+          No ride history yet. </div>
+      </div>
+    </div>
     <div class="tab-content" id="navigation-tab">
       <div class="panel">
         <h2>GPS Navigation</h2>
         <p class="warning">LOCK POSITION</p>
-        <div class="control-group"> <button id="testBtn" class="primary-btn">Lock Position</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
+        <div class="control-group"> <button id="testBtn" class="primary-btn">Lock
+            Position</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
             Sensors</button> <button id="autoLockBtn" class="secondary-btn" disabled="disabled">Auto-Lock
             Mode</button> <button id="muteBtn" class="secondary-btn" disabled="disabled">Mute
             Sound</button> <button id="stopBtn" class="secondary-btn" disabled="disabled">Stop</button>
@@ -1136,7 +1107,6 @@
             </div>
           </div>
         </div>
-     
         <div id="calibrateStatus" class="status">Sensors not calibrated</div>
         <div id="lockStatus" class="status">Lock Status: Not locked</div>
         <div id="audioStatus" class="status">Audio: Not initialized</div>
@@ -1179,59 +1149,50 @@
               <span id="bleepRate">--</span> </div>
           </div>
         </div>
-    
       </div>
     </div>
-
-  
     <div class="tab-content" id="emergency-tab">
-  <div class="panel emergency-panel">
-    <h2>Emergency Features</h2>
-    
-    <div class="control-group">
-      <button id="emergencyBtn" class="emergency-btn">EMERGENCY ALERT</button>
-    </div>
-    <div class="control-group">
-  <button onclick="MotoFindBack.toggleEmergency()" class="secondary-btn">
-    Emergency: <span id="emergencyStatus">ENABLED</span>
-  </button>
-</div>
-    
-    <div id="crashStatus" class="status">Crash Detection: Inactive</div>
-    
-    <div class="control-group">
-      <div class="control-item">
-        <label for="emergencyMessage">Emergency Message</label><br>
-        <textarea id="emergencyMessage" rows="3" style="width: 100%;">I need help! My current location is: </textarea>
-      </div>
-    </div>
-    
-    <h3>Emergency Contacts</h3>
-    <div class="emergency-contacts" id="emergencyContactList">
-      <!-- Contacts will appear here -->
-    </div>
-    
-    <div class="control-group">
-      <button id="addContactBtn" class="primary-btn">➕ Add Contact</button>
-      <button id="testEmergencyBtn" class="warning-btn">Test Emergency</button>
-      <button id="callEmergencyBtn" class="emergency-btn" onclick="MotoFindBack.callEmergency()">Call 112/911</button>
-    </div>
-
-    <!-- Add Contact Modal -->
-    <div id="addContactModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
-      <div style="background: #333; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px;">
-        <h3>Add Emergency Contact</h3>
-        <input type="text" id="newContactName" placeholder="Contact Name" style="width: 100%; margin: 10px 0; padding: 10px; background: #444; color: white; border: 1px solid #555; border-radius: 5px;">
-        <input type="text" id="newContactNumber" placeholder="Phone Number" style="width: 100%; margin: 10px 0; padding: 10px; background: #444; color: white; border: 1px solid #555; border-radius: 5px;">
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-          <button onclick="MotoFindBack.saveNewContact()" class="primary-btn" style="flex: 1;">Save</button>
-          <button onclick="MotoFindBack.closeContactModal()" class="secondary-btn" style="flex: 1;">Cancel</button>
+      <div class="panel emergency-panel">
+        <h2>Emergency Features</h2>
+        <div class="control-group"> <button id="emergencyBtn" class="emergency-btn">EMERGENCY
+            ALERT</button> </div>
+        <div class="control-group"> <button onclick="MotoFindBack.toggleEmergency()"
+            class="secondary-btn">
+            Emergency: <span id="emergencyStatus">ENABLED</span> </button>
+        </div>
+        <div id="crashStatus" class="status">Crash Detection: Inactive</div>
+        <div class="control-group">
+          <div class="control-item"> <label for="emergencyMessage">Emergency
+              Message</label><br>
+            <textarea id="emergencyMessage" rows="3" style="width: 100%;">I need help! My current location is: </textarea>
+          </div>
+        </div>
+        <h3>Emergency Contacts</h3>
+        <div class="emergency-contacts" id="emergencyContactList">
+          <!-- Contacts will appear here --> </div>
+        <div class="control-group"> <button id="addContactBtn" class="primary-btn">➕
+            Add Contact</button> <button id="testEmergencyBtn" class="warning-btn">Test
+            Emergency</button> <button id="callEmergencyBtn" class="emergency-btn"
+            onclick="MotoFindBack.callEmergency()">Call
+            112/911</button> </div>
+        <!-- Add Contact Modal -->
+        <div id="addContactModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+          <div style="background: #333; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px;">
+            <h3>Add Emergency Contact</h3>
+            <input id="newContactName" placeholder="Contact Name" style="width: 100%; margin: 10px 0; padding: 10px; background: #444; color: white; border: 1px solid #555; border-radius: 5px;"
+              type="text">
+            <input id="newContactNumber" placeholder="Phone Number" style="width: 100%; margin: 10px 0; padding: 10px; background: #444; color: white; border: 1px solid #555; border-radius: 5px;"
+              type="text">
+            <div style="display: flex; gap: 10px; margin-top: 15px;"> <button onclick="MotoFindBack.saveNewContact()"
+                class="primary-btn"
+                style="flex: 1;">Save</button>
+              <button onclick="MotoFindBack.closeContactModal()" class="secondary-btn"
+                style="flex: 1;">Cancel</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
-        
     <div class="tab-content" id="maintenance-tab">
       <div class="panel">
         <h2>Maintenance Alerts</h2>
@@ -1271,152 +1232,178 @@
         </div>
       </div>
     </div>
-   <div class="panel">
-  <h2 class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-    Help Guide ▼
-  </h2>
-  <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
-    <h1>Spin - Motorcycle Companion</h1>
-    <h2>Purpose:</h2>
-    Comprehensive motorcycle-focused GPS navigation with advanced ride metrics, emergency features, maintenance tracking, and engine sound analysis. The spinning wheel in the header rotates to reflect your current speed, spinning faster as you ride faster.
-
-    <h2>🚀 Navigation Tab</h2>
-    <strong>GPS Navigation:</strong> Lock your position and navigate back with audio cues.<br>
-    <strong>Calibrate Sensors:</strong> Place phone on bike in riding position and tap to set baseline for lean angle and crash detection.<br>
-    <strong>Auto-Lock Mode:</strong> Automatically locks position when motorcycle is stationary.<br>
-    <strong>Direction Indicator:</strong> Visual compass pointing to locked position.<br>
-    <strong>Sonar Parameters:</strong> Adjust audio feedback frequency and range.<br>
-    <strong>Triple-Tap Overlay:</strong> Quickly tap screen 3 times to show enlarged speed/lean display.
-    <strong>GPS Navigation:</strong> Lock your position and navigate back with audio cues (initially muted for safety).<br>
-<strong>Mute Sound:</strong> Toggle audio feedback on/off. Starts muted to prevent unexpected sounds.<br>
-
-    <h2>📊 Metrics Tab</h2>
-    <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and lean angles with real-time updates.<br>
-    <strong>Cornering Analysis:</strong> Detects corners using GPS curvature and lean angle, calculates cornering G and speeds.<br>
-    <strong>Elevation Profile:</strong> Tracks altitude changes using GPS data with live chart.<br>
-    <strong>Lean Angle Indicator:</strong> Visual display of motorcycle lean during corners.<br>
-    <strong>Distance Statistics:</strong> Daily, weekly, monthly, and total distance tracking.<br>
-    <strong>Acceleration Timer:</strong> Measures 0-100 km/h (customizable) acceleration.<br>
-
-    <h3>🎵 Engine Sound Analysis</h3>
-    <strong>Real-time RPM Monitoring:</strong> Uses microphone to detect engine RPM from sound.<br>
-    <strong>Gear Position Estimation:</strong> Automatically estimates current gear based on speed/RPM ratio.<br>
-    <strong>Engine Health Monitoring:</strong> Detects engine knock, exhaust leaks, and unusual vibrations.<br>
-    <strong>Gear Shift Detection:</strong> Tracks shift patterns and quality.<br>
-    <strong>Impulse Response Calibration:</strong> Record your engine sound for precise RPM calibration.<br>
-    <strong>Sound Spectrum Visualization:</strong> Real-time frequency display.
-
-    <h3>💾 Session Management</h3>
-    <strong>Start Session:</strong> Begin recording a new ride with auto-save every 30 seconds.<br>
-    <strong>Save Session:</strong> Save ride with custom name and notes.<br>
-    <strong>Quick Save:</strong> Instant save without prompts.<br>
-    <strong>Export Session:</strong> Download ride data as JSON file.<br>
-    <strong>Session History:</strong> Browse and manage all past rides.
-
-    <h2>🚨 Emergency Tab</h2>
-    <strong>Emergency Alert:</strong> Send your location to emergency contacts manually.<br>
-    <strong>Crash Detection:</strong> Automatically sends location to contacts if bike is detected lying flat for 5 seconds.<br>
-    <strong>Quick Contacts:</strong> Pre-set emergency contacts for quick access with call/message buttons.<br>
-    <strong>Custom Message:</strong> Edit the emergency message with your details.<br>
-    <strong>Emergency Call:</strong> Direct access to 112/911 emergency services.
-
-    <h2>🔧 Maintenance Tab</h2>
-    <strong>Maintenance Alerts:</strong> Track service intervals based on mileage.<br>
-    <strong>Progress Indicators:</strong> Visual progress bars for each maintenance item.<br>
-    <strong>Custom Items:</strong> Add your own maintenance tasks and intervals.<br>
-    <strong>Auto Reminders:</strong> Get notified when maintenance is due.
-
-    <h2>🎛️ Advanced Features</h2>
-    <strong>Triple-Tap Overlay:</strong> Quick triple-tap anywhere to show enlarged stats display.<br>
-    <strong>Real-time Wheel Animation:</strong> Header wheel spins according to your speed.<br>
-    <strong>Comprehensive Data Export:</strong> Export metrics, sessions, and maintenance data.<br>
-    <strong>Offline Capable:</strong> Works without internet connection for basic navigation.<br>
-    <strong>Battery Efficient:</strong> Optimized sensors and GPS usage.
-
-    <h2>🚀 Quick Start Guide</h2>
-    <ol>
-      <li><strong>Initial Setup:</strong>
+    <div class="panel">
+      <h2 class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+        Help Guide ▼ </h2>
+      <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
+        <h1>Spin - Motorcycle Companion</h1>
+        <h2>Purpose:</h2>
+        Comprehensive motorcycle-focused GPS navigation with advanced ride
+        metrics, emergency features, maintenance tracking, and engine sound
+        analysis. The spinning wheel in the header rotates to reflect your
+        current speed, spinning faster as you ride faster.
+        <h2>🚀 Navigation Tab</h2>
+        <strong>GPS Navigation:</strong> Lock your position and navigate back
+        with audio cues.<br>
+        <strong>Calibrate Sensors:</strong> Place phone on bike in riding
+        position and tap to set baseline for lean angle and crash detection.<br>
+        <strong>Auto-Lock Mode:</strong> Automatically locks position when
+        motorcycle is stationary.<br>
+        <strong>Direction Indicator:</strong> Visual compass pointing to locked
+        position.<br>
+        <strong>Sonar Parameters:</strong> Adjust audio feedback frequency and
+        range.<br>
+        <strong>Triple-Tap Overlay:</strong> Quickly tap screen 3 times to show
+        enlarged speed/lean display. <strong>GPS Navigation:</strong> Lock your
+        position and navigate back with audio cues (initially muted for safety).<br>
+        <strong>Mute Sound:</strong> Toggle audio feedback on/off. Starts muted
+        to prevent unexpected sounds.<br>
+        <h2>📊 Metrics Tab</h2>
+        <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and
+        lean angles with real-time updates.<br>
+        <strong>Cornering Analysis:</strong> Detects corners using GPS curvature
+        and lean angle, calculates cornering G and speeds.<br>
+        <strong>Elevation Profile:</strong> Tracks altitude changes using GPS
+        data with live chart.<br>
+        <strong>Lean Angle Indicator:</strong> Visual display of motorcycle lean
+        during corners.<br>
+        <strong>Distance Statistics:</strong> Daily, weekly, monthly, and total
+        distance tracking.<br>
+        <strong>Acceleration Timer:</strong> Measures 0-100 km/h (customizable)
+        acceleration.<br>
+        <h3>🎵 Engine Sound Analysis</h3>
+        <strong>Real-time RPM Monitoring:</strong> Uses microphone to detect
+        engine RPM from sound.<br>
+        <strong>Gear Position Estimation:</strong> Automatically estimates
+        current gear based on speed/RPM ratio.<br>
+        <strong>Engine Health Monitoring:</strong> Detects engine knock, exhaust
+        leaks, and unusual vibrations.<br>
+        <strong>Gear Shift Detection:</strong> Tracks shift patterns and
+        quality.<br>
+        <strong>Impulse Response Calibration:</strong> Record your engine sound
+        for precise RPM calibration.<br>
+        <strong>Sound Spectrum Visualization:</strong> Real-time frequency
+        display.
+        <h3>💾 Session Management</h3>
+        <strong>Start Session:</strong> Begin recording a new ride with
+        auto-save every 30 seconds.<br>
+        <strong>Save Session:</strong> Save ride with custom name and notes.<br>
+        <strong>Quick Save:</strong> Instant save without prompts.<br>
+        <strong>Export Session:</strong> Download ride data as JSON file.<br>
+        <strong>Session History:</strong> Browse and manage all past rides.
+        <h2>🚨 Emergency Tab</h2>
+        <strong>Emergency Alert:</strong> Send your location to emergency
+        contacts manually.<br>
+        <strong>Crash Detection:</strong> Automatically sends location to
+        contacts if bike is detected lying flat for 5 seconds.<br>
+        <strong>Quick Contacts:</strong> Pre-set emergency contacts for quick
+        access with call/message buttons.<br>
+        <strong>Custom Message:</strong> Edit the emergency message with your
+        details.<br>
+        <strong>Emergency Call:</strong> Direct access to 112/911 emergency
+        services.
+        <h2>🔧 Maintenance Tab</h2>
+        <strong>Maintenance Alerts:</strong> Track service intervals based on
+        mileage.<br>
+        <strong>Progress Indicators:</strong> Visual progress bars for each
+        maintenance item.<br>
+        <strong>Custom Items:</strong> Add your own maintenance tasks and
+        intervals.<br>
+        <strong>Auto Reminders:</strong> Get notified when maintenance is due.
+        <h2>🎛️ Advanced Features</h2>
+        <strong>Triple-Tap Overlay:</strong> Quick triple-tap anywhere to show
+        enlarged stats display.<br>
+        <strong>Real-time Wheel Animation:</strong> Header wheel spins according
+        to your speed.<br>
+        <strong>Comprehensive Data Export:</strong> Export metrics, sessions,
+        and maintenance data.<br>
+        <strong>Offline Capable:</strong> Works without internet connection for
+        basic navigation.<br>
+        <strong>Battery Efficient:</strong> Optimized sensors and GPS usage.
+        <h2>🚀 Quick Start Guide</h2>
+        <ol>
+          <li><strong>Initial Setup:</strong>
+            <ul>
+              <li>Mount phone securely on motorcycle</li>
+              <li>Tap "Calibrate Sensors" to set lean angle baseline</li>
+              <li>Set emergency contacts in Emergency tab</li>
+            </ul>
+          </li>
+          <li><strong>Before Riding:</strong>
+            <ul>
+              <li>Tap "Test Audio &amp; Lock" to initialize app</li>
+              <li>Start Engine Analysis for RPM monitoring</li>
+              <li>Record engine sample for accurate RPM calibration</li>
+              <li>Start new session to track your ride</li>
+            </ul>
+          </li>
+          <li><strong>During Ride:</strong>
+            <ul>
+              <li>Use Navigation tab to lock parking position</li>
+              <li>Monitor Metrics tab for performance data</li>
+              <li>Watch header wheel spin with your speed</li>
+              <li>Triple-tap screen for quick stats overlay</li>
+            </ul>
+          </li>
+          <li><strong>After Ride:</strong>
+            <ul>
+              <li>Save session with notes</li>
+              <li>Check maintenance progress</li>
+              <li>Export data for analysis</li>
+            </ul>
+          </li>
+        </ol>
+        <h2>💡 Pro Tips</h2>
+        <strong>For Best Results:</strong>
         <ul>
-          <li>Mount phone securely on motorcycle</li>
-          <li>Tap "Calibrate Sensors" to set lean angle baseline</li>
-          <li>Set emergency contacts in Emergency tab</li>
+          <li>Mount phone securely aligned with bike's centerline for accurate
+            lean angles</li>
+          <li>Calibrate engine sound analysis in a quiet environment</li>
+          <li>Set realistic maintenance intervals based on your riding style</li>
+          <li>Test emergency features before your first ride</li>
+          <li>Use quick save frequently during long rides</li>
+          <li>Export session data regularly to backup your rides</li>
         </ul>
-      </li>
-      <li><strong>Before Riding:</strong>
+        <strong>Safety Features:</strong>
         <ul>
-          <li>Tap "Test Audio & Lock" to initialize app</li>
-          <li>Start Engine Analysis for RPM monitoring</li>
-          <li>Record engine sample for accurate RPM calibration</li>
-          <li>Start new session to track your ride</li>
+          <li>Crash detection requires proper phone mounting</li>
+          <li>Emergency contacts should be set before riding</li>
+          <li>Test audio navigation in a safe area first</li>
+          <li>Keep phone charged during long rides</li>
         </ul>
-      </li>
-      <li><strong>During Ride:</strong>
+        <strong>Performance Tracking:</strong>
         <ul>
-          <li>Use Navigation tab to lock parking position</li>
-          <li>Monitor Metrics tab for performance data</li>
-          <li>Watch header wheel spin with your speed</li>
-          <li>Triple-tap screen for quick stats overlay</li>
+          <li>Monitor cornering G-forces to improve technique</li>
+          <li>Track acceleration times for performance tuning</li>
+          <li>Use elevation data for route planning</li>
+          <li>Analyze gear shift patterns for smoother riding</li>
         </ul>
-      </li>
-      <li><strong>After Ride:</strong>
+        <h2>🔧 Troubleshooting</h2>
+        <strong>Common Issues:</strong>
         <ul>
-          <li>Save session with notes</li>
-          <li>Check maintenance progress</li>
-          <li>Export data for analysis</li>
+          <li><em>No GPS signal:</em> Ensure location services are enabled</li>
+          <li><em>No engine sound detection:</em> Allow microphone access and
+            start engine analysis</li>
+          <li><em>Inaccurate lean angles:</em> Recalibrate sensors with phone
+            properly mounted</li>
+          <li><em>Audio not working:</em> Check phone volume and app permissions</li>
+          <li><em>Crash detection false positives:</em> Adjust phone mounting
+            position</li>
         </ul>
-      </li>
-    </ol>
-
-    <h2>💡 Pro Tips</h2>
-    <strong>For Best Results:</strong>
-    <ul>
-      <li>Mount phone securely aligned with bike's centerline for accurate lean angles</li>
-      <li>Calibrate engine sound analysis in a quiet environment</li>
-      <li>Set realistic maintenance intervals based on your riding style</li>
-      <li>Test emergency features before your first ride</li>
-      <li>Use quick save frequently during long rides</li>
-      <li>Export session data regularly to backup your rides</li>
-    </ul>
-
-    <strong>Safety Features:</strong>
-    <ul>
-      <li>Crash detection requires proper phone mounting</li>
-      <li>Emergency contacts should be set before riding</li>
-      <li>Test audio navigation in a safe area first</li>
-      <li>Keep phone charged during long rides</li>
-    </ul>
-
-    <strong>Performance Tracking:</strong>
-    <ul>
-      <li>Monitor cornering G-forces to improve technique</li>
-      <li>Track acceleration times for performance tuning</li>
-      <li>Use elevation data for route planning</li>
-      <li>Analyze gear shift patterns for smoother riding</li>
-    </ul>
-
-    <h2>🔧 Troubleshooting</h2>
-    <strong>Common Issues:</strong>
-    <ul>
-      <li><em>No GPS signal:</em> Ensure location services are enabled</li>
-      <li><em>No engine sound detection:</em> Allow microphone access and start engine analysis</li>
-      <li><em>Inaccurate lean angles:</em> Recalibrate sensors with phone properly mounted</li>
-      <li><em>Audio not working:</em> Check phone volume and app permissions</li>
-      <li><em>Crash detection false positives:</em> Adjust phone mounting position</li>
-    </ul>
-
-    <strong>Support:</strong>
-    <ul>
-      <li>Ensure latest browser version for best performance</li>
-      <li>Grant all requested permissions for full functionality</li>
-      <li>Use in landscape mode for better dashboard visibility</li>eleveation 
-      <li>Keep app updated for new features and bug fixes</li>
-    </ul>
-
-    <div style="background: rgba(255,102,0,0.1); padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 3px solid var(--primary-color);">
-      <strong>🎯 Remember:</strong> Spin is designed to enhance your riding experience, not replace safe riding practices. Always ride responsibly and within your limits.
+        <strong>Support:</strong>
+        <ul>
+          <li>Ensure latest browser version for best performance</li>
+          <li>Grant all requested permissions for full functionality</li>
+          <li>Use in landscape mode for better dashboard visibility</li>
+          eleveation
+          <li>Keep app updated for new features and bug fixes</li>
+        </ul>
+        <div style="background: rgba(255,102,0,0.1); padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 3px solid var(--primary-color);">
+          <strong>🎯 Remember:</strong> Spin is designed to enhance your riding
+          experience, not replace safe riding practices. Always ride responsibly
+          and within your limits. </div>
+      </div>
     </div>
-  </div>
-</div>
     <div id="debug"></div>
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1487,6 +1474,7 @@ const MotoFindBack = {
   tripleTapTimeout: null,
   lastTapTime: 0,
   isOverlayVisible: false,
+
   
   // Session data structure - MOVED OUTSIDE audioAnalysis
   sessionTemplate: {
@@ -1546,6 +1534,7 @@ const MotoFindBack = {
         redline: 8000,
         idleRPM: 1500
       }
+      
     },
     recording: {
       isRecording: false,
@@ -1554,7 +1543,9 @@ const MotoFindBack = {
       sampleDuration: 3000, // 3 seconds
       analysisBuffer: null
     }
+    
   },
+  
   
 init: async function() {
   this.loadUserPreferences();
@@ -1651,6 +1642,7 @@ init: async function() {
       this.log('Service Worker registration failed: ' + err, true);
     });
   }
+      window.loadSessionsChoice = this.loadSessionsChoice.bind(this);
 },
   
                                                             
@@ -3881,6 +3873,40 @@ loadContactsFromStorage: function() {
   }
 },
 
+// Background communication with service worker
+backgroundComm: {
+  async postMessage(type, payload) {
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      return new Promise((resolve) => {
+        const messageChannel = new MessageChannel();
+        messageChannel.port1.onmessage = (event) => {
+          resolve(event.data);
+        };
+        navigator.serviceWorker.controller.postMessage(
+          { type, payload },
+          [messageChannel.port2]
+        );
+      });
+    }
+    return { success: false };
+  }
+},
+
+// Store data in background
+async storeInBackground(data) {
+  const result = await this.backgroundComm.postMessage('STORE_BACKGROUND_DATA', data);
+  if (result.success) {
+    this.log('Data stored for background processing');
+  }
+},
+
+// Queue emergency alert for background sending
+async queueEmergencyForBackground(alertData) {
+  const result = await this.backgroundComm.postMessage('QUEUE_EMERGENCY_ALERT', alertData);
+  if (result.success) {
+    this.log('Emergency alert queued for background sending');
+  }
+},
 
 
 // Enhanced crash detection with actual alert sending
@@ -3989,10 +4015,6 @@ callEmergency: function() {
   }
 };
       
-                                                                                                                                 // General statistics functions
-
-  
-                                                                                                                                 
 
 MotoFindBack.init();
 </script>

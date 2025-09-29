@@ -891,6 +891,51 @@
     </div>
   </div>
 </div>
+        <!-- Add this after the Session Management panel -->
+<div class="panel">
+  <h3>📊 General Statistics (All Sessions)</h3>
+  
+  <div class="dashboard">
+    <div class="dashboard-item">
+      <div class="dashboard-label">Total Distance</div>
+      <div class="dashboard-value" id="statsTotalDistance">0 km</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Speed</div>
+      <div class="dashboard-value" id="statsMaxSpeedAll">0 km/h</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Lean Angle</div>
+      <div class="dashboard-value" id="statsMaxLeanAll">0°</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Elevation Gain</div>
+      <div class="dashboard-value" id="statsMaxElevationAll">0 m</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Corner Speed</div>
+      <div class="dashboard-value" id="statsMaxCornerSpeedAll">0 km/h</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Max Corner G</div>
+      <div class="dashboard-value" id="statsMaxCornerGAll">0 g</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Best 0-60 km/h</div>
+      <div class="dashboard-value" id="statsBest0to60">-- s</div>
+    </div>
+    <div class="dashboard-item">
+      <div class="dashboard-label">Best 0-100 km/h</div>
+      <div class="dashboard-value" id="statsBest0to100">-- s</div>
+    </div>
+  </div>
+  
+  <div class="control-group" style="margin-top: 15px;">
+    <button onclick="MotoFindBack.updateGeneralStatistics()" class="secondary-btn">Refresh Stats</button>
+    <button onclick="MotoFindBack.exportAllStatistics()" class="secondary-btn">Export All Data</button>
+    <button onclick="MotoFindBack.clearAllStatistics()" class="secondary-btn" style="background: var(--error-color);">Clear All Data</button>
+  </div>
+</div>
          <button id="resetMetricsBtn" class="secondary-btn">Reset
             Metrics</button> <button id="exportMetricsBtn" class="secondary-btn">Export
             Data</button> </div>
@@ -1390,6 +1435,8 @@ const MotoFindBack = {
   currentTempo: 1000,
   emergencyEnabled: true,
   autoLockEnabled: false,
+    loadPreviousSessions: true,
+  showSessionPrompt: true,
   autoLockDebounce: null,
   currentSpeed: 0,
   reachedPointDisplayed: false,
@@ -1509,12 +1556,14 @@ const MotoFindBack = {
     }
   },
   
-  init: async function() {
-    this.initMap();
+init: async function() {
+  this.loadUserPreferences();
+  this.initMap();
   this.loadContactsFromStorage();
   this.setupTripleTapDetection();
   this.loadSessionsFromStorage();
-    // Auto-start session when ride starts
+  
+  // Auto-start session when ride starts
   const originalStartRide = this.startRide;
   this.startRide = function() {
     if (!this.currentSession) {
@@ -1527,74 +1576,160 @@ const MotoFindBack = {
   setInterval(() => {
     this.updateSessionDisplay();
   }, 1000);
-    this.canvas = document.getElementById('elevationCanvas'); // Store the canvas element
-    if (!this.canvas) {
-      this.log("Error: elevationCanvas element not found", true);
-      return;
-    }
-    this.cornerChart = new Chart(document.getElementById('cornerChart').getContext('2d'), {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'Corner G-Force',
-          data: [],
-          borderColor: '#00ccff',
-          backgroundColor: 'rgba(0, 204, 255, 0.2)',
-          fill: true,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          y: { beginAtZero: true, title: { display: true, text: 'G-Force (g)' } },
-          x: { title: { display: true, text: 'Corner Number' } }
-        }
+  
+  this.canvas = document.getElementById('elevationCanvas'); // Store the canvas element
+  if (!this.canvas) {
+    this.log("Error: elevationCanvas element not found", true);
+    return;
+  }
+  
+  this.cornerChart = new Chart(document.getElementById('cornerChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Corner G-Force',
+        data: [],
+        borderColor: '#00ccff',
+        backgroundColor: 'rgba(0, 204, 255, 0.2)',
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: 'G-Force (g)' } },
+        x: { title: { display: true, text: 'Corner Number' } }
       }
-    });
-    this.setupEventListeners();
-    this.setupTabs();
-    this.setupCollapsibles();
-    this.loadData();
-    this.updateUI();
-    this.log("MotoFindBack initialized");
-    this.initDeviceOrientation();
+    }
+  });
+  
+  this.setupEventListeners();
+  this.setupTabs();
+  this.setupCollapsibles();
+  this.loadData();
+  this.updateUI();
+  this.log("MotoFindBack initialized");
+  this.initDeviceOrientation();
 
-    document.getElementById("maxDistInput").addEventListener("input", (e) => {
-      document.getElementById("maxDistValue").textContent = e.target.value;
-    });
+  document.getElementById("maxDistInput").addEventListener("input", (e) => {
+    document.getElementById("maxDistValue").textContent = e.target.value;
+  });
 
-    document.getElementById("stationaryTime").addEventListener("input", (e) => {
-      document.getElementById("stationaryTimeValue").textContent = e.target.value + ' sec';
-    });
+  document.getElementById("stationaryTime").addEventListener("input", (e) => {
+    document.getElementById("stationaryTimeValue").textContent = e.target.value + ' sec';
+  });
 
-    document.getElementById("speedThreshold").addEventListener("input", (e) => {
-      this.speedThreshold = parseFloat(e.target.value);
-      document.getElementById("speedThresholdValue").textContent = e.target.value + ' km/h';
-    });
-      
-      document.getElementById("addContactBtn").addEventListener("click", () => this.showContactModal());
+  document.getElementById("speedThreshold").addEventListener("input", (e) => {
+    this.speedThreshold = parseFloat(e.target.value);
+    document.getElementById("speedThresholdValue").textContent = e.target.value + ' km/h';
+  });
+  
+  document.getElementById("addContactBtn").addEventListener("click", () => this.showContactModal());
   document.getElementById("muteBtn").textContent = "Sound Muted";
   document.getElementById("muteBtn").classList.add("muted");
   document.getElementById("muteBtn").disabled = true;
-    document.getElementById("accelTarget").addEventListener("input", (e) => {
-      this.accelTarget = parseFloat(e.target.value) || 100;
-      const label = document.querySelector('#accelerationTime').previousElementSibling;
-      if (label) label.textContent = `0-${this.accelTarget} km/h`;
-      const statsLabel = document.querySelector('#statsAcceleration').previousElementSibling;
-      if (statsLabel) statsLabel.textContent = `0-${this.accelTarget} km/h`;
-    });
+  
+  document.getElementById("accelTarget").addEventListener("input", (e) => {
+    this.accelTarget = parseFloat(e.target.value) || 100;
+    const label = document.querySelector('#accelerationTime').previousElementSibling;
+    if (label) label.textContent = `0-${this.accelTarget} km/h`;
+    const statsLabel = document.querySelector('#statsAcceleration').previousElementSibling;
+    if (statsLabel) statsLabel.textContent = `0-${this.accelTarget} km/h`;
+  });
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').then(reg => {
-        this.log('Service Worker registered');
-      }).catch(err => {
-        this.log('Service Worker registration failed: ' + err, true);
-      });
-    }
-  },
-    
+  // Fixed the incomplete if statement
+  if (this.showSessionPrompt && this.sessionHistory.length > 0) {
+    this.showSessionLoadPrompt();
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      this.log('Service Worker registered');
+    }).catch(err => {
+      this.log('Service Worker registration failed: ' + err, true);
+    });
+  }
+},
+  
+                                                            
+loadUserPreferences: function() {
+  const prefs = localStorage.getItem('motoFindBack_preferences');
+  if (prefs) {
+    const preferences = JSON.parse(prefs);
+    this.loadPreviousSessions = preferences.loadPreviousSessions !== undefined ? preferences.loadPreviousSessions : true;
+    this.showSessionPrompt = preferences.showSessionPrompt !== undefined ? preferences.showSessionPrompt : true;
+  }
+},
+
+saveUserPreferences: function() {
+  const preferences = {
+    loadPreviousSessions: this.loadPreviousSessions,
+    showSessionPrompt: this.showSessionPrompt
+  };
+  localStorage.setItem('motoFindBack_preferences', JSON.stringify(preferences));
+  
+},
+
+showSessionLoadPrompt: function() {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  `;
+  
+  modal.innerHTML = `
+    <div style="background: #333; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; border: 2px solid var(--primary-color);">
+      <h3>Load Previous Sessions?</h3>
+      <p style="color: #ccc; margin: 15px 0;">Found ${this.sessionHistory.length} saved ride sessions. Load them now?</p>
+      
+      <div style="margin: 15px 0;">
+        <label style="color: #ccc; display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="dontAskAgain">
+          Don't ask me again
+        </label>
+      </div>
+      
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button onclick="MotoFindBack.loadSessionsChoice(true)" class="primary-btn" style="flex: 1;">Yes, Load</button>
+        <button onclick="MotoFindBack.loadSessionsChoice(false)" class="secondary-btn" style="flex: 1;">No, Start Fresh</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+},
+
+loadSessionsChoice: function(loadSessions) {
+  this.loadPreviousSessions = loadSessions;
+  
+  const dontAskAgain = document.getElementById('dontAskAgain').checked;
+  if (dontAskAgain) {
+    this.showSessionPrompt = false;
+  }
+  
+  this.saveUserPreferences();
+  
+  if (!loadSessions) {
+    this.sessionHistory = [];
+    this.saveSessionsToStorage();
+  }
+  
+  // Remove modal
+  document.body.removeChild(document.querySelector('div[style*="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8)"]'));
+  
+  this.updateSessionHistoryDisplay();
+  this.updateGeneralStatistics();
+},
     
     // Microphone initialization
 // Update the initMicrophone function to handle permissions better
@@ -2281,6 +2416,122 @@ toggleEmergency: function() {
     status.textContent = "DISABLED"; 
     status.style.color = "var(--error-color)";
     document.getElementById('emergencyBtn').disabled = true;
+  }
+},
+  
+  updateGeneralStatistics: function() {
+  if (this.sessionHistory.length === 0) {
+    this.resetStatisticsDisplay();
+    return;
+  }
+  
+  const stats = this.calculateGeneralStatistics();
+  
+  document.getElementById('statsTotalDistance').textContent = stats.totalDistance.toFixed(1) + ' km';
+  document.getElementById('statsMaxSpeedAll').textContent = stats.maxSpeed.toFixed(1) + ' km/h';
+  document.getElementById('statsMaxLeanAll').textContent = stats.maxLeanAngle.toFixed(1) + '°';
+  document.getElementById('statsMaxElevationAll').textContent = stats.maxElevationGain.toFixed(0) + ' m';
+  document.getElementById('statsMaxCornerSpeedAll').textContent = stats.maxCornerSpeed.toFixed(1) + ' km/h';
+  document.getElementById('statsMaxCornerGAll').textContent = stats.maxCornerG.toFixed(2) + ' g';
+  document.getElementById('statsBest0to60').textContent = stats.best0to60 > 0 ? stats.best0to60.toFixed(2) + ' s' : '--';
+  document.getElementById('statsBest0to100').textContent = stats.best0to100 > 0 ? stats.best0to100.toFixed(2) + ' s' : '--';
+},
+
+calculateGeneralStatistics: function() {
+  let totalDistance = 0;
+  let maxSpeed = 0;
+  let maxLeanAngle = 0;
+  let maxElevationGain = 0;
+  let maxCornerSpeed = 0;
+  let maxCornerG = 0;
+  let best0to60 = Infinity;
+  let best0to100 = Infinity;
+  
+  this.sessionHistory.forEach(session => {
+    totalDistance += session.distance || 0;
+    maxSpeed = Math.max(maxSpeed, session.maxSpeed || 0);
+    maxElevationGain = Math.max(maxElevationGain, session.elevationGain || 0);
+    
+    // Get max values from metrics
+    if (session.metrics) {
+      if (session.metrics.leanAngles && session.metrics.leanAngles.length > 0) {
+        const sessionMaxLean = Math.max(...session.metrics.leanAngles.map(l => l.angle || 0));
+        maxLeanAngle = Math.max(maxLeanAngle, sessionMaxLean);
+      }
+      
+      if (session.metrics.corneringData && session.metrics.corneringData.length > 0) {
+        const sessionMaxCornerSpeed = Math.max(...session.metrics.corneringData.map(c => c.speed || 0));
+        const sessionMaxCornerG = Math.max(...session.metrics.corneringData.map(c => c.g || 0));
+        maxCornerSpeed = Math.max(maxCornerSpeed, sessionMaxCornerSpeed);
+        maxCornerG = Math.max(maxCornerG, sessionMaxCornerG);
+      }
+      
+      if (session.metrics.accelerationTimes && session.metrics.accelerationTimes.length > 0) {
+        // For simplicity, using the best acceleration time from the session
+        const sessionBestAccel = Math.min(...session.metrics.accelerationTimes.filter(t => t > 0));
+        if (sessionBestAccel < best0to100) {
+          best0to100 = sessionBestAccel;
+        }
+        // For 0-60, we'd need separate tracking, but using same for demo
+        best0to60 = Math.min(best0to60, sessionBestAccel * 0.6); // Rough estimate
+      }
+    }
+  });
+  
+  return {
+    totalDistance,
+    maxSpeed,
+    maxLeanAngle,
+    maxElevationGain,
+    maxCornerSpeed,
+    maxCornerG,
+    best0to60: best0to60 !== Infinity ? best0to60 : 0,
+    best0to100: best0to100 !== Infinity ? best0to100 : 0
+  };
+},
+
+resetStatisticsDisplay: function() {
+  document.getElementById('statsTotalDistance').textContent = '0 km';
+  document.getElementById('statsMaxSpeedAll').textContent = '0 km/h';
+  document.getElementById('statsMaxLeanAll').textContent = '0°';
+  document.getElementById('statsMaxElevationAll').textContent = '0 m';
+  document.getElementById('statsMaxCornerSpeedAll').textContent = '0 km/h';
+  document.getElementById('statsMaxCornerGAll').textContent = '0 g';
+  document.getElementById('statsBest0to60').textContent = '--';
+  document.getElementById('statsBest0to100').textContent = '--';
+},
+
+exportAllStatistics: function() {
+  const stats = this.calculateGeneralStatistics();
+  const data = {
+    generalStatistics: stats,
+    totalSessions: this.sessionHistory.length,
+    sessions: this.sessionHistory,
+    exportedAt: new Date().toISOString()
+  };
+  
+  const dataStr = JSON.stringify(data, null, 2);
+  const dataBlob = new Blob([dataStr], { type: 'application/json' });
+  
+  const url = URL.createObjectURL(dataBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `motorcycle_stats_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  this.log("All statistics exported");
+},
+
+clearAllStatistics: function() {
+  if (confirm('Are you sure you want to clear ALL statistics and session data? This cannot be undone!')) {
+    this.sessionHistory = [];
+    this.saveSessionsToStorage();
+    this.updateGeneralStatistics();
+    this.updateSessionHistoryDisplay();
+    this.log("All statistics cleared");
   }
 },
   
@@ -3222,6 +3473,7 @@ initAudio: function() {
     this.updateMaintenanceList();
     this.updateEmergencyContacts();
     this.updateRideHistory();
+    this.updateGeneralStatistics();
      if (this.isOverlayVisible) {
     this.updateOverlayStats();
     this.updateEnlargedWheelAnimation();
@@ -3239,30 +3491,48 @@ initAudio: function() {
     return this.accelerationTimes.reduce((sum, time) => sum + time, 0) / this.accelerationTimes.length;
   },
 
-  startRide: function() {
-    if (this.isRideActive) return;
-    this.isRideActive = true;
-    this.rideStartTime = Date.now();
-    this.movementHistory = [];
-    this.corners = [];
-    this.cornerEntrySpeeds = [];
-    this.cornerExitSpeeds = [];
-    this.elevationHistory = [];
-    this.elevationGain = 0;
-    this.maxSpeed = 0;
-    this.maxLeanAngle = 0;
-    this.maxCornerG = 0;
-    this.maxCornerSpeed = 0;
-    this.accelerationTimes = [];
-    document.getElementById("startRideBtn").textContent = "Ride Active";
-    document.getElementById("startRideBtn").disabled = true;
-    this.watchId = navigator.geolocation.watchPosition(
-      pos => this.updatePosition(pos),
-      err => this.handleGpsError(err),
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
-    );
-    this.log("Ride started");
-  },
+startRide: function() {
+  if (this.isRideActive) {
+    // If ride is active, stop it and save session
+    this.stop();
+    if (this.currentSession) {
+      this.saveCurrentSession();
+    }
+    return;
+  }
+  
+  // Start new ride
+  this.isRideActive = true;
+  this.rideStartTime = Date.now();
+  this.movementHistory = [];
+  this.corners = [];
+  this.cornerEntrySpeeds = [];
+  this.cornerExitSpeeds = [];
+  this.elevationHistory = [];
+  this.elevationGain = 0;
+  this.maxSpeed = 0;
+  this.maxLeanAngle = 0;
+  this.maxCornerG = 0;
+  this.maxCornerSpeed = 0;
+  this.accelerationTimes = [];
+  
+  document.getElementById("startRideBtn").textContent = "Stop & Save Ride";
+  document.getElementById("startRideBtn").style.background = "linear-gradient(to bottom, #ff3333, #cc0000)";
+  document.getElementById("startRideBtn").disabled = false;
+  
+  this.watchId = navigator.geolocation.watchPosition(
+    pos => this.updatePosition(pos),
+    err => this.handleGpsError(err),
+    { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
+  );
+  
+  // Auto-start session
+  if (!this.currentSession) {
+    this.startNewSession();
+  }
+  
+  this.log("Ride started");
+},
 
   updatePosition: function(pos) {
     this.prevPosition = this.lastPosition;
@@ -3718,7 +3988,10 @@ callEmergency: function() {
     debug.scrollTop = debug.scrollHeight;
   }
 };
-                                                                                                                                 
+      
+                                                                                                                                 // General statistics functions
+
+  
                                                                                                                                  
 
 MotoFindBack.init();

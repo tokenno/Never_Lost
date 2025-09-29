@@ -1325,7 +1325,7 @@
           <li><strong>Initial Setup:</strong>
             <ul>
               <li>Mount phone securely on motorcycle</li>
-              <li>Tap "Calibrate Sensors" to set lean angle baseline</li>
+              <li>Tap "Calibrate Sensors" to set lean angle baseline (Calibration will fail if phone is completely flat).</li>
               <li>Set emergency contacts in Emergency tab</li>
             </ul>
           </li>
@@ -1546,6 +1546,7 @@ const MotoFindBack = {
     
   },
   
+ 
   
 init: async function() {
   this.loadUserPreferences();
@@ -1629,7 +1630,34 @@ init: async function() {
     const statsLabel = document.querySelector('#statsAcceleration').previousElementSibling;
     if (statsLabel) statsLabel.textContent = `0-${this.accelTarget} km/h`;
   });
+      
+        // TEMPORARY: Force show prompt for testing
+  console.log('=== TEMPORARY OVERRIDE: Forcing session prompt ===');
+  this.showSessionPrompt = true;
+  
+  // Your existing session loading code...
+  await this.loadSessionsFromStorage();
+  await this.loadUserPreferences();
+  
+  console.log('After loading - Sessions:', this.sessionHistory.length, 'Show prompt:', this.showSessionPrompt);
+  
 
+  
+  console.log('After override - Sessions:', this.sessionHistory.length, 'Show prompt:', this.showSessionPrompt);
+  
+  if (this.showSessionPrompt && this.sessionHistory.length > 0) {
+    console.log('✅ Showing session load prompt (forced)');
+    setTimeout(() => {
+      this.showSessionLoadPrompt();
+    }, 1500);
+  } else {
+    console.log('❌ Still not showing prompt:', {
+      showSessionPrompt: this.showSessionPrompt,
+      sessionHistoryLength: this.sessionHistory.length
+    });
+  }
+      
+      
   // Fixed the incomplete if statement
   if (this.showSessionPrompt && this.sessionHistory.length > 0) {
     this.showSessionLoadPrompt();
@@ -1642,16 +1670,34 @@ init: async function() {
       this.log('Service Worker registration failed: ' + err, true);
     });
   }
-      window.loadSessionsChoice = this.loadSessionsChoice.bind(this);
+      
 },
   
                                                             
 loadUserPreferences: function() {
   const prefs = localStorage.getItem('motoFindBack_preferences');
+  console.log('User preferences:', prefs);
+  
   if (prefs) {
-    const preferences = JSON.parse(prefs);
-    this.loadPreviousSessions = preferences.loadPreviousSessions !== undefined ? preferences.loadPreviousSessions : true;
-    this.showSessionPrompt = preferences.showSessionPrompt !== undefined ? preferences.showSessionPrompt : true;
+    try {
+      const preferences = JSON.parse(prefs);
+      this.loadPreviousSessions = preferences.loadPreviousSessions !== undefined ? preferences.loadPreviousSessions : true;
+      this.showSessionPrompt = preferences.showSessionPrompt !== undefined ? preferences.showSessionPrompt : true;
+      
+      console.log('Loaded preferences:', {
+        loadPreviousSessions: this.loadPreviousSessions,
+        showSessionPrompt: this.showSessionPrompt
+      });
+    } catch (error) {
+      console.error('Error loading preferences:', error);
+      // Set defaults
+      this.loadPreviousSessions = true;
+      this.showSessionPrompt = true;
+    }
+  } else {
+    console.log('No preferences found, using defaults');
+    this.loadPreviousSessions = true;
+    this.showSessionPrompt = true;
   }
 },
 
@@ -1664,8 +1710,14 @@ saveUserPreferences: function() {
   
 },
 
-showSessionLoadPrompt: function() {
+  showSessionLoadPrompt: function() {
+  // Check if modal already exists
+  if (document.getElementById('sessionLoadModal')) {
+    return;
+  }
+  
   const modal = document.createElement('div');
+  modal.id = 'sessionLoadModal';
   modal.style.cssText = `
     position: fixed;
     top: 0;
@@ -1692,21 +1744,55 @@ showSessionLoadPrompt: function() {
       </div>
       
       <div style="display: flex; gap: 10px; margin-top: 20px;">
-        <button onclick="MotoFindBack.loadSessionsChoice(true)" class="primary-btn" style="flex: 1;">Yes, Load</button>
-        <button onclick="MotoFindBack.loadSessionsChoice(false)" class="secondary-btn" style="flex: 1;">No, Start Fresh</button>
+        <button id="loadSessionsYes" class="primary-btn" style="flex: 1;">Yes, Load</button>
+        <button id="loadSessionsNo" class="secondary-btn" style="flex: 1;">No, Start Fresh</button>
       </div>
     </div>
   `;
   
   document.body.appendChild(modal);
+  
+  // Add event listeners
+  document.getElementById('loadSessionsYes').addEventListener('click', () => {
+    this.loadSessionsChoice(true);
+  });
+  
+  document.getElementById('loadSessionsNo').addEventListener('click', () => {
+    this.loadSessionsChoice(false);
+  });
+  
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      this.loadSessionsChoice(false);
+    }
+  });
 },
-
+  
+  resetSessionPrompt: function() {
+  this.showSessionPrompt = true;
+  this.saveUserPreferences();
+  this.log('Session prompt preference reset to true');
+  this.showAlertNotification('Session prompts have been re-enabled!', 'success');
+  
+  // Optional: Show the prompt immediately
+  setTimeout(() => {
+    if (this.sessionHistory.length > 0) {
+      this.showSessionLoadPrompt();
+    }
+  }, 1000);
+},
+  
 loadSessionsChoice: function(loadSessions) {
+  console.log('=== loadSessionsChoice called ===', { loadSessions });
+  
   this.loadPreviousSessions = loadSessions;
   
-  const dontAskAgain = document.getElementById('dontAskAgain').checked;
-  if (dontAskAgain) {
+  const dontAskAgain = document.getElementById('dontAskAgain');
+  console.log('DontAskAgain checkbox:', dontAskAgain, 'Checked:', dontAskAgain?.checked);
+  
+  if (dontAskAgain && dontAskAgain.checked) {
     this.showSessionPrompt = false;
+    console.log('User chose: Don\'t ask again');
   }
   
   this.saveUserPreferences();
@@ -1714,14 +1800,48 @@ loadSessionsChoice: function(loadSessions) {
   if (!loadSessions) {
     this.sessionHistory = [];
     this.saveSessionsToStorage();
+    console.log('Cleared session history');
   }
   
   // Remove modal
-  document.body.removeChild(document.querySelector('div[style*="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8)"]'));
+  const modal = document.getElementById('sessionLoadModal');
+  console.log('Modal to remove:', modal);
+  
+  if (modal) {
+    document.body.removeChild(modal);
+    console.log('✅ Modal removed successfully');
+  } else {
+    console.log('❌ Modal not found for removal');
+  }
   
   this.updateSessionHistoryDisplay();
   this.updateGeneralStatistics();
+  console.log('Session choice completed');
 },
+              
+              // Add this temporary method to test CSS
+testButtonClickability: function() {
+  setTimeout(() => {
+    const yesBtn = document.getElementById('loadSessionsYes');
+    const noBtn = document.getElementById('loadSessionsNo');
+    
+    if (yesBtn) {
+      console.log('YES button styles:', {
+        display: yesBtn.style.display,
+        visibility: yesBtn.style.visibility,
+        pointerEvents: yesBtn.style.pointerEvents,
+        opacity: yesBtn.style.opacity,
+        position: yesBtn.style.position,
+        zIndex: yesBtn.style.zIndex
+      });
+      
+      // Temporarily add visible border to see button area
+      yesBtn.style.border = '2px solid red';
+      noBtn.style.border = '2px solid blue';
+    }
+  }, 100);
+},
+              
     
     // Microphone initialization
 // Update the initMicrophone function to handle permissions better
@@ -2715,15 +2835,21 @@ saveSessionsToStorage: function() {
 
 loadSessionsFromStorage: function() {
   const saved = localStorage.getItem('rideSessions');
+  console.log('Loading sessions from storage:', saved ? 'Data found' : 'No data');
+  
   if (saved) {
     try {
       const data = JSON.parse(saved);
       this.sessionHistory = data.sessions || [];
+      console.log('Successfully loaded sessions:', this.sessionHistory.length);
       this.updateSessionHistoryDisplay();
-      this.log(`Loaded ${this.sessionHistory.length} saved sessions`);
     } catch (error) {
-      this.log('Error loading saved sessions: ' + error, true);
+      console.error('Error loading saved sessions:', error);
+      this.sessionHistory = [];
     }
+  } else {
+    this.sessionHistory = [];
+    console.log('No saved sessions found in storage');
   }
 },
 
@@ -4015,7 +4141,6 @@ callEmergency: function() {
   }
 };
       
-window.MotoFindBack = MotoFindBack;  
 MotoFindBack.init();
 </script>
   </body>

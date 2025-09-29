@@ -923,12 +923,18 @@
         <button id="resetMetricsBtn" class="secondary-btn">Reset Metrics</button>
         <button id="exportMetricsBtn" class="secondary-btn">Export Data</button>
       </div>
-      <div class="control-group">
-        <div class="control-item"> <label for="accelTarget">Acceleration Target
-            (km/h)</label><br>
-          <input id="accelTarget" value="100" min="10" max="200" type="number">
-        </div>
-      </div>
+    <div class="setting-item">
+  <h4>Acceleration Popup</h4>
+  <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
+    <label>Target Speed:</label>
+    <input type="range" id="accelTarget" min="20" max="200" value="100" style="flex: 1;">
+    <span id="accelTargetValue">100 km/h</span>
+  </div>
+  <div style="margin: 10px 0;">
+    <button onclick="MotoFindBack.testAccelerationPopup()" class="secondary-btn">Test Popup</button>
+    <button onclick="MotoFindBack.hideAccelerationPopup()" class="secondary-btn">Clear Popup</button>
+  </div>
+</div>
       <div class="lean-container">
         <div class="lean-scale">
           <div class="lean-mark"></div>
@@ -1482,6 +1488,14 @@ const MotoFindBack = {
   tripleTapTimeout: null,
   lastTapTime: 0,
   isOverlayVisible: false,
+  
+  
+  accelerationPopup: {
+  visible: false,
+  achievedTime: null,
+  startTime: null,
+  element: null
+},
 
   
   // Session data structure - MOVED OUTSIDE audioAnalysis
@@ -1612,6 +1626,21 @@ init: async function() {
   this.updateUI();
   this.log("MotoFindBack initialized");
   this.initDeviceOrientation();
+      
+      document.getElementById("accelTarget").addEventListener("input", (e) => {
+  this.accelTarget = parseFloat(e.target.value) || 100;
+  const label = document.querySelector('#accelerationTime').previousElementSibling;
+  if (label) label.textContent = `0-${this.accelTarget} km/h`;
+  const statsLabel = document.querySelector('#statsAcceleration').previousElementSibling;
+  if (statsLabel) statsLabel.textContent = `0-${this.accelTarget} km/h`;
+  
+  // Update the value display
+  document.getElementById('accelTargetValue').textContent = this.accelTarget + ' km/h';
+  
+  // Reset acceleration tracking when target changes
+  this.accelerationPopup.startTime = null;
+  this.accelerationPopup.achievedTime = null;
+});
 
   document.getElementById("maxDistInput").addEventListener("input", (e) => {
     document.getElementById("maxDistValue").textContent = e.target.value;
@@ -1850,6 +1879,130 @@ testButtonClickability: function() {
       noBtn.style.border = '2px solid blue';
     }
   }, 100);
+},
+              
+              // Acceleration popup methods
+setupAccelerationPopup: function() {
+  // Create the popup element
+  this.accelerationPopup.element = document.createElement('div');
+  this.accelerationPopup.element.id = 'accelerationPopup';
+  this.accelerationPopup.element.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #ff6600, #ff3300);
+    color: white;
+    padding: 25px 30px;
+    border-radius: 15px;
+    border: 3px solid #fff;
+    box-shadow: 0 8px 25px rgba(255, 102, 0, 0.4);
+    z-index: 9999;
+    text-align: center;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    display: none;
+    min-width: 200px;
+    backdrop-filter: blur(10px);
+  `;
+  
+  this.accelerationPopup.element.innerHTML = `
+    <div style="margin-bottom: 15px;">
+      <div style="font-size: 1.8em; font-weight: bold; margin-bottom: 5px;">🎯</div>
+      <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 8px;">ACCELERATION ACHIEVED!</div>
+    </div>
+    <div id="accelerationPopupContent" style="font-size: 1.3em; font-weight: bold;">
+      Calculating...
+    </div>
+    <div style="margin-top: 12px; font-size: 0.8em; opacity: 0.9;">
+      Click to clear
+    </div>
+  `;
+  
+  // Add click to clear
+  this.accelerationPopup.element.addEventListener('click', () => {
+    this.hideAccelerationPopup();
+  });
+  
+  document.body.appendChild(this.accelerationPopup.element);
+},
+
+showAccelerationPopup: function(time, targetSpeed) {
+  if (!this.accelerationPopup.element) {
+    this.setupAccelerationPopup();
+  }
+  
+  const content = `
+    <div style="margin-bottom: 8px;">0-${targetSpeed} km/h</div>
+    <div style="font-size: 1.8em;">${time.toFixed(2)}s</div>
+  `;
+  
+  document.getElementById('accelerationPopupContent').innerHTML = content;
+  this.accelerationPopup.element.style.display = 'block';
+  this.accelerationPopup.visible = true;
+  this.accelerationPopup.achievedTime = Date.now();
+  
+  // Auto-hide after 10 seconds
+  setTimeout(() => {
+    if (this.accelerationPopup.visible) {
+      this.hideAccelerationPopup();
+    }
+  }, 10000);
+},
+
+hideAccelerationPopup: function() {
+  if (this.accelerationPopup.element) {
+    this.accelerationPopup.element.style.display = 'none';
+    this.accelerationPopup.visible = false;
+    this.accelerationPopup.achievedTime = null;
+    this.accelerationPopup.startTime = null;
+  }
+},
+
+checkAccelerationAchievement: function() {
+  const currentSpeedKmh = this.currentSpeed * 3.6;
+  const targetSpeed = this.accelTarget; // User-defined target
+  
+  // Start timing if we're below target and not already timing
+  if (currentSpeedKmh < targetSpeed && !this.accelerationPopup.startTime && !this.accelerationPopup.achievedTime) {
+    this.accelerationPopup.startTime = Date.now();
+    this.log(`Starting acceleration timer for 0-${targetSpeed} km/h`);
+  }
+  
+  // Check if we reached the target speed
+  if (this.accelerationPopup.startTime && 
+      !this.accelerationPopup.achievedTime && 
+      currentSpeedKmh >= targetSpeed) {
+    
+    const accelerationTime = (Date.now() - this.accelerationPopup.startTime) / 1000;
+    
+    // Only show popup if this is a meaningful acceleration (at least 0.5 seconds)
+    if (accelerationTime >= 0.5) {
+      this.accelerationTimes.push(accelerationTime);
+      this.log(`🎯 Acceleration achieved: 0-${targetSpeed} km/h in ${accelerationTime.toFixed(2)}s`);
+      
+      // Show the popup
+      this.showAccelerationPopup(accelerationTime, targetSpeed);
+      
+      // Update UI
+      this.updateUI();
+    }
+    
+    this.accelerationPopup.achievedTime = Date.now();
+  }
+  
+  // Reset if speed drops significantly below target (like after braking)
+  if (this.accelerationPopup.startTime && currentSpeedKmh < (targetSpeed * 0.3)) {
+    this.accelerationPopup.startTime = null;
+    this.accelerationPopup.achievedTime = null;
+  }
+},
+
+// Test method
+testAccelerationPopup: function() {
+  const testTime = 4.27;
+  this.showAccelerationPopup(testTime, this.accelTarget);
+  this.log('Test acceleration popup shown');
 },
               
     
@@ -3687,6 +3840,7 @@ startRide: function() {
 
   updatePosition: function(pos) {
     this.prevPosition = this.lastPosition;
+    this.checkAccelerationAchievement();
     this.lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude, alt: pos.coords.altitude || 0 };
     this.currentSpeed = pos.coords.speed || 0;
     if (this.currentSpeed > this.maxSpeed) this.maxSpeed = this.currentSpeed * 3.6;

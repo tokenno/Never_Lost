@@ -1,7 +1,7 @@
 {
-  "name": "Find Back - GPS Locator",
-  "short_name": "FindBack",
-  "description": "Helps you navigate back to a locked GPS position using audio bleeps and visual compass",
+  "name": "Spin - Bike Companion and GPS Locator",
+  "short_name": "Spin",
+  "description": "Bike Riding Statistics and navigation back to a locked GPS position.",
   "start_url": "https://tokenno.github.io/Never_Lost/",
   "display": "standalone",
   "orientation": "portrait",

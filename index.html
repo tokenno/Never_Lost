@@ -1069,9 +1069,8 @@
     <div class="tab-content" id="navigation-tab">
       <div class="panel">
         <h2>GPS Navigation</h2>
-        <p class="warning">TAP "TEST AUDIO &amp; LOCK" FIRST!</p>
-        <div class="control-group"> <button id="testBtn" class="primary-btn">Test
-            Audio &amp; Lock</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
+        <p class="warning">LOCK POSITION</p>
+        <div class="control-group"> <button id="testBtn" class="primary-btn">Lock Position</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
             Sensors</button> <button id="autoLockBtn" class="secondary-btn" disabled="disabled">Auto-Lock
             Mode</button> <button id="muteBtn" class="secondary-btn" disabled="disabled">Mute
             Sound</button> <button id="stopBtn" class="secondary-btn" disabled="disabled">Stop</button>
@@ -1147,6 +1146,11 @@
     <div class="control-group">
       <button id="emergencyBtn" class="emergency-btn">EMERGENCY ALERT</button>
     </div>
+    <div class="control-group">
+  <button onclick="MotoFindBack.toggleEmergency()" class="secondary-btn">
+    Emergency: <span id="emergencyStatus">ENABLED</span>
+  </button>
+</div>
     
     <div id="crashStatus" class="status">Crash Detection: Inactive</div>
     
@@ -1238,6 +1242,8 @@
     <strong>Direction Indicator:</strong> Visual compass pointing to locked position.<br>
     <strong>Sonar Parameters:</strong> Adjust audio feedback frequency and range.<br>
     <strong>Triple-Tap Overlay:</strong> Quickly tap screen 3 times to show enlarged speed/lean display.
+    <strong>GPS Navigation:</strong> Lock your position and navigate back with audio cues (initially muted for safety).<br>
+<strong>Mute Sound:</strong> Toggle audio feedback on/off. Starts muted to prevent unexpected sounds.<br>
 
     <h2>📊 Metrics Tab</h2>
     <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and lean angles with real-time updates.<br>
@@ -1382,6 +1388,7 @@ const MotoFindBack = {
   isRideActive: false,
   movementHistory: [],
   currentTempo: 1000,
+  emergencyEnabled: true,
   autoLockEnabled: false,
   autoLockDebounce: null,
   currentSpeed: 0,
@@ -1392,6 +1399,7 @@ const MotoFindBack = {
   lastStationaryPosition: null,
   speedThreshold: 10,
   maxSpeed: 0,
+   isMuted: true,
   totalDistance: 0,
   todayDistance: 0,
   weekDistance: 0,
@@ -1567,7 +1575,9 @@ const MotoFindBack = {
     });
       
       document.getElementById("addContactBtn").addEventListener("click", () => this.showContactModal());
-
+  document.getElementById("muteBtn").textContent = "Sound Muted";
+  document.getElementById("muteBtn").classList.add("muted");
+  document.getElementById("muteBtn").disabled = true;
     document.getElementById("accelTarget").addEventListener("input", (e) => {
       this.accelTarget = parseFloat(e.target.value) || 100;
       const label = document.querySelector('#accelerationTime').previousElementSibling;
@@ -2256,6 +2266,22 @@ applyManualCalibration: function() {
   document.getElementById('calibrationStatus').style.color = 'var(--success-color)';
   
   this.log(`Manual calibration applied: ${currentFreq.toFixed(1)} Hz = ${this.manualReferenceRPM} RPM`);
+},
+  
+  // Simple emergency toggle
+toggleEmergency: function() {
+  this.emergencyEnabled = !this.emergencyEnabled;
+  const status = document.getElementById('emergencyStatus');
+  
+  if (this.emergencyEnabled) {
+    status.textContent = "ENABLED";
+    status.style.color = "var(--success-color)";
+    document.getElementById('emergencyBtn').disabled = false;
+  } else {
+    status.textContent = "DISABLED"; 
+    status.style.color = "var(--error-color)";
+    document.getElementById('emergencyBtn').disabled = true;
+  }
 },
   
   // Session management functions
@@ -3016,20 +3042,30 @@ setupEventListeners: function() {
     }
   },
 
-  toggleMute: function() {
-    this.isMuted = !this.isMuted;
-    const muteBtn = document.getElementById("muteBtn");
-    if (this.isMuted) {
-      muteBtn.textContent = "Sound Muted";
-      muteBtn.classList.add("muted");
-      clearTimeout(this.bleepTimer);
-      this.log("Audio muted");
-    } else {
-      muteBtn.textContent = "Mute Sound";
-      muteBtn.classList.remove("muted");
-      this.log("Audio unmuted");
+toggleMute: function() {
+  this.isMuted = !this.isMuted;
+  const muteBtn = document.getElementById("muteBtn");
+  const audioStatus = document.getElementById("audioStatus");
+  
+  if (this.isMuted) {
+    muteBtn.textContent = "Sound Muted";
+    muteBtn.classList.add("muted");
+    audioStatus.textContent = "Audio: Muted";
+    audioStatus.className = "status warning";
+    clearTimeout(this.bleepTimer);
+    this.log("Audio muted");
+  } else {
+    muteBtn.textContent = "Mute Sound";
+    muteBtn.classList.remove("muted");
+    audioStatus.textContent = "Audio: Active";
+    audioStatus.className = "status success";
+    // Restart bleep if active
+    if (this.isActive) {
+      this.startBleep();
     }
-  },
+    this.log("Audio unmuted");
+  }
+},
 
   toggleAutoLock: function() {
     this.autoLockEnabled = !this.autoLockEnabled;
@@ -3059,26 +3095,27 @@ setupEventListeners: function() {
     this.updateUI();
   },
 
-  initAudio: function() {
-    if (this.audioCtx) {
-      if (this.audioCtx.state === 'suspended') {
-        this.audioCtx.resume().then(() => this.log("Audio context resumed"));
-      }
-      return;
+initAudio: function() {
+  if (this.audioCtx) {
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume().then(() => this.log("Audio context resumed"));
     }
-    try {
-      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      document.getElementById("audioStatus").textContent = "Audio: Initialized";
-      document.getElementById("audioStatus").className = "status success";
-      document.getElementById("autoLockBtn").disabled = false;
-      this.isAudioAllowed = true;
-      this.log("Audio system initialized");
-    } catch (e) {
-      document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
-      document.getElementById("audioStatus").className = "status error";
-      this.log(`Audio init error: ${e.message}`, true);
-    }
-  },
+    return;
+  }
+  try {
+    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    document.getElementById("audioStatus").textContent = "Audio: Initialized (Muted)";
+    document.getElementById("audioStatus").className = "status warning";
+    document.getElementById("autoLockBtn").disabled = false;
+    document.getElementById("muteBtn").disabled = false;
+    this.isAudioAllowed = true;
+    this.log("Audio system initialized (initially muted)");
+  } catch (e) {
+    document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
+    document.getElementById("audioStatus").className = "status error";
+    this.log(`Audio init error: ${e.message}`, true);
+  }
+},
 
   playTestSound: function() {
     if (!this.audioCtx || this.isMuted) {
@@ -3384,6 +3421,11 @@ setupEventListeners: function() {
   },
 
 sendEmergencyAlert: function(message = null) {
+
+  if (!this.emergencyEnabled) {
+    alert("Emergency features are disabled");
+    return;
+  }
   const msg = message || `${document.getElementById('emergencyMessage').value} Lat: ${this.lastPosition?.lat.toFixed(6)}, Lon: ${this.lastPosition?.lon.toFixed(6)}`;
   
   this.emergencyContacts.forEach(contact => {
@@ -3573,6 +3615,7 @@ loadContactsFromStorage: function() {
 
 // Enhanced crash detection with actual alert sending
 triggerCrashAlert: function() {
+  if (!this.emergencyEnabled) return;
   document.getElementById('crashStatus').textContent = 'Crash detected! Sending alert...';
   document.getElementById('crashStatus').className = 'status error';
   this.log('Crash confirmed, triggering emergency alert');

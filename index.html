@@ -759,7 +759,8 @@
     }
   </style>
   </head>
-  <body> <!-- Triple Tap Overlay -->
+  <body>
+    <!-- Triple Tap Overlay -->
     <div class="triple-tap-overlay" id="tripleTapOverlay">
       <div class="enlarged-wheel">
         <svg viewBox="0 0 100 100">
@@ -849,7 +850,9 @@
           <div class="control-group"> <button id="startSessionBtn" class="primary-btn"
               onclick="MotoFindBack.startNewSession()">
               🏁 Start New Session </button> <button id="startRideBtn" class="primary-btn">Start
-              Ride</button> <button id="saveSessionBtn" class="secondary-btn" onclick="MotoFindBack.saveCurrentSession()">
+              Ride</button> <button id="testBtn" class="primary-btn">Lock
+              Position</button> <button id="saveSessionBtn" class="secondary-btn"
+              onclick="MotoFindBack.saveCurrentSession()">
               💾 Save Session </button> <button id="quickSaveBtn" class="secondary-btn"
               onclick="MotoFindBack.quickSaveSession()">
               ⚡ Quick Save </button> <button id="exportSessionBtn" class="secondary-btn"
@@ -923,18 +926,20 @@
         <button id="resetMetricsBtn" class="secondary-btn">Reset Metrics</button>
         <button id="exportMetricsBtn" class="secondary-btn">Export Data</button>
       </div>
-    <div class="setting-item">
-  <h4>Acceleration Popup</h4>
-  <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
-    <label>Target Speed:</label>
-    <input type="range" id="accelTarget" min="20" max="200" value="100" style="flex: 1;">
-    <span id="accelTargetValue">100 km/h</span>
-  </div>
-  <div style="margin: 10px 0;">
-    <button onclick="MotoFindBack.testAccelerationPopup()" class="secondary-btn">Test Popup</button>
-    <button onclick="MotoFindBack.hideAccelerationPopup()" class="secondary-btn">Clear Popup</button>
-  </div>
-</div>
+      <div class="setting-item">
+        <h4>Acceleration Popup</h4>
+        <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
+          <label>Target Speed:</label> <input id="accelTarget" min="20" max="200"
+            value="100"
+            style="flex: 1;"
+            type="range">
+          <span id="accelTargetValue">100 km/h</span> </div>
+        <div style="margin: 10px 0;"> <button onclick="MotoFindBack.testAccelerationPopup()"
+            class="secondary-btn">Test
+            Popup</button> <button onclick="MotoFindBack.hideAccelerationPopup()"
+            class="secondary-btn">Clear
+            Popup</button> </div>
+      </div>
       <div class="lean-container">
         <div class="lean-scale">
           <div class="lean-mark"></div>
@@ -1052,8 +1057,7 @@
           <input id="volumeThreshold" min="1" max="50" step="1" value="20" oninput="MotoFindBack.updateVolumeThreshold(this.value)"
             type="range">
           <button onclick="MotoFindBack.applyManualCalibration()" class="secondary-btn">
-            Apply Manual Calibration </button>
-        </div>
+            Apply Manual Calibration </button> </div>
         <div class="control-item">
           <h4>Debug Info</h4>
           <div>Microphone Status: <span id="micStatus">Not Started</span></div>
@@ -1061,8 +1065,7 @@
           <div>Max Volume: <span id="debugVolume">0</span></div>
           <div>Total Energy: <span id="debugEnergy">0</span></div>
           <button onclick="MotoFindBack.stopEngineAnalysis()" class="secondary-btn">Stop
-            Analysis</button>
-        </div>
+            Analysis</button> </div>
         <!-- Real-time frequency visualization -->
         <div class="control-item">
           <h4>Sound Spectrum</h4>
@@ -1164,8 +1167,7 @@
             ALERT</button> </div>
         <div class="control-group"> <button onclick="MotoFindBack.toggleEmergency()"
             class="secondary-btn">
-            Emergency: <span id="emergencyStatus">ENABLED</span> </button>
-        </div>
+            Emergency: <span id="emergencyStatus">ENABLED</span> </button> </div>
         <div id="crashStatus" class="status">Crash Detection: Inactive</div>
         <div class="control-group">
           <div class="control-item"> <label for="emergencyMessage">Emergency
@@ -1331,7 +1333,8 @@
           <li><strong>Initial Setup:</strong>
             <ul>
               <li>Mount phone securely on motorcycle</li>
-              <li>Tap "Calibrate Sensors" to set lean angle baseline (Calibration will fail if phone is completely flat).</li>
+              <li>Tap "Calibrate Sensors" to set lean angle baseline
+                (Calibration will fail if phone is completely flat).</li>
               <li>Set emergency contacts in Emergency tab</li>
             </ul>
           </li>
@@ -1404,13 +1407,15 @@
           eleveation
           <li>Keep app updated for new features and bug fixes</li>
         </ul>
-         <strong>Created:</strong>
+        <strong>Created:</strong>
         <ul>
           <li>For ihearcolors.online</li>
           <li>By Dimitris Barnias 2025</li>
-          <li>If you like this app, <strong>please support</strong>  by buying me a cup of coffee (or two..) </li>
+          <li>If you like this app, <strong>please support</strong> by buying
+            me a cup of coffee (or two..) </li>
           <li>Any donation is welcome: PayPall newtones@icloud.com</li>
-          <li><strong>Report</strong> any bugs or possible features at: dbarnias@gmail.com</li>
+          <li><strong>Report</strong> any bugs or possible features at:
+            dbarnias@gmail.com</li>
         </ul>
         <div style="background: rgba(255,102,0,0.1); padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 3px solid var(--primary-color);">
           <strong>🎯 Remember:</strong> Spin is designed to enhance your riding

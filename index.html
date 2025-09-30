@@ -5124,17 +5124,6 @@ updateMaintenanceProgress: function() {
 },
 
 
-  saveMaintenanceItem: function() {
-    const name = document.getElementById("newMaintenanceName").value;
-    const interval = parseInt(document.getElementById("newMaintenanceInterval").value);
-    if (name && interval) {
-      this.maintenanceItems.push({ name, interval, progress: 0 });
-      this.updateMaintenanceList();
-      document.getElementById("newMaintenanceName").value = "";
-      document.getElementById("newMaintenanceInterval").value = "";
-      this.log(`Maintenance item added: ${name}`);
-    }
-  },
 
   resetMaintenance: function() {
     this.maintenanceItems = [];
@@ -5142,35 +5131,7 @@ updateMaintenanceProgress: function() {
     this.log("Maintenance items reset");
   },
 
-  updateMaintenanceList: function() {
-    const list = document.getElementById("maintenanceList");
-    list.innerHTML = this.maintenanceItems.map(item => `
-      <div class="maintenance-item">
-        <div>${item.name}</div>
-        <div class="maintenance-progress">
-          <div class="maintenance-progress-bar" style="width: ${(item.progress / item.interval) * 100}%"></div>
-        </div>
-        <div>${item.progress}/${item.interval} km</div>
-      </div>
-    `).join('') || `
-      <div class="maintenance-item">
-        <div>Oil Change</div>
-        <div class="maintenance-progress"><div class="maintenance-progress-bar" style="width: 30%"></div></div>
-        <div>2000/5000 km</div>
-      </div>
-      <div class="maintenance-item">
-        <div>Tire Pressure</div>
-        <div class="maintenance-progress"><div class="maintenance-progress-bar" style="width: 70%"></div></div>
-        <div>Check weekly</div>
-      </div>
-      <div class="maintenance-item">
-        <div>Chain Lubrication</div>
-        <div class="maintenance-progress"><div class="maintenance-progress-bar" style="width: 50%"></div></div>
-        <div>500/1000 km</div>
-      </div>
-    `;
-  },
-
+ 
   updateRideHistory: function() {
     const history = document.getElementById("rideHistory");
     history.innerHTML = this.rideHistory.map(ride => `

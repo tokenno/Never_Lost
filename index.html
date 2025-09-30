@@ -806,8 +806,7 @@ input[type="range"]::-webkit-slider-thumb {
     }
   </style>
   </head>
-  <body>
-    <!-- Triple Tap Overlay -->
+  <body> <!-- Triple Tap Overlay -->
     <div class="triple-tap-overlay" id="tripleTapOverlay">
       <div class="enlarged-wheel">
         <svg viewBox="0 0 100 100">
@@ -894,11 +893,10 @@ input[type="range"]::-webkit-slider-thumb {
         <!-- Session Management -->
         <div class="panel">
           <h3>Ride Session Management</h3>
-          <button id="startRideBtn" class="primary-btn">Let's Ride</button>
           <div class="control-group"> <button id="startSessionBtn" class="primary-btn"
               onclick="MotoFindBack.startNewSession()">🏁
-              Start New Session</button><button id="saveSessionBtn" class="secondary-btn"
-              onclick="MotoFindBack.saveCurrentSession()">💾
+              Start New Session</button> <button id="startRideBtn" class="primary-btn">Start
+              Ride</button> <button id="saveSessionBtn" class="secondary-btn" onclick="MotoFindBack.saveCurrentSession()">💾
               Save Session</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
               Sensors</button> <button onclick="MotoFindBack.toggleEmergency()"
               class="secondary-btn">
@@ -923,6 +921,7 @@ input[type="range"]::-webkit-slider-thumb {
         <div class="panel">
           <h3>Sensor Calibration Status</h3>
           <div class="calibration-info">
+            <div id="calibrateStatus" class="status">Sensors not calibrated</div>
             <div>Lean Offset: <span id="calibrationLeanOffset">0°</span></div>
             <div>Normal Riding Position: <span id="calibrationNormalBeta">--°</span></div>
             <div>Crash Threshold: <span id="calibrationCrashThreshold">--°</span></div>
@@ -1174,6 +1173,7 @@ input[type="range"]::-webkit-slider-thumb {
             </div>
           </div>
         </div>
+        <div id="calibrateStatus" class="status">Sensors not calibrated</div>
         <div id="lockStatus" class="status">Lock Status: Not locked</div>
         <div id="audioStatus" class="status">Audio: Not initialized</div>
         <div id="gpsStatus" class="status">GPS: Ready</div>
@@ -1672,7 +1672,7 @@ init: async function() {
   // Setup event listeners FIRST
   this.setupEventListeners();
  this.loadCalibrationFromStorage();
-   this.updateCalibrationDisplay();
+  
   // Load data BEFORE any processing
   await this.loadSessionsFromStorage();
   await this.loadUserPreferences();
@@ -2089,7 +2089,7 @@ testAccelerationPopup: function() {
               
     
     // Microphone initialization
-
+// Update the initMicrophone function to handle permissions better
 initMicrophone: function() {
   return new Promise((resolve, reject) => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -3464,25 +3464,6 @@ formatDistance: function(km) {
   return `${km.toFixed(1)} km`;
 },
 
-updateCalibrationDisplay: function() {
-  // Update lean offset
-  document.getElementById('calibrationLeanOffset').textContent = 
-    this.leanOffset !== undefined ? this.leanOffset.toFixed(1) + '°' : '0°';
-  
-  // Update normal beta
-  document.getElementById('calibrationNormalBeta').textContent = 
-    this.normalBeta !== undefined ? this.normalBeta.toFixed(1) + '°' : '--°';
-  
-  // Update crash threshold
-  document.getElementById('calibrationCrashThreshold').textContent = 
-    this.crashThreshold !== undefined ? this.crashThreshold.toFixed(1) + '°' : '--°';
-  
-  // Update current deviation (initialize as --)
-  if (!document.getElementById('currentDeviation').textContent.includes('--')) {
-    document.getElementById('currentDeviation').textContent = '--°';
-  }
-},
-
 // Session display functions
 updateSessionDisplay: function() {
   const sessionInfo = document.getElementById('sessionInfo');
@@ -4088,35 +4069,41 @@ calibrateSensors: function() {
 },
 
 finalizeCalibration: function() {
-  this.isCalibrating = false;
-  
-  if (this.calibrationSamples.length > 0 && this.betaSamples.length > 0) {
-    // Calculate offsets
-    const avgGamma = this.calibrationSamples.reduce((a, b) => a + b, 0) / this.calibrationSamples.length;
-    const avgBeta = this.betaSamples.reduce((a, b) => a + b, 0) / this.betaSamples.length;
+    this.isCalibrating = false;
     
-    this.leanOffset = avgGamma;
-    this.normalBeta = avgBeta;
-    this.crashThreshold = 45;
-    this.betaTolerance = 15;
-    
-    // Save calibration to storage
-    this.saveCalibrationToStorage();
-    
-    // UPDATE THE DISPLAY
-    this.updateCalibrationDisplay();
-    
-    document.getElementById('calibrateStatus').textContent = 
-      `Calibrated! Lean offset: ${this.leanOffset.toFixed(1)}° | Riding position: ${this.normalBeta.toFixed(1)}°`;
-    document.getElementById('calibrateStatus').className = 'status success';
-    
-    this.log(`Calibration complete - Lean offset: ${this.leanOffset.toFixed(1)}°, Normal beta: ${this.normalBeta.toFixed(1)}°`);
-    
-  } else {
-    document.getElementById('calibrateStatus').textContent = 'Calibration failed - no sensor data';
-    document.getElementById('calibrateStatus').className = 'status error';
-  }
+    if (this.calibrationSamples.length > 0 && this.betaSamples.length > 0) {
+        // Calculate offsets
+        const avgGamma = this.calibrationSamples.reduce((a, b) => a + b, 0) / this.calibrationSamples.length;
+        const avgBeta = this.betaSamples.reduce((a, b) => a + b, 0) / this.betaSamples.length;
+        
+        this.leanOffset = avgGamma;
+        this.normalBeta = avgBeta; // Store normal riding position beta
+        
+        // Calculate thresholds for crash detection
+        this.crashThreshold = 45; // Degrees from normal position to consider as crash
+        this.betaTolerance = 15; // Tolerance range for normal position
+        
+        // Save calibration to storage
+        this.saveCalibrationToStorage();
+        
+        document.getElementById('calibrateStatus').textContent = 
+            `Calibrated! Lean offset: ${this.leanOffset.toFixed(1)}° | Riding position: ${this.normalBeta.toFixed(1)}°`;
+        document.getElementById('calibrateStatus').className = 'status success';
+        
+        this.log(`Calibration complete - Lean offset: ${this.leanOffset.toFixed(1)}°, Normal beta: ${this.normalBeta.toFixed(1)}°`);
+        this.log(`Crash detection will trigger when tilt exceeds ${this.crashThreshold}° from normal position`);
+        
+        // Update crash detection status
+        document.getElementById('crashStatus').textContent = 'Crash Detection: Active (Calibrated)';
+        document.getElementById('crashStatus').className = 'status success';
+        
+    } else {
+        document.getElementById('calibrateStatus').textContent = 'Calibration failed - no sensor data';
+        document.getElementById('calibrateStatus').className = 'status error';
+        this.log('Calibration failed - no data received');
+    }
 },
+
 
 
   updateLeanAngleDisplay: function() {
@@ -4967,33 +4954,27 @@ saveCalibrationToStorage: function() {
 },
 
 loadCalibrationFromStorage: function() {
-  const saved = localStorage.getItem('sensorCalibration');
-  if (saved) {
-    try {
-      const calibration = JSON.parse(saved);
-      this.leanOffset = calibration.leanOffset || 0;
-      this.normalBeta = calibration.normalBeta;
-      this.crashThreshold = calibration.crashThreshold || 45;
-      this.betaTolerance = calibration.betaTolerance || 15;
-      
-      // UPDATE THE DISPLAY
-      this.updateCalibrationDisplay();
-      
-      document.getElementById('calibrateStatus').textContent = 
-        `Calibration loaded | Normal position: ${this.normalBeta.toFixed(1)}°`;
-      document.getElementById('calibrateStatus').className = 'status success';
-      
-      this.log('Sensor calibration loaded from storage');
-    } catch (error) {
-      this.log('Error loading calibration: ' + error.message, true);
+    const saved = localStorage.getItem('sensorCalibration');
+    if (saved) {
+        try {
+            const calibration = JSON.parse(saved);
+            this.leanOffset = calibration.leanOffset || 0;
+            this.normalBeta = calibration.normalBeta;
+            this.crashThreshold = calibration.crashThreshold || 45;
+            this.betaTolerance = calibration.betaTolerance || 15;
+            
+            document.getElementById('calibrateStatus').textContent = 
+                `Calibration loaded | Normal position: ${this.normalBeta.toFixed(1)}°`;
+            document.getElementById('calibrateStatus').className = 'status success';
+            
+            document.getElementById('crashStatus').textContent = 'Crash Detection: Active (Calibrated)';
+            document.getElementById('crashStatus').className = 'status success';
+            
+            this.log('Sensor calibration loaded from storage');
+        } catch (error) {
+            this.log('Error loading calibration: ' + error.message, true);
+        }
     }
-  } else {
-    // Initialize with defaults if no saved calibration
-    this.leanOffset = 0;
-    this.crashThreshold = 45;
-    this.betaTolerance = 15;
-    this.updateCalibrationDisplay();
-  }
 },
 
 // Maintenance unit toggle

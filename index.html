@@ -893,10 +893,7 @@ input[type="range"]::-webkit-slider-thumb {
         <!-- Session Management -->
         <div class="panel">
           <h3>Ride Session Management</h3>
-          <div class="control-group"> <button id="startSessionBtn" class="primary-btn"
-              onclick="MotoFindBack.startNewSession()">🏁
-              Start New Session</button> <button id="startRideBtn" class="primary-btn">Start
-              Ride</button> <button id="saveSessionBtn" class="secondary-btn" onclick="MotoFindBack.saveCurrentSession()">💾
+          <div class="control-group">  <button id="startRideBtn" class="primary-btn">🏁 Start Ride & Session</button>  <button id="saveSessionBtn" class="secondary-btn" onclick="MotoFindBack.saveCurrentSession()">💾
               Save Session</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
               Sensors</button> <button onclick="MotoFindBack.toggleEmergency()"
               class="secondary-btn">
@@ -3919,10 +3916,62 @@ handleDeviceOrientation: function(event) {
         `<div style="color: #ccc">Beta: ${currentBeta.toFixed(1)}° | Deviation: ${deviationFromNormal.toFixed(1)}° | Normal: ${this.normalBeta.toFixed(1)}°</div>`;
   }
 },
+  
+startRideAndSession: function() {
+  if (this.isRideActive) {
+    // If ride is active, stop it and save session
+    this.stop();
+    if (this.currentSession) {
+      this.saveCurrentSession();
+    }
+    return;
+  }
+  
+  // Start new session first
+  if (!this.currentSession) {
+    this.startNewSession();
+  }
+  
+  // Then start the ride (without auto-locking position)
+  this.startRideWithoutLock();
+  
+  this.log("Ride and session started simultaneously");
+},
+  
+  startRideWithoutLock: function() {
+  this.isRideActive = true;
+  this.rideStartTime = Date.now();
+  this.movementHistory = [];
+  this.corners = [];
+  this.cornerEntrySpeeds = [];
+  this.cornerExitSpeeds = [];
+  this.elevationHistory = [];
+  this.elevationGain = 0;
+  this.maxSpeed = 0;
+  this.maxLeanAngle = 0;
+  this.maxCornerG = 0;
+  this.maxCornerSpeed = 0;
+  this.accelerationTimes = [];
+  
+  // Update button to show stop function
+  document.getElementById("startRideBtn").textContent = "Stop Ride & Save";
+  document.getElementById("startRideBtn").style.background = "linear-gradient(to bottom, #ff3333, #cc0000)";
+  document.getElementById("startRideBtn").disabled = false;
+  
+  // Start GPS tracking but DON'T auto-lock position
+  this.watchId = navigator.geolocation.watchPosition(
+    pos => this.updatePosition(pos),
+    err => this.handleGpsError(err),
+    { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
+  );
+  
+  this.log("Ride started without auto-locking position");
+},
+
 
 setupEventListeners: function() {
   console.log('=== SETUP EVENT LISTENERS STARTED ===');
-   // TAB SWITCHING
+
 // Tab switching - SIMPLIFIED VERSION
 const tabs = document.querySelectorAll('.tab');
 tabs.forEach(tab => {
@@ -3954,7 +4003,6 @@ tabs.forEach(tab => {
   document.getElementById("autoLockBtn").addEventListener("click", () => this.toggleAutoLock());
   document.getElementById("muteBtn").addEventListener("click", () => this.toggleMute());
   document.getElementById("stopBtn").addEventListener("click", () => this.stop());
-  document.getElementById("startRideBtn").addEventListener("click", () => this.startRide());
   document.getElementById("resetMetricsBtn").addEventListener("click", () => this.resetMetrics());
   document.getElementById("exportMetricsBtn").addEventListener("click", () => this.exportMetrics());
   document.getElementById("emergencyBtn").addEventListener("click", () => this.sendEmergencyAlert());
@@ -3965,11 +4013,12 @@ tabs.forEach(tab => {
   document.getElementById("saveMaintenanceBtn").addEventListener("click", () => this.saveMaintenanceItem());
   document.getElementById("startEngineAnalysis").addEventListener("click", () => this.startEngineAnalysis());
   document.getElementById("calibrateEngine").addEventListener("click", () => this.calibrateEngine());
-  document.getElementById("startSessionBtn").addEventListener("click", () => this.startNewSession());
   document.getElementById("saveSessionBtn").addEventListener("click", () => this.saveCurrentSession());
   document.getElementById("quickSaveBtn").addEventListener("click", () => this.quickSaveSession());
   document.getElementById("exportSessionBtn").addEventListener("click", () => this.exportSession());
   document.getElementById("startRecordingBtn").addEventListener("click", () => this.startRecordingCalibration());
+  document.getElementById("startRideBtn").addEventListener("click", () => this.startRideAndSession());
+
 
 document.getElementById("calibrationMonitorBtn").addEventListener("click", () => this.startCalibrationMonitor());
 
@@ -4474,6 +4523,7 @@ startRide: function() {
   }
   
   // Start new ride
+  this.startRideAndSession();
   this.isRideActive = true;
   this.rideStartTime = Date.now();
   this.movementHistory = [];
@@ -4588,38 +4638,58 @@ startRide: function() {
     document.getElementById("directionArrow").style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
     document.getElementById("directionStatus").textContent = `Direction: ${angle.toFixed(0)}°`;
   },
-
-  stop: function() {
-    if (this.watchId) {
-      navigator.geolocation.clearWatch(this.watchId);
-      this.watchId = null;
-    }
-    clearTimeout(this.bleepTimer);
-    this.isActive = false;
-    this.isRideActive = false;
-    document.getElementById("startRideBtn").textContent = "Start Ride";
-    document.getElementById("startRideBtn").disabled = false;
-    document.getElementById("stopBtn").disabled = true;
-    document.getElementById("muteBtn").disabled = true;
-    document.getElementById("lockStatus").textContent = "Lock Status: Not locked";
-    document.getElementById("lockStatus").className = "status";
-    this.lockPosition = null;
-    this.updateWheelAnimation();
-    this.log("Tracking stopped");
-    if (this.rideStartTime) {
-      this.rideHistory.push({
-        startTime: this.rideStartTime,
-        distance: this.todayDistance,
-        maxSpeed: this.maxSpeed,
-        avgSpeed: this.calculateAverageSpeed(),
-        acceleration: this.calculateAccelerationTime(),
-        corners: this.corners.length,
-        elevationGain: this.elevationGain
-      });
-      this.rideStartTime = null;
-    }
-    this.updateRideHistory();
-  },
+    
+    
+    updateRideButtonState: function() {
+  const rideBtn = document.getElementById("startRideBtn");
+  if (this.isRideActive) {
+    rideBtn.textContent = "Stop Ride & Save";
+    rideBtn.style.background = "linear-gradient(to bottom, #ff3333, #cc0000)";
+  } else {
+    rideBtn.textContent = "🏁 Start Ride & Session";
+    rideBtn.style.background = "";
+  }
+},
+  
+stop: function() {
+  if (this.watchId) {
+    navigator.geolocation.clearWatch(this.watchId);
+    this.watchId = null;
+  }
+  clearTimeout(this.bleepTimer);
+  this.isActive = false;
+  this.isRideActive = false;
+  
+  // Reset button to start state
+  document.getElementById("startRideBtn").textContent = "🏁 Start Ride & Session";
+  document.getElementById("startRideBtn").style.background = "";
+  document.getElementById("startRideBtn").disabled = false;
+  
+  document.getElementById("stopBtn").disabled = true;
+  document.getElementById("muteBtn").disabled = true;
+  document.getElementById("lockStatus").textContent = "Lock Status: Not locked";
+  document.getElementById("lockStatus").className = "status";
+  
+  // Don't clear lockPosition here - let user keep it if they want
+  // this.lockPosition = null;
+  
+  this.updateWheelAnimation();
+  this.log("Tracking stopped");
+  
+  if (this.rideStartTime) {
+    this.rideHistory.push({
+      startTime: this.rideStartTime,
+      distance: this.todayDistance,
+      maxSpeed: this.maxSpeed,
+      avgSpeed: this.calculateAverageSpeed(),
+      acceleration: this.calculateAccelerationTime(),
+      corners: this.corners.length,
+      elevationGain: this.elevationGain
+    });
+    this.rideStartTime = null;
+  }
+  this.updateRideHistory();
+},
 
   resetMetrics: function() {
     this.maxSpeed = 0;

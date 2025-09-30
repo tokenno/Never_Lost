@@ -900,8 +900,12 @@ input[type="range"]::-webkit-slider-thumb {
         <button id="startRideBtn" class="primary-btn">Start Ride</button> 
         <button id="saveSessionBtn" class="secondary-btn" onclick="MotoFindBack.saveCurrentSession()">💾 Save Session</button> 
         <button id="quickSaveBtn" class="secondary-btn" onclick="MotoFindBack.quickSaveSession()">⚡ Quick Save</button> 
+        <button id="calibrateBtn" class="secondary-btn">Calibrate Sensors</button>
+         
         <button id="exportSessionBtn" class="secondary-btn" onclick="MotoFindBack.exportSession()">📤 Export Current</button> 
+     
       </div>
+       <div id="calibrateStatus" class="status" style="margin-top: 10px;">Sensors not calibrated</div>
       <div id="sessionInfo" class="session-info" style="display: none;">
         <h4>Current Session</h4>
         <div class="session-stats">
@@ -1152,8 +1156,7 @@ input[type="range"]::-webkit-slider-thumb {
         <p class="warning">LOCK POSITION</p>
      
         <div class="control-group"> <button id="testBtn" class="primary-btn">Lock
-            Position</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
-            Sensors</button> <button id="autoLockBtn" class="secondary-btn" disabled="disabled">Auto-Lock
+            Position</button>  <button id="autoLockBtn" class="secondary-btn" disabled="disabled">Auto-Lock
             Mode</button> <button id="muteBtn" class="secondary-btn" disabled="disabled">Mute
             Sound</button> <button id="stopBtn" class="secondary-btn" disabled="disabled">Stop</button>
         </div>

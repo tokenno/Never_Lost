@@ -143,6 +143,9 @@
       padding: 15px;
       margin: 10px 0;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        position: relative;
+  z-index: 2;
+  margin: 10px 0;
     }
     
     .control-group {
@@ -309,14 +312,13 @@
       margin-top: 5px;
     }
     
-    #map {
-      height: 250px;
-      width: 100%;
-      background: #222;
-      border: 1px solid #555;
-      border-radius: 8px;
-      margin-top: 10px;
-    }
+ /* Fix map container height */
+#map {
+  height: 250px !important; /* Limit map height */
+  max-height: 250px;
+  position: relative !important;
+  z-index: 1 !important;
+}
     
     .user-marker, .lock-marker {
       font-size: 20px;
@@ -422,14 +424,7 @@
       margin-bottom: -1px;
     }
     
-    .tab-content {
-      display: none;
-    }
-    
-    .tab-content.active {
-      display: block;
-    }
-    
+ 
     .maintenance-item {
       display: flex;
       justify-content: space-between;
@@ -780,6 +775,17 @@ input[type="range"]::-webkit-slider-thumb {
   cursor: pointer;
 }
       
+/* Tab content styling */
+.tab-content {
+  display: none;
+  width: 100%;
+  position: relative;
+}
+
+.tab-content.active {
+  display: block;
+}
+      
     @media (max-width: 768px) {
       .dashboard {
         grid-template-columns: 1fr;
@@ -882,249 +888,264 @@ input[type="range"]::-webkit-slider-thumb {
       <div class="tab" data-tab="emergency">SOS</div>
       <div class="tab" data-tab="maintenance">Upkeep</div>
     </div>
-    <div class="tab-content active" id="metrics-tab">
-      <div class="panel">
-        <h2>Ride Metrics</h2>
-        <!-- Add to Metrics tab, near the top -->
-        <div class="panel">
-          <h3>Ride Session Management</h3>
-          <div class="control-group"> <button id="startSessionBtn" class="primary-btn"
-              onclick="MotoFindBack.startNewSession()">
-              🏁 Start New Session </button> <button id="startRideBtn" class="primary-btn">Start
-              Ride</button> <button id="saveSessionBtn" class="secondary-btn"
-              onclick="MotoFindBack.saveCurrentSession()">
-              💾 Save Session </button> <button id="quickSaveBtn" class="secondary-btn"
-              onclick="MotoFindBack.quickSaveSession()">
-              ⚡ Quick Save </button> <button id="exportSessionBtn" class="secondary-btn"
-              onclick="MotoFindBack.exportSession()">
-              📤 Export Current </button> </div>
-          <div id="sessionInfo" class="session-info" style="display: none;">
-            <h4>Current Session</h4>
-            <div class="session-stats">
-              <div>Name: <span id="sessionName">--</span></div>
-              <div>Duration: <span id="sessionDuration">--</span></div>
-              <div>Distance: <span id="sessionDistance">--</span></div>
-              <div>Max Speed: <span id="sessionMaxSpeed">--</span></div>
-              <div>Corners: <span id="sessionCorners">--</span></div>
-            </div>
-          </div>
-        </div>
-        <!-- Session History Panel -->
-        <div class="panel">
-          <h3>Session History</h3>
-          <div id="sessionHistoryList" class="session-history">
-            <div style="text-align: center; color: #aaa; padding: 20px;"> No
-              saved sessions yet </div>
-          </div>
-        </div>
-        <!-- Add this after the Session Management panel -->
-        <div class="panel">
-          <h3>📊 General Statistics (All Sessions)</h3>
-          <div class="dashboard">
-            <div class="dashboard-item">
-              <div class="dashboard-label">Total Distance</div>
-              <div class="dashboard-value" id="statsTotalDistance">0 km</div>
-            </div>
-            <div class="dashboard-item">
-              <div class="dashboard-label">Max Speed</div>
-              <div class="dashboard-value" id="statsMaxSpeedAll">0 km/h</div>
-            </div>
-            <div class="dashboard-item">
-              <div class="dashboard-label">Max Lean Angle</div>
-              <div class="dashboard-value" id="statsMaxLeanAll">0°</div>
-            </div>
-            <div class="dashboard-item">
-              <div class="dashboard-label">Max Elevation Gain</div>
-              <div class="dashboard-value" id="statsMaxElevationAll">0 m</div>
-            </div>
-            <div class="dashboard-item">
-              <div class="dashboard-label">Max Corner Speed</div>
-              <div class="dashboard-value" id="statsMaxCornerSpeedAll">0 km/h</div>
-            </div>
-            <div class="dashboard-item">
-              <div class="dashboard-label">Max Corner G</div>
-              <div class="dashboard-value" id="statsMaxCornerGAll">0 g</div>
-            </div>
-            <div class="dashboard-item">
-              <div class="dashboard-label">Best 0-60 km/h</div>
-              <div class="dashboard-value" id="statsBest0to60">-- s</div>
-            </div>
-            <div class="dashboard-item">
-              <div class="dashboard-label">Best 0-100 km/h</div>
-              <div class="dashboard-value" id="statsBest0to100">-- s</div>
-            </div>
-          </div>
-          <div class="control-group" style="margin-top: 15px;"> <button onclick="MotoFindBack.updateGeneralStatistics()"
-              class="secondary-btn">Refresh
-              Stats</button> <button onclick="MotoFindBack.exportAllStatistics()"
-              class="secondary-btn">Export
-              All Data</button> <button onclick="MotoFindBack.clearAllStatistics()"
-              class="secondary-btn"
-              style="background: var(--error-color);">Clear
-              All Data</button> </div>
-        </div>
-        <button id="resetMetricsBtn" class="secondary-btn">Reset Metrics</button>
-        <button id="exportMetricsBtn" class="secondary-btn">Export Data</button>
-      </div>
-      <div class="setting-item">
-        <h4>Acceleration Popup</h4>
-        <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
-          <label>Target Speed:</label> <input id="accelTarget" min="20" max="200"
-            value="100"
-            style="flex: 1;"
-            type="range">
-          <span id="accelTargetValue">100 km/h</span> </div>
-        <div style="margin: 10px 0;"> <button onclick="MotoFindBack.testAccelerationPopup()"
-            class="secondary-btn">Test
-            Popup</button> <button onclick="MotoFindBack.hideAccelerationPopup()"
-            class="secondary-btn">Clear
-            Popup</button> </div>
-      </div>
-      <div class="lean-container">
-        <div class="lean-scale">
-          <div class="lean-mark"></div>
-          <div class="lean-mark"></div>
-          <div class="lean-mark"></div>
-          <div class="lean-mark"></div>
-          <div class="lean-mark"></div>
-          <div class="lean-mark"></div>
-          <div class="lean-mark"></div>
-          <div class="lean-mark"></div>
-          <div class="lean-mark"></div>
-          <div class="lean-mark"></div>
-          <div class="lean-mark"></div>
-        </div>
-        <div class="lean-bike" id="leanBike"></div>
-        <div class="lean-value" id="leanValue">0°</div>
-      </div>
-      <div class="corner-analysis">
-        <h3>Cornering Analysis</h3>
-        <p>Current Corner G: <span id="currentCornerG">0 g</span></p>
-        <p>Max Corner Speed: <span id="currentMaxCornerSpeed">0 km/h</span></p>
-        <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
-        <div id="cornerList">No corners detected yet.</div>
-      </div>
-      <div class="elevation-profile-container">
-        <h3>Elevation Profile</h3>
-        <div class="elevation-profile"> <canvas id="elevationCanvas"></canvas>
-        </div>
-        <p>Total Elevation Gain: <span id="totalElevationGain">0 m</span></p>
-      </div>
-      <div class="control-group">
-        <div class="control-item">
-          <h3>Distance Statistics</h3>
-          <div>Today: <span id="statsToday">0 km</span></div>
-          <div>This Week: <span id="statsWeek">0 km</span></div>
-          <div>This Month: <span id="statsMonth">0 km</span></div>
-          <div>Total: <span id="statsTotal">0 km</span></div>
-        </div>
-        <div class="control-item">
-          <h3>Speed Statistics</h3>
-          <div>Current: <span id="statsCurrentSpeed">0 km/h</span></div>
-          <div>Average: <span id="statsAvgSpeed">0 km/h</span></div>
-          <div>Max: <span id="statsMaxSpeed">0 km/h</span></div>
-          <div>0-100 km/h: <span id="statsAcceleration">-- s</span></div>
-        </div>
-      </div>
-      <!-- Add to Metrics tab -->
-      <div class="panel">
-        <h3>Engine Sound Analysis</h3>
-        <div class="control-group"> <button id="startEngineAnalysis" class="primary-btn">Start
-            Engine Analysis</button>   <button onclick="MotoFindBack.stopEngineAnalysis()" class="secondary-btn">Stop
-            Analysis</button> <button id="calibrateEngine" class="secondary-btn">Calibrate
-            Engine</button> </div>
-        <div class="dashboard">
-          <div class="dashboard-item">
-            <div class="dashboard-label">Engine RPM</div>
-            <div class="dashboard-value" id="engineRPM">--</div>
-          </div>
-          <div class="dashboard-item">
-            <div class="dashboard-label">Estimated Gear</div>
-            <div class="dashboard-value" id="engineGear">--</div>
-          </div>
-          <div class="dashboard-item">
-            <div class="dashboard-label">Engine Health</div>
-            <div class="dashboard-value" id="engineHealth">--</div>
-          </div>
-          <div class="dashboard-item">
-            <div class="dashboard-label">Sound Level</div>
-            <div class="dashboard-value" id="engineVolume">-- dB</div>
-          </div>
-        </div>
+ <div class="tab-content active" id="metrics-tab">
+  <div class="panel">
+    <h2>Ride Metrics</h2>
    
-        </div>
-      
-        <div class="control-item">
-          <h4>Impulse Response Calibration</h4>
-          <div class="control-group"> <button id="startRecordingBtn" class="primary-btn"
-              onclick="MotoFindBack.startRecordingCalibration()">
-              🎤 Record Engine Sample </button> <button class="secondary-btn"
-              onclick="MotoFindBack.stopRecordingCalibration()">
-              Stop Recording </button> </div>
-          <!-- Add to your engine analysis section -->
-<div style="border: 1px solid #ff6600; padding: 10px; margin: 10px 0; border-radius: 5px;">
-  <h4>🔧 Calibration Debug</h4>
-<button id="calibrationMonitorBtn" onclick="MotoFindBack.startCalibrationMonitor()" class="secondary-btn">Start Monitor</button>
-  <button onclick="MotoFindBack.manualCalibration()" class="secondary-btn">Manual Calibration</button>
-  
-<button onclick="MotoFindBack.resetCalibration()" class="secondary-btn" style="background: var(--error-color);">
-  Reset Calibration
-</button>
-          <div class="recording-instructions">
-            <p><strong>How to calibrate:</strong></p>
-            <ol style="text-align: left; font-size: 0.9em; color: #ccc;">
-              <li>Start engine analysis</li>
-              <li>Click "Record Engine Sample"</li>
-              <li>Rev engine steadily for 3 seconds</li>
-              <li>System will auto-analyze your engine sound</li>
-            </ol>
-          </div>
-         <!-- Real-time frequency visualization -->
-        <div class="control-item">
-          <h4>Sound Spectrum</h4>
-          <canvas id="frequencyCanvas" width="100%" height="100" style="background: #222; border-radius: 5px;"></canvas>
-        </div>
-   
-          <div class="calibration-info">
-            <div>Bike Profile: <span id="bikeProfileName">Uncalibrated</span></div>
-            <div>Calibration: <span id="calibrationStatus">Not calibrated</span></div>
-            <div>Detected Range: <span id="detectedRange">--</span></div>
-            <div>Calibration Factor: <span id="calibrationMultiplier">--</span></div>
-          </div> 
-  
-        <div class="control-item">
-          <h4>Debug Info</h4>
-          <div>Microphone Status: <span id="micStatus">Not Started</span></div>
-          <div>Dominant Frequency: <span id="debugFreq">0</span> Hz</div>
-          <div>Max Volume: <span id="debugVolume">0</span></div>
-          <div>Total Energy: <span id="debugEnergy">0</span></div>
-         </div>  
-               <div class="control-group">
-          <div class="control-item">
-            <h4>Shift Analysis</h4>
-            <div>Total Shifts: <span id="totalShifts">0</span></div>
-            <div>Last Shift Quality: <span id="lastShiftQuality">--</span></div>
-            <div>Avg Shift RPM: <span id="avgShiftRPM">--</span></div>
-          </div></div>
- 
-      <div class="panel">
-        <h3>Cornering Analysis</h3>
-        <!-- Add this canvas for the corner chart --> <canvas id="cornerChart"
-          width="100%"
-          height="200"></canvas>
-        <!-- Your existing corner analysis content -->
-        <p>Current Corner G: <span id="currentCornerG">0 g</span></p>
-        <p>Max Corner Speed: <span id="currentMaxCornerSpeed">0 km/h</span></p>
-        <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
-        <p>Avg Corner Entry Speed: <span id="avgCornerEntrySpeed">0 km/h</span></p>
-        <div id="cornerList">No corners detected yet.</div>
+    <!-- Session Management -->
+    <div class="panel">
+      <h3>Ride Session Management</h3>
+      <div class="control-group"> 
+        <button id="startSessionBtn" class="primary-btn" onclick="MotoFindBack.startNewSession()">🏁 Start New Session</button> 
+        <button id="startRideBtn" class="primary-btn">Start Ride</button> 
+        <button id="saveSessionBtn" class="secondary-btn" onclick="MotoFindBack.saveCurrentSession()">💾 Save Session</button> 
+        <button id="quickSaveBtn" class="secondary-btn" onclick="MotoFindBack.quickSaveSession()">⚡ Quick Save</button> 
+        <button id="exportSessionBtn" class="secondary-btn" onclick="MotoFindBack.exportSession()">📤 Export Current</button> 
       </div>
-      <div class="control-item">
-        <h3>Ride History</h3>
-        <div id="rideHistory" style="max-height: 200px; overflow-y: auto; text-align: left; padding: 10px; background: rgba(40,40,40,0.7); border-radius: 5px;">
-          No ride history yet. </div>
+      <div id="sessionInfo" class="session-info" style="display: none;">
+        <h4>Current Session</h4>
+        <div class="session-stats">
+          <div>Name: <span id="sessionName">--</span></div>
+          <div>Duration: <span id="sessionDuration">--</span></div>
+          <div>Distance: <span id="sessionDistance">--</span></div>
+          <div>Max Speed: <span id="sessionMaxSpeed">--</span></div>
+          <div>Corners: <span id="sessionCorners">--</span></div>
+        </div>
       </div>
     </div>
+
+    <!-- Session History -->
+    <div class="panel">
+      <h3>Session History</h3>
+      <div id="sessionHistoryList" class="session-history">
+        <div style="text-align: center; color: #aaa; padding: 20px;">No saved sessions yet</div>
+      </div>
+    </div>
+
+    <!-- General Statistics -->
+    <div class="panel">
+      <h3>📊 General Statistics (All Sessions)</h3>
+      <div class="dashboard">
+        <div class="dashboard-item">
+          <div class="dashboard-label">Total Distance</div>
+          <div class="dashboard-value" id="statsTotalDistance">0 km</div>
+        </div>
+        <div class="dashboard-item">
+          <div class="dashboard-label">Max Speed</div>
+          <div class="dashboard-value" id="statsMaxSpeedAll">0 km/h</div>
+        </div>
+        <div class="dashboard-item">
+          <div class="dashboard-label">Max Lean Angle</div>
+          <div class="dashboard-value" id="statsMaxLeanAll">0°</div>
+        </div>
+        <div class="dashboard-item">
+          <div class="dashboard-label">Max Elevation Gain</div>
+          <div class="dashboard-value" id="statsMaxElevationAll">0 m</div>
+        </div>
+        <div class="dashboard-item">
+          <div class="dashboard-label">Max Corner Speed</div>
+          <div class="dashboard-value" id="statsMaxCornerSpeedAll">0 km/h</div>
+        </div>
+        <div class="dashboard-item">
+          <div class="dashboard-label">Max Corner G</div>
+          <div class="dashboard-value" id="statsMaxCornerGAll">0 g</div>
+        </div>
+        <div class="dashboard-item">
+          <div class="dashboard-label">Best 0-60 km/h</div>
+          <div class="dashboard-value" id="statsBest0to60">-- s</div>
+        </div>
+        <div class="dashboard-item">
+          <div class="dashboard-label">Best 0-100 km/h</div>
+          <div class="dashboard-value" id="statsBest0to100">-- s</div>
+        </div>
+      </div>
+      <div class="control-group" style="margin-top: 15px;"> 
+        <button onclick="MotoFindBack.updateGeneralStatistics()" class="secondary-btn">Refresh Stats</button> 
+        <button onclick="MotoFindBack.exportAllStatistics()" class="secondary-btn">Export All Data</button> 
+        <button onclick="MotoFindBack.clearAllStatistics()" class="secondary-btn" style="background: var(--error-color);">Clear All Data</button> 
+      </div>
+    </div>
+
+    <button id="resetMetricsBtn" class="secondary-btn">Reset Metrics</button>
+    <button id="exportMetricsBtn" class="secondary-btn">Export Data</button>
+  </div>
+
+  <!-- Acceleration Popup -->
+  <div class="setting-item">
+    <h4>Acceleration Popup</h4>
+    <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
+      <label>Target Speed:</label> 
+      <input id="accelTarget" min="20" max="200" value="100" style="flex: 1;" type="range">
+      <span id="accelTargetValue">100 km/h</span> 
+    </div>
+    <div style="margin: 10px 0;"> 
+      <button onclick="MotoFindBack.testAccelerationPopup()" class="secondary-btn">Test Popup</button> 
+      <button onclick="MotoFindBack.hideAccelerationPopup()" class="secondary-btn">Clear Popup</button> 
+    </div>
+  </div>
+
+  <!-- Lean Angle Display -->
+  <div class="lean-container">
+    <div class="lean-scale">
+      <div class="lean-mark"></div>
+      <div class="lean-mark"></div>
+      <div class="lean-mark"></div>
+      <div class="lean-mark"></div>
+      <div class="lean-mark"></div>
+      <div class="lean-mark"></div>
+      <div class="lean-mark"></div>
+      <div class="lean-mark"></div>
+      <div class="lean-mark"></div>
+      <div class="lean-mark"></div>
+      <div class="lean-mark"></div>
+    </div>
+    <div class="lean-bike" id="leanBike"></div>
+    <div class="lean-value" id="leanValue">0°</div>
+  </div>
+
+  <!-- Corner Analysis -->
+  <div class="corner-analysis">
+    <h3>Cornering Analysis</h3>
+    <p>Current Corner G: <span id="currentCornerG">0 g</span></p>
+    <p>Max Corner Speed: <span id="currentMaxCornerSpeed">0 km/h</span></p>
+    <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
+    <div id="cornerList">No corners detected yet.</div>
+  </div>
+
+  <!-- Elevation Profile -->
+  <div class="elevation-profile-container">
+    <h3>Elevation Profile</h3>
+    <div class="elevation-profile"> 
+      <canvas id="elevationCanvas"></canvas>
+    </div>
+    <p>Total Elevation Gain: <span id="totalElevationGain">0 m</span></p>
+  </div>
+
+  <!-- Statistics -->
+  <div class="control-group">
+    <div class="control-item">
+      <h3>Distance Statistics</h3>
+      <div>Today: <span id="statsToday">0 km</span></div>
+      <div>This Week: <span id="statsWeek">0 km</span></div>
+      <div>This Month: <span id="statsMonth">0 km</span></div>
+      <div>Total: <span id="statsTotal">0 km</span></div>
+    </div>
+    <div class="control-item">
+      <h3>Speed Statistics</h3>
+      <div>Current: <span id="statsCurrentSpeed">0 km/h</span></div>
+      <div>Average: <span id="statsAvgSpeed">0 km/h</span></div>
+      <div>Max: <span id="statsMaxSpeed">0 km/h</span></div>
+      <div>0-100 km/h: <span id="statsAcceleration">-- s</span></div>
+    </div>
+  </div>
+
+  <!-- Engine Sound Analysis -->
+  <div class="panel">
+    <h3>Engine Sound Analysis</h3>
+    <div class="control-group"> 
+      <button id="startEngineAnalysis" class="primary-btn">Start Engine Analysis</button>   
+      <button onclick="MotoFindBack.stopEngineAnalysis()" class="secondary-btn">Stop Analysis</button> 
+      <button id="calibrateEngine" class="secondary-btn">Calibrate Engine</button> 
+    </div>
+    <div class="dashboard">
+      <div class="dashboard-item">
+        <div class="dashboard-label">Engine RPM</div>
+        <div class="dashboard-value" id="engineRPM">--</div>
+      </div>
+      <div class="dashboard-item">
+        <div class="dashboard-label">Estimated Gear</div>
+        <div class="dashboard-value" id="engineGear">--</div>
+      </div>
+      <div class="dashboard-item">
+        <div class="dashboard-label">Engine Health</div>
+        <div class="dashboard-value" id="engineHealth">--</div>
+      </div>
+      <div class="dashboard-item">
+        <div class="dashboard-label">Sound Level</div>
+        <div class="dashboard-value" id="engineVolume">-- dB</div>
+      </div>
+    </div>
+
+    <!-- Calibration Section -->
+    <div class="control-item">
+      <h4>Impulse Response Calibration</h4>
+      <div class="control-group"> 
+        <button id="startRecordingBtn" class="primary-btn" onclick="MotoFindBack.startRecordingCalibration()">🎤 Record Engine Sample</button> 
+        <button class="secondary-btn" onclick="MotoFindBack.stopRecordingCalibration()">Stop Recording</button> 
+      </div>
+      
+      <!-- Calibration Debug -->
+      <div style="border: 1px solid #ff6600; padding: 10px; margin: 10px 0; border-radius: 5px;">
+        <h4>🔧 Calibration Debug</h4>
+        <button id="calibrationMonitorBtn" onclick="MotoFindBack.startCalibrationMonitor()" class="secondary-btn">Start Monitor</button>
+        <button onclick="MotoFindBack.manualCalibration()" class="secondary-btn">Manual Calibration</button>
+        <button onclick="MotoFindBack.resetCalibration()" class="secondary-btn" style="background: var(--error-color);">Reset Calibration</button>
+      </div>
+
+      <div class="recording-instructions">
+        <p><strong>How to calibrate:</strong></p>
+        <ol style="text-align: left; font-size: 0.9em; color: #ccc;">
+          <li>Start engine analysis</li>
+          <li>Click "Record Engine Sample"</li>
+          <li>Rev engine steadily for 3 seconds</li>
+          <li>System will auto-analyze your engine sound</li>
+        </ol>
+      </div>
+
+      <div class="calibration-info">
+        <div>Bike Profile: <span id="bikeProfileName">Uncalibrated</span></div>
+        <div>Calibration: <span id="calibrationStatus">Not calibrated</span></div>
+        <div>Detected Range: <span id="detectedRange">--</span></div>
+        <div>Calibration Factor: <span id="calibrationMultiplier">--</span></div>
+      </div>
+    </div>
+
+    <!-- Sound Spectrum -->
+    <div class="control-item">
+      <h4>Sound Spectrum</h4>
+      <canvas id="frequencyCanvas" width="100%" height="100" style="background: #222; border-radius: 5px;"></canvas>
+    </div>
+
+    <!-- Debug Info -->
+    <div class="control-item">
+      <h4>Debug Info</h4>
+      <div>Microphone Status: <span id="micStatus">Not Started</span></div>
+      <div>Dominant Frequency: <span id="debugFreq">0</span> Hz</div>
+      <div>Max Volume: <span id="debugVolume">0</span></div>
+      <div>Total Energy: <span id="debugEnergy">0</span></div>
+    </div>
+
+    <!-- Shift Analysis -->
+    <div class="control-group">
+      <div class="control-item">
+        <h4>Shift Analysis</h4>
+        <div>Total Shifts: <span id="totalShifts">0</span></div>
+        <div>Last Shift Quality: <span id="lastShiftQuality">--</span></div>
+        <div>Avg Shift RPM: <span id="avgShiftRPM">--</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Corner Chart -->
+  <div class="panel">
+    <h3>Cornering Analysis</h3>
+    <canvas id="cornerChart" width="100%" height="200"></canvas>
+    <p>Current Corner G: <span id="currentCornerG">0 g</span></p>
+    <p>Max Corner Speed: <span id="currentMaxCornerSpeed">0 km/h</span></p>
+    <p>Avg Corner Lean: <span id="avgCornerLean">0°</span></p>
+    <p>Avg Corner Entry Speed: <span id="avgCornerEntrySpeed">0 km/h</span></p>
+    <div id="cornerList">No corners detected yet.</div>
+  </div>
+
+  <!-- Ride History -->
+  <div class="control-item">
+    <h3>Ride History</h3>
+    <div id="rideHistory" style="max-height: 200px; overflow-y: auto; text-align: left; padding: 10px; background: rgba(40,40,40,0.7); border-radius: 5px;">
+      No ride history yet. 
+    </div>
+  </div>
+</div>
+      </div>
     <div class="tab-content" id="navigation-tab">
       <div class="panel">
         <h2>GPS Navigation</h2>
@@ -1646,6 +1667,7 @@ const MotoFindBack = {
 init: async function() {
   // Setup event listeners FIRST
   this.setupEventListeners();
+ 
   
   // Load data BEFORE any processing
   await this.loadSessionsFromStorage();
@@ -2251,6 +2273,8 @@ frequencyToRPM: function(frequency) {
     return (frequency * 60) / cylinders;
   }
 },
+  
+
 
 // Engine health monitoring
 analyzeEngineHealth: function() {
@@ -3832,7 +3856,28 @@ initDeviceOrientation: function() {
 
 setupEventListeners: function() {
   console.log('=== SETUP EVENT LISTENERS STARTED ===');
-  
+   // TAB SWITCHING
+// Tab switching - SIMPLIFIED VERSION
+const tabs = document.querySelectorAll('.tab');
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    console.log('Tab clicked:', tab.dataset.tab);
+    
+    // Remove active from all tabs and hide all contents
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.remove('active');
+    });
+    
+    // Activate selected tab and content
+    tab.classList.add('active');
+    const tabContent = document.getElementById(tab.dataset.tab + '-tab');
+    if (tabContent) {
+      tabContent.classList.add('active');
+    }
+  });
+});
+
   // All button event listeners
   document.getElementById("testBtn").addEventListener("click", () => {
     this.initAudio();
@@ -3904,6 +3949,7 @@ document.getElementById("calibrationMonitorBtn").addEventListener("click", () =>
 
   console.log('=== SETUP EVENT LISTENERS COMPLETED ===');
 },
+
 
 
   calibrateSensors: function() {

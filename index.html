@@ -785,6 +785,25 @@ input[type="range"]::-webkit-slider-thumb {
 .tab-content.active {
   display: block;
 }
+      /* Simple fullscreen map */
+.fullscreen-map {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: none;
+}
+
+.fullscreen-map.active {
+  display: block;
+}
+
+.fullscreen-map #map {
+  height: 100% !important;
+  max-height: none !important;
+}
       
     @media (max-width: 768px) {
       .dashboard {
@@ -1152,7 +1171,10 @@ input[type="range"]::-webkit-slider-thumb {
     </div>
   </div>
 </div>
-  
+  <!-- Simple fullscreen map -->
+<div class="fullscreen-map" id="fullscreenMap">
+  <div id="map"></div>
+</div>
     <div class="tab-content" id="navigation-tab">
       <div class="panel">
         <h2>GPS Navigation</h2>
@@ -3921,6 +3943,47 @@ quickGpsLock: function() {
       lockBtn.textContent = originalText;
       lockBtn.style.background = "";
     }, 2000);
+  }
+},
+
+// Simple map-only methods
+setupMapOnly: function() {
+  this.longPressTimer = null;
+  this.isMapOnly = false;
+  
+  document.addEventListener('touchstart', (e) => this.handleLongPressStart(e));
+  document.addEventListener('touchend', () => this.handleLongPressEnd());
+  document.addEventListener('mousedown', (e) => this.handleLongPressStart(e));
+  document.addEventListener('mouseup', () => this.handleLongPressEnd());
+},
+
+handleLongPressStart: function(e) {
+  if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+  
+  this.longPressTimer = setTimeout(() => {
+    this.toggleMapOnly();
+  }, 3000);
+},
+
+handleLongPressEnd: function() {
+  if (this.longPressTimer) {
+    clearTimeout(this.longPressTimer);
+    this.longPressTimer = null;
+  }
+},
+
+toggleMapOnly: function() {
+  this.isMapOnly = !this.isMapOnly;
+  const fullscreenMap = document.getElementById('fullscreenMap');
+  
+  if (this.isMapOnly) {
+    fullscreenMap.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    this.log("Fullscreen map activated");
+  } else {
+    fullscreenMap.classList.remove('active');
+    document.body.style.overflow = '';
+    this.log("Fullscreen map closed");
   }
 },
 

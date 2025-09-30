@@ -739,6 +739,47 @@
   background: linear-gradient(to bottom, #ff3333, #cc0000) !important;
 }
       
+      .maintenance-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  margin: 8px 0;
+  background: #2a2a2a;
+  border-radius: 5px;
+  border-left: 3px solid var(--accent-color);
+}
+
+.maintenance-progress {
+  flex: 1;
+  height: 20px;
+  background: #444;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 0 10px;
+}
+
+.maintenance-progress-bar {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  height: 6px;
+  background: #555;
+  border-radius: 3px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--accent-color);
+  border-radius: 50%;
+  cursor: pointer;
+}
+      
     @media (max-width: 768px) {
       .dashboard {
         grid-template-columns: 1fr;
@@ -850,8 +891,7 @@
           <div class="control-group"> <button id="startSessionBtn" class="primary-btn"
               onclick="MotoFindBack.startNewSession()">
               🏁 Start New Session </button> <button id="startRideBtn" class="primary-btn">Start
-              Ride</button> <button id="testBtn" class="secondary-btn">Lock
-              Position</button> <button id="saveSessionBtn" class="secondary-btn"
+              Ride</button> <button id="saveSessionBtn" class="secondary-btn"
               onclick="MotoFindBack.saveCurrentSession()">
               💾 Save Session </button> <button id="quickSaveBtn" class="secondary-btn"
               onclick="MotoFindBack.quickSaveSession()">
@@ -1094,6 +1134,7 @@
       <div class="panel">
         <h2>GPS Navigation</h2>
         <p class="warning">LOCK POSITION</p>
+     
         <div class="control-group"> <button id="testBtn" class="primary-btn">Lock
             Position</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
             Sensors</button> <button id="autoLockBtn" class="secondary-btn" disabled="disabled">Auto-Lock
@@ -1231,13 +1272,50 @@
           </div>
         </div>
         <div class="control-group">
-          <div class="control-item">
-            <h3>Add New Maintenance Item</h3>
-            <input id="newMaintenanceName" placeholder="Item name" type="text">
-            <input id="newMaintenanceInterval" placeholder="Interval (km)" type="number">
-            <button id="saveMaintenanceBtn" class="secondary-btn">Save</button>
-          </div>
-        </div>
+     <!-- Updated Maintenance Form -->
+<div class="setting-item">
+  <h4>Add New Maintenance Item</h4>
+  <div style="margin: 10px 0;">
+    <input type="text" id="newMaintenanceName" placeholder="Maintenance Item (e.g., Oil Change)" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+    
+    <div style="margin: 10px 0;">
+      <label style="display: block; margin-bottom: 5px; color: #ccc;">Track by:</label>
+      <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+        <label style="display: flex; align-items: center; gap: 5px;">
+          <input type="radio" name="maintenanceUnit" value="km" checked> Kilometers
+        </label>
+        <label style="display: flex; align-items: center; gap: 5px;">
+          <input type="radio" name="maintenanceUnit" value="weeks"> Weeks
+        </label>
+      </div>
+    </div>
+
+    <div id="kmSettings" style="margin: 10px 0;">
+      <label style="display: block; margin-bottom: 5px; color: #ccc;">Interval (kilometers):</label>
+      <input type="range" id="newMaintenanceInterval" min="100" max="10000" step="100" value="5000" style="width: 100%;">
+      <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+        <span style="font-size: 0.8em; color: #aaa;">100 km</span>
+        <span id="intervalValue" style="font-weight: bold;">5000 km</span>
+        <span style="font-size: 0.8em; color: #aaa;">10000 km</span>
+      </div>
+    </div>
+
+    <div id="weekSettings" style="margin: 10px 0; display: none;">
+      <label style="display: block; margin-bottom: 5px; color: #ccc;">Interval (weeks):</label>
+      <input type="range" id="newMaintenanceWeeks" min="1" max="52" step="1" value="4" style="width: 100%;">
+      <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+        <span style="font-size: 0.8em; color: #aaa;">1 week</span>
+        <span id="weeksValue" style="font-weight: bold;">4 weeks</span>
+        <span style="font-size: 0.8em; color: #aaa;">52 weeks</span>
+      </div>
+    </div>
+  </div>
+  
+  <div style="display: flex; gap: 10px;">
+    <button id="saveMaintenanceBtn" class="primary-btn">Add Maintenance Item</button>
+    <button id="resetMaintenanceBtn" class="secondary-btn">Reset All</button>
+  </div>
+</div>
       </div>
     </div>
     <div class="panel">
@@ -1428,6 +1506,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
 const MotoFindBack = {
+  maintenanceItems: [],
   audioCtx: null,
   watchId: null,
   bleepTimer: null,
@@ -1574,13 +1653,26 @@ const MotoFindBack = {
   },
   
  
-  
 init: async function() {
-  this.loadUserPreferences();
+  // Setup event listeners FIRST
+  this.setupEventListeners();
+  
+  // Load data BEFORE any processing
+  await this.loadSessionsFromStorage();
+  await this.loadUserPreferences();
+  
+  console.log('After loading - Sessions:', this.sessionHistory.length, 'Show prompt:', this.showSessionPrompt);
+  
+  // TEMPORARY: Force show prompt (AFTER preferences are loaded)
+  console.log('=== TEMPORARY OVERRIDE: Forcing session prompt ===');
+  this.showSessionPrompt = true;
+  
+  console.log('After override - Sessions:', this.sessionHistory.length, 'Show prompt:', this.showSessionPrompt);
+  
+  // Initialize core components
   this.initMap();
   this.loadContactsFromStorage();
   this.setupTripleTapDetection();
-  this.loadSessionsFromStorage();
   
   // Auto-start session when ride starts
   const originalStartRide = this.startRide;
@@ -1596,7 +1688,8 @@ init: async function() {
     this.updateSessionDisplay();
   }, 1000);
   
-  this.canvas = document.getElementById('elevationCanvas'); // Store the canvas element
+  // Initialize charts and UI components
+  this.canvas = document.getElementById('elevationCanvas');
   if (!this.canvas) {
     this.log("Error: elevationCanvas element not found", true);
     return;
@@ -1624,87 +1717,29 @@ init: async function() {
     }
   });
   
-  this.setupEventListeners();
+  // Setup UI components 
   this.setupTabs();
   this.setupCollapsibles();
   this.loadData();
   this.updateUI();
+  
+  // Initialize acceleration popup
+  this.setupAccelerationPopup();
+  
   this.log("MotoFindBack initialized");
   this.initDeviceOrientation();
-      
-      document.getElementById("accelTarget").addEventListener("input", (e) => {
-  this.accelTarget = parseFloat(e.target.value) || 100;
-  const label = document.querySelector('#accelerationTime').previousElementSibling;
-  if (label) label.textContent = `0-${this.accelTarget} km/h`;
-  const statsLabel = document.querySelector('#statsAcceleration').previousElementSibling;
-  if (statsLabel) statsLabel.textContent = `0-${this.accelTarget} km/h`;
-  
-  // Update the value display
-  document.getElementById('accelTargetValue').textContent = this.accelTarget + ' km/h';
-  
-  // Reset acceleration tracking when target changes
-  this.accelerationPopup.startTime = null;
-  this.accelerationPopup.achievedTime = null;
-});
 
-  document.getElementById("maxDistInput").addEventListener("input", (e) => {
-    document.getElementById("maxDistValue").textContent = e.target.value;
-  });
-
-  document.getElementById("stationaryTime").addEventListener("input", (e) => {
-    document.getElementById("stationaryTimeValue").textContent = e.target.value + ' sec';
-  });
-
-  document.getElementById("speedThreshold").addEventListener("input", (e) => {
-    this.speedThreshold = parseFloat(e.target.value);
-    document.getElementById("speedThresholdValue").textContent = e.target.value + ' km/h';
-  });
-  
-  document.getElementById("addContactBtn").addEventListener("click", () => this.showContactModal());
-  document.getElementById("muteBtn").textContent = "Sound Muted";
-  document.getElementById("muteBtn").classList.add("muted");
-  document.getElementById("muteBtn").disabled = true;
-  
-  document.getElementById("accelTarget").addEventListener("input", (e) => {
-    this.accelTarget = parseFloat(e.target.value) || 100;
-    const label = document.querySelector('#accelerationTime').previousElementSibling;
-    if (label) label.textContent = `0-${this.accelTarget} km/h`;
-    const statsLabel = document.querySelector('#statsAcceleration').previousElementSibling;
-    if (statsLabel) statsLabel.textContent = `0-${this.accelTarget} km/h`;
-  });
-      
-        // TEMPORARY: Force show prompt for testing
-  console.log('=== TEMPORARY OVERRIDE: Forcing session prompt ===');
-  this.showSessionPrompt = true;
-  
-  // Your existing session loading code...
-  await this.loadSessionsFromStorage();
-  await this.loadUserPreferences();
-  
-  console.log('After loading - Sessions:', this.sessionHistory.length, 'Show prompt:', this.showSessionPrompt);
-  
-
-  
-  console.log('After override - Sessions:', this.sessionHistory.length, 'Show prompt:', this.showSessionPrompt);
-  
+  // Session prompt check (SINGLE CHECK - removed duplicates)
   if (this.showSessionPrompt && this.sessionHistory.length > 0) {
-    console.log('✅ Showing session load prompt (forced)');
+    console.log('✅ Showing session load prompt');
     setTimeout(() => {
       this.showSessionLoadPrompt();
-    }, 1500);
+    }, 2000);
   } else {
-    console.log('❌ Still not showing prompt:', {
-      showSessionPrompt: this.showSessionPrompt,
-      sessionHistoryLength: this.sessionHistory.length
-    });
-  }
-      
-      
-  // Fixed the incomplete if statement
-  if (this.showSessionPrompt && this.sessionHistory.length > 0) {
-    this.showSessionLoadPrompt();
+    console.log('Not showing session prompt - conditions not met');
   }
 
+  // Service worker registration
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => {
       this.log('Service Worker registered');
@@ -1712,9 +1747,34 @@ init: async function() {
       this.log('Service Worker registration failed: ' + err, true);
     });
   }
-      
-},
+
+},  
+
   
+  // Simple lock that doesn't depend on audio
+forceLockPosition: function() {
+  if (!this.lastPosition) {
+    alert("Wait for GPS signal first (blue dot on map)");
+    return;
+  }
+  
+  this.lockPosition = { 
+    lat: this.lastPosition.lat, 
+    lon: this.lastPosition.lon 
+  };
+  
+  // Update UI
+  document.getElementById("lockStatus").textContent = 
+    `Lock Status: LOCKED at ${this.lockPosition.lat.toFixed(6)}, ${this.lockPosition.lon.toFixed(6)}`;
+  document.getElementById("lockStatus").className = "status success";
+  
+  this.isActive = true;
+  
+  alert(`✅ Position locked! You will get directional guidance.`);
+  
+  // Start audio if possible
+  this.startBleep();
+},
                                                             
 loadUserPreferences: function() {
   const prefs = localStorage.getItem('motoFindBack_preferences');
@@ -2838,6 +2898,27 @@ clearAllStatistics: function() {
   }
 },
   
+  // Add this debug method
+debugLockPosition: function() {
+  console.log('=== LOCK POSITION DEBUG ===');
+  console.log('1. Button element:', document.getElementById("testBtn"));
+  console.log('2. Last position:', this.lastPosition);
+  console.log('3. Audio context:', this.audioCtx);
+  console.log('4. Audio allowed:', this.isAudioAllowed);
+  console.log('5. Is active:', this.isActive);
+  
+  // Test if click handler is attached
+  const btn = document.getElementById("testBtn");
+  if (btn) {
+    console.log('6. Button onclick:', btn.onclick);
+    console.log('7. Button event listeners:', 
+      btn._eventListeners ? btn._eventListeners : 'No internal tracking');
+  }
+  
+  // Manually test lock position
+  this.lockCurrentPosition();
+},
+  
   // Session management functions
 startNewSession: function() {
   const sessionId = 'session_' + Date.now();
@@ -3418,7 +3499,53 @@ updateWheelAnimation: function() {
     }
   },
 
+initDeviceOrientation: function() {
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', (event) => {
+      if (this.isCalibrating) {
+        this.calibrationSamples.push(event.gamma || 0);
+        return;
+      }
+      if (event.gamma !== null) {
+        this.currentLeanAngle = Math.round(Math.abs(event.gamma - this.leanOffset));
+        this.updateLeanAngleDisplay();
+        if (this.currentLeanAngle > this.maxLeanAngle) this.maxLeanAngle = this.currentLeanAngle;
+        const speedMs = this.currentSpeed;
+        this.currentCornerG = this.calculateCornerG(speedMs, this.currentLeanAngle);
+        this.detectCorner(this.lastPosition?.lat, this.lastPosition?.lon, speedMs * 3.6, this.currentLeanAngle, this.currentCornerG);
+      }
+      if (event.beta !== null && !this.crashDetected) {
+        const betaAbs = Math.abs(event.beta);
+        if (betaAbs > 70) {
+          if (!this.crashStartTime) {
+            this.crashStartTime = Date.now();
+            document.getElementById('crashStatus').textContent = 'Possible crash detected... Confirming';
+            document.getElementById('crashStatus').className = 'status warning';
+            this.log('Possible crash detected, confirming for 5 seconds');
+          }
+          if (Date.now() - this.crashStartTime > 5000) {
+            this.crashDetected = true;
+            this.triggerCrashAlert();
+          }
+        } else if (this.crashStartTime) {
+          this.crashStartTime = null;
+          document.getElementById('crashStatus').textContent = 'Crash Detection: Inactive';
+          document.getElementById('crashStatus').className = 'status';
+          this.log('Crash condition cleared');
+        }
+      }
+    });
+  } else {
+    this.log("Device orientation not supported", true);
+    document.getElementById('crashStatus').textContent = 'Crash Detection: Not supported';
+    document.getElementById('crashStatus').className = 'status error';
+  }
+},
+
 setupEventListeners: function() {
+  console.log('=== SETUP EVENT LISTENERS STARTED ===');
+  
+  // All button event listeners
   document.getElementById("testBtn").addEventListener("click", () => {
     this.initAudio();
     this.playTestSound();
@@ -3444,52 +3571,49 @@ setupEventListeners: function() {
   document.getElementById("quickSaveBtn").addEventListener("click", () => this.quickSaveSession());
   document.getElementById("exportSessionBtn").addEventListener("click", () => this.exportSession());
   document.getElementById("startRecordingBtn").addEventListener("click", () => this.startRecordingCalibration());
-  document.getElementById("startSessionBtn").addEventListener("click", () => this.startNewSession());
+  document.querySelectorAll('input[name="maintenanceUnit"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      this.toggleMaintenanceUnit(e.target.value);
+    });
+  });
 
-},  
+  // Maintenance slider updates
+  document.getElementById("newMaintenanceInterval").addEventListener("input", (e) => {
+    document.getElementById("intervalValue").textContent = e.target.value + ' km';
+  });
 
-  initDeviceOrientation: function() {
-    if (window.DeviceOrientationEvent) {
-      window.addEventListener('deviceorientation', (event) => {
-        if (this.isCalibrating) {
-          this.calibrationSamples.push(event.gamma || 0);
-          return;
-        }
-        if (event.gamma !== null) {
-          this.currentLeanAngle = Math.round(Math.abs(event.gamma - this.leanOffset));
-          this.updateLeanAngleDisplay();
-          if (this.currentLeanAngle > this.maxLeanAngle) this.maxLeanAngle = this.currentLeanAngle;
-          const speedMs = this.currentSpeed;
-          this.currentCornerG = this.calculateCornerG(speedMs, this.currentLeanAngle);
-          this.detectCorner(this.lastPosition?.lat, this.lastPosition?.lon, speedMs * 3.6, this.currentLeanAngle, this.currentCornerG);
-        }
-        if (event.beta !== null && !this.crashDetected) {
-          const betaAbs = Math.abs(event.beta);
-          if (betaAbs > 70) {
-            if (!this.crashStartTime) {
-              this.crashStartTime = Date.now();
-              document.getElementById('crashStatus').textContent = 'Possible crash detected... Confirming';
-              document.getElementById('crashStatus').className = 'status warning';
-              this.log('Possible crash detected, confirming for 5 seconds');
-            }
-            if (Date.now() - this.crashStartTime > 5000) {
-              this.crashDetected = true;
-              this.triggerCrashAlert();
-            }
-          } else if (this.crashStartTime) {
-            this.crashStartTime = null;
-            document.getElementById('crashStatus').textContent = 'Crash Detection: Inactive';
-            document.getElementById('crashStatus').className = 'status';
-            this.log('Crash condition cleared');
-          }
-        }
-      });
-    } else {
-      this.log("Device orientation not supported", true);
-      document.getElementById('crashStatus').textContent = 'Crash Detection: Not supported';
-      document.getElementById('crashStatus').className = 'status error';
-    }
-  },
+  document.getElementById("newMaintenanceWeeks").addEventListener("input", (e) => {
+    document.getElementById("weeksValue").textContent = e.target.value + ' weeks';
+  });
+
+  // Input event listeners
+  document.getElementById("maxDistInput").addEventListener("input", (e) => {
+    document.getElementById("maxDistValue").textContent = e.target.value;
+  });
+
+  document.getElementById("stationaryTime").addEventListener("input", (e) => {
+    document.getElementById("stationaryTimeValue").textContent = e.target.value + ' sec';
+  });
+
+  document.getElementById("speedThreshold").addEventListener("input", (e) => {
+    this.speedThreshold = parseFloat(e.target.value);
+    document.getElementById("speedThresholdValue").textContent = e.target.value + ' km/h';
+  });
+
+  document.getElementById("accelTarget").addEventListener("input", (e) => {
+    this.accelTarget = parseFloat(e.target.value) || 100;
+    const label = document.querySelector('#accelerationTime').previousElementSibling;
+    if (label) label.textContent = `0-${this.accelTarget} km/h`;
+    const statsLabel = document.querySelector('#statsAcceleration').previousElementSibling;
+    if (statsLabel) statsLabel.textContent = `0-${this.accelTarget} km/h`;
+    document.getElementById('accelTargetValue').textContent = this.accelTarget + ' km/h';
+    this.accelerationPopup.startTime = null;
+    this.accelerationPopup.achievedTime = null;
+  });
+
+  console.log('=== SETUP EVENT LISTENERS COMPLETED ===');
+},
+
 
   calibrateSensors: function() {
     this.isCalibrating = true;
@@ -3658,18 +3782,33 @@ toggleMute: function() {
 initAudio: function() {
   if (this.audioCtx) {
     if (this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume().then(() => this.log("Audio context resumed"));
+      this.audioCtx.resume().then(() => {
+        console.log("Audio context resumed");
+        this.isAudioAllowed = true;
+      });
     }
     return;
   }
+  
   try {
     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    document.getElementById("audioStatus").textContent = "Audio: Initialized (Muted)";
-    document.getElementById("audioStatus").className = "status warning";
+    
+    // Modern browsers require user interaction to enable audio
+    if (this.audioCtx.state === 'suspended') {
+      console.log('Audio context created but suspended - needs user interaction');
+      // Don't set isAudioAllowed to true yet - it will be set after user interaction
+    } else {
+      this.isAudioAllowed = true;
+      console.log('Audio context created and ready');
+    }
+    
+    document.getElementById("audioStatus").textContent = "Audio: Initialized";
+    document.getElementById("audioStatus").className = "status success";
     document.getElementById("autoLockBtn").disabled = false;
     document.getElementById("muteBtn").disabled = false;
-    this.isAudioAllowed = true;
-    this.log("Audio system initialized (initially muted)");
+    
+    this.log("Audio system initialized");
+    
   } catch (e) {
     document.getElementById("audioStatus").textContent = `Audio: ${e.message}`;
     document.getElementById("audioStatus").className = "status error";
@@ -3701,22 +3840,78 @@ initAudio: function() {
     }
   },
 
-  lockCurrentPosition: function() {
-    if (!this.lastPosition) {
-      this.log("No position available to lock", true);
-      return;
+lockCurrentPosition: function() {
+  console.log('lockCurrentPosition called, lastPosition:', this.lastPosition);
+  
+  if (!this.lastPosition) {
+    this.log("No position available to lock", true);
+    
+    // Show helpful message based on whether GPS is active
+    if (this.isRideActive) {
+      alert("⌛ GPS is active but no position yet. Wait a few seconds for GPS to acquire your location.");
+    } else {
+      alert("📍 Start a ride first or wait for GPS signal. The map should show your location as a blue dot.");
     }
-    this.lockPosition = { lat: this.lastPosition.lat, lon: this.lastPosition.lon };
+    return;
+  }
+  
+  this.lockPosition = { 
+    lat: this.lastPosition.lat, 
+    lon: this.lastPosition.lon 
+  };
+  
+  console.log('✅ Position locked at:', this.lockPosition);
+  
+  // Update lock marker on map
+  if (this.lockMarker) {
     this.lockMarker.setLatLng([this.lockPosition.lat, this.lockPosition.lon]);
-    document.getElementById("lockStatus").textContent = `Lock Status: Locked at Lat ${this.lockPosition.lat.toFixed(6)}, Lon ${this.lockPosition.lon.toFixed(6)}`;
-    document.getElementById("lockStatus").className = "status success";
-    this.isActive = true;
-    document.getElementById("stopBtn").disabled = false;
-    document.getElementById("muteBtn").disabled = false;
-    this.updateGpsStatus("Position locked");
-    this.log(`Position locked at Lat ${this.lockPosition.lat.toFixed(6)}, Lon ${this.lockPosition.lon.toFixed(6)}`);
-    this.startBleep();
-  },
+    console.log('✅ Lock marker updated on map');
+  }
+  
+  // Update UI
+  document.getElementById("lockStatus").textContent = 
+    `Lock Status: LOCKED at ${this.lockPosition.lat.toFixed(6)}, ${this.lockPosition.lon.toFixed(6)}`;
+  document.getElementById("lockStatus").className = "status success";
+  
+  this.isActive = true;
+  document.getElementById("stopBtn").disabled = false;
+  document.getElementById("muteBtn").disabled = false;
+  
+  this.updateGpsStatus("Position locked - audio guidance active");
+  this.log(`🎯 Position locked! Audio guidance started`);
+  
+  // Start audio guidance
+  this.startBleep();
+  
+  // Show visual confirmation
+  this.showAlertNotification('📍 Position Locked! Audio guidance active', 'success');
+},
+  
+  // Check if GPS is ready for locking
+isGPSReadyForLock: function() {
+  if (!this.lastPosition) {
+    return { ready: false, reason: "No GPS position available" };
+  }
+  
+  if (this.lastPosition.lat === 0 && this.lastPosition.lon === 0) {
+    return { ready: false, reason: "GPS position not yet acquired" };
+  }
+  
+  return { ready: true, reason: "GPS ready" };
+},
+
+// Enhanced lock method with GPS check
+smartLockPosition: function() {
+  const gpsStatus = this.isGPSReadyForLock();
+  console.log('GPS status for locking:', gpsStatus);
+  
+  if (!gpsStatus.ready) {
+    alert(`📡 GPS Not Ready:\n${gpsStatus.reason}\n\nWait for the blue dot on the map to appear.`);
+    return false;
+  }
+  
+  return this.lockCurrentPosition();
+},
 
   startBleep: function() {
     if (!this.isActive || this.isMuted || !this.audioCtx) return;
@@ -4063,6 +4258,11 @@ closeContactModal: function() {
   document.getElementById('addContactModal').style.display = 'none';
 },
 
+addEmergencyContact: function() {
+  console.log('Add Emergency Contact clicked');
+  this.showContactModal();
+},
+
 saveNewContact: function() {
   const name = document.getElementById('newContactName').value.trim();
   const number = document.getElementById('newContactNumber').value.trim();
@@ -4266,6 +4466,151 @@ callEmergency: function() {
   }
 },
 
+// Maintenance unit toggle
+toggleMaintenanceUnit: function(unit) {
+  const kmSettings = document.getElementById('kmSettings');
+  const weekSettings = document.getElementById('weekSettings');
+  
+  if (unit === 'km') {
+    kmSettings.style.display = 'block';
+    weekSettings.style.display = 'none';
+  } else {
+    kmSettings.style.display = 'none';
+    weekSettings.style.display = 'block';
+  }
+},
+
+// Updated save maintenance item
+saveMaintenanceItem: function() {
+  const name = document.getElementById("newMaintenanceName").value.trim();
+  const unit = document.querySelector('input[name="maintenanceUnit"]:checked').value;
+  
+  let interval, progress, unitLabel;
+  
+  if (unit === 'km') {
+    interval = parseInt(document.getElementById("newMaintenanceInterval").value);
+    progress = 0; // Start at 0 km
+    unitLabel = 'km';
+  } else {
+    interval = parseInt(document.getElementById("newMaintenanceWeeks").value);
+    progress = 0; // Start at 0 weeks passed
+    unitLabel = 'weeks';
+  }
+  
+  if (!name) {
+    alert('Please enter a maintenance item name');
+    return;
+  }
+  
+  if (!interval || interval <= 0) {
+    alert('Please set a valid interval');
+    return;
+  }
+
+  this.maintenanceItems.push({ 
+    name, 
+    interval, 
+    progress, 
+    unit: unitLabel,
+    createdAt: Date.now(),
+    lastReset: Date.now()
+  });
+  
+  this.updateMaintenanceList();
+  
+  // Clear form
+  document.getElementById("newMaintenanceName").value = "";
+  document.getElementById("newMaintenanceInterval").value = "5000";
+  document.getElementById("newMaintenanceWeeks").value = "4";
+  document.getElementById("intervalValue").textContent = "5000 km";
+  document.getElementById("weeksValue").textContent = "4 weeks";
+  
+  this.log(`Maintenance item added: ${name} - every ${interval} ${unitLabel}`);
+},
+
+// Enhanced maintenance list display
+updateMaintenanceList: function() {
+  const list = document.getElementById("maintenanceList");
+  
+  if (this.maintenanceItems.length === 0) {
+    list.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: #aaa;">
+        No maintenance items added yet.<br>
+        Add your first maintenance item above.
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = this.maintenanceItems.map((item, index) => {
+    const progressPercent = (item.progress / item.interval) * 100;
+    const progressColor = progressPercent < 70 ? 'var(--success-color)' : 
+                         progressPercent < 90 ? 'var(--warning-color)' : 'var(--error-color)';
+    
+    let timeInfo = '';
+    if (item.unit === 'weeks') {
+      const weeksPassed = Math.floor((Date.now() - item.lastReset) / (7 * 24 * 60 * 60 * 1000));
+      timeInfo = `<div style="font-size: 0.8em; color: #aaa;">${weeksPassed} weeks passed</div>`;
+    } else {
+      timeInfo = `<div style="font-size: 0.8em; color: #aaa;">${item.progress}/${item.interval} km</div>`;
+    }
+    
+    return `
+      <div class="maintenance-item" data-index="${index}">
+        <div style="flex: 1;">
+          <div style="font-weight: bold; margin-bottom: 5px;">${item.name}</div>
+          <div style="font-size: 0.9em; color: #ccc;">Every ${item.interval} ${item.unit}</div>
+          ${timeInfo}
+        </div>
+        <div class="maintenance-progress">
+          <div class="maintenance-progress-bar" style="width: ${progressPercent}%; background: ${progressColor};"></div>
+        </div>
+        <div style="margin-left: 10px;">
+          <button onclick="MotoFindBack.resetMaintenanceItem(${index})" title="Reset" style="background: var(--accent-color);">🔄</button>
+          <button onclick="MotoFindBack.removeMaintenanceItem(${index})" title="Remove" style="background: #ff3333;">🗑️</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+},
+
+// Reset individual maintenance item
+resetMaintenanceItem: function(index) {
+  if (index >= 0 && index < this.maintenanceItems.length) {
+    this.maintenanceItems[index].progress = 0;
+    this.maintenanceItems[index].lastReset = Date.now();
+    this.updateMaintenanceList();
+    this.log(`Reset maintenance item: ${this.maintenanceItems[index].name}`);
+  }
+},
+
+// Remove individual maintenance item
+removeMaintenanceItem: function(index) {
+  if (index >= 0 && index < this.maintenanceItems.length && confirm('Remove this maintenance item?')) {
+    const itemName = this.maintenanceItems[index].name;
+    this.maintenanceItems.splice(index, 1);
+    this.updateMaintenanceList();
+    this.log(`Removed maintenance item: ${itemName}`);
+  }
+},
+
+// Update maintenance progress based on distance or time
+updateMaintenanceProgress: function() {
+  const now = Date.now();
+  
+  this.maintenanceItems.forEach(item => {
+    if (item.unit === 'km') {
+      // Update based on distance (you'll need to track distance since last reset)
+      // This would need to be integrated with your distance tracking
+    } else {
+      // Update based on time (weeks)
+      const weeksPassed = Math.floor((now - item.lastReset) / (7 * 24 * 60 * 60 * 1000));
+      item.progress = weeksPassed;
+    }
+  });
+  
+  this.updateMaintenanceList();
+},
 
 
   saveMaintenanceItem: function() {

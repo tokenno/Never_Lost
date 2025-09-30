@@ -1671,7 +1671,7 @@ const MotoFindBack = {
 init: async function() {
   // Setup event listeners FIRST
   this.setupEventListeners();
- this.loadCalibrationFromStorage();
+
   
   // Load data BEFORE any processing
   await this.loadSessionsFromStorage();
@@ -1690,6 +1690,8 @@ init: async function() {
   this.loadContactsFromStorage();
   this.setupTripleTapDetection();
   this.loadCalibrationFromStorage();
+   this.loadCalibrationFromStorage();
+  this.loadMaintenanceFromStorage();
   
   // Auto-start session when ride starts
   const originalStartRide = this.startRide;
@@ -3214,6 +3216,35 @@ clearAllStatistics: function() {
   }
 },
   
+  // Save maintenance items to localStorage
+saveMaintenanceToStorage: function() {
+    const maintenanceData = {
+        items: this.maintenanceItems,
+        lastUpdated: Date.now()
+    };
+    localStorage.setItem('maintenanceData', JSON.stringify(maintenanceData));
+    this.log('Maintenance items saved to storage');
+},
+
+// Load maintenance items from localStorage
+loadMaintenanceFromStorage: function() {
+    const saved = localStorage.getItem('maintenanceData');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            this.maintenanceItems = data.items || [];
+            this.log(`Loaded ${this.maintenanceItems.length} maintenance items from storage`);
+        } catch (error) {
+            this.log('Error loading maintenance data: ' + error.message, true);
+            this.maintenanceItems = [];
+        }
+    } else {
+        this.maintenanceItems = [];
+        this.log('No saved maintenance data found');
+    }
+    this.updateMaintenanceList();
+},
+  
   // Add this debug method
 debugLockPosition: function() {
   console.log('=== LOCK POSITION DEBUG ===');
@@ -4506,7 +4537,7 @@ startRide: function() {
   this.log("Ride started");
 },
 
-  updatePosition: function(pos) {
+ updatePosition: function(pos) {
     this.prevPosition = this.lastPosition;
     this.checkAccelerationAchievement();
     this.lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude, alt: pos.coords.altitude || 0 };
@@ -4515,65 +4546,74 @@ startRide: function() {
     this.movementHistory.push({ lat: this.lastPosition.lat, lon: this.lastPosition.lon, speed: this.currentSpeed, alt: this.lastPosition.alt, time: Date.now() });
 
     if (this.prevPosition) {
-      const distance = this.calculateDistance(this.prevPosition, this.lastPosition) / 1000;
-      this.totalDistance += distance;
-      this.todayDistance += distance;
-      this.weekDistance += distance;
-      this.monthDistance += distance;
+        const distance = this.calculateDistance(this.prevPosition, this.lastPosition) / 1000;
+        this.totalDistance += distance;
+        this.todayDistance += distance;
+        this.weekDistance += distance;
+        this.monthDistance += distance;
 
-      if (this.prevPosition.alt && this.lastPosition.alt && this.lastPosition.alt > this.prevPosition.alt) {
-        this.elevationGain += this.lastPosition.alt - this.prevPosition.alt;
-      }
-      this.elevationHistory.push({ elev: this.lastPosition.alt, time: Date.now() });
+        // UPDATE MAINTENANCE PROGRESS
+        this.updateMaintenanceProgress(distance);
+        
+        // Elevation gain calculation
+        if (this.prevPosition.alt && this.lastPosition.alt && this.lastPosition.alt > this.prevPosition.alt) {
+            this.elevationGain += this.lastPosition.alt - this.prevPosition.alt;
+        }
+        this.elevationHistory.push({ elev: this.lastPosition.alt, time: Date.now() });
     }
 
+    // Acceleration timing
     if (this.isRideActive && this.currentSpeed * 3.6 >= this.accelTarget && this.accelerationStartTime && !this.accelerationTimes.some(t => t)) {
-      const accelTime = (Date.now() - this.accelerationStartTime) / 1000;
-      this.accelerationTimes.push(accelTime);
-      this.accelerationStartTime = null;
+        const accelTime = (Date.now() - this.accelerationStartTime) / 1000;
+        this.accelerationTimes.push(accelTime);
+        this.accelerationStartTime = null;
     } else if (this.currentSpeed * 3.6 < this.accelTarget && !this.accelerationStartTime) {
-      this.accelerationStartTime = Date.now();
+        this.accelerationStartTime = Date.now();
     }
 
+    // Map updates
     this.userMarker.setLatLng([this.lastPosition.lat, this.lastPosition.lon]);
     this.line.addLatLng([this.lastPosition.lat, this.lastPosition.lon]);
     this.map.panTo([this.lastPosition.lat, this.lastPosition.lon]);
 
+    // Lock position guidance
     if (this.lockPosition) {
-      const distance = this.calculateDistance(this.lastPosition, this.lockPosition);
-      document.getElementById("distance").textContent = distance.toFixed(0);
-      document.getElementById("accuracy").textContent = pos.coords.accuracy.toFixed(1);
-      if (distance < 5 && !this.reachedPointDisplayed) {
-        document.getElementById("reachedMessage").style.display = "block";
-        this.reachedPointDisplayed = true;
-        setTimeout(() => {
-          document.getElementById("reachedMessage").style.display = "none";
-          this.reachedPointDisplayed = false;
-        }, 5000);
-        this.stop();
-      }
-      this.updateDirection();
-    }
-
-    if (this.autoLockEnabled) {
-      if (this.currentSpeed * 3.6 < this.speedThreshold) {
-        if (!this.lastStationaryTime) {
-          this.lastStationaryTime = Date.now();
-          this.lastStationaryPosition = this.lastPosition;
-        } else if (Date.now() - this.lastStationaryTime > parseInt(document.getElementById("stationaryTime").value) * 1000) {
-          this.lockCurrentPosition();
-          this.toggleAutoLock();
+        const distance = this.calculateDistance(this.lastPosition, this.lockPosition);
+        document.getElementById("distance").textContent = distance.toFixed(0);
+        document.getElementById("accuracy").textContent = pos.coords.accuracy.toFixed(1);
+        if (distance < 5 && !this.reachedPointDisplayed) {
+            document.getElementById("reachedMessage").style.display = "block";
+            this.reachedPointDisplayed = true;
+            setTimeout(() => {
+                document.getElementById("reachedMessage").style.display = "none";
+                this.reachedPointDisplayed = false;
+            }, 5000);
+            this.stop();
         }
-      } else {
-        this.lastStationaryTime = null;
-        this.lastStationaryPosition = null;
-      }
+        this.updateDirection();
     }
 
+    // Auto-lock functionality
+    if (this.autoLockEnabled) {
+        if (this.currentSpeed * 3.6 < this.speedThreshold) {
+            if (!this.lastStationaryTime) {
+                this.lastStationaryTime = Date.now();
+                this.lastStationaryPosition = this.lastPosition;
+            } else if (Date.now() - this.lastStationaryTime > parseInt(document.getElementById("stationaryTime").value) * 1000) {
+                this.lockCurrentPosition();
+                this.toggleAutoLock();
+            }
+        } else {
+            this.lastStationaryTime = null;
+            this.lastStationaryPosition = null;
+        }
+    }
+
+    // UI updates
     this.updateWheelAnimation();
     this.updateUI();
     this.startBleep();
-  },
+},
 
   handleGpsError: function(err) {
     this.log(`GPS error: ${err.message}`, true);
@@ -4977,152 +5017,209 @@ loadCalibrationFromStorage: function() {
     }
 },
 
-// Maintenance unit toggle
+
 toggleMaintenanceUnit: function(unit) {
-  const kmSettings = document.getElementById('kmSettings');
-  const weekSettings = document.getElementById('weekSettings');
-  
-  if (unit === 'km') {
-    kmSettings.style.display = 'block';
-    weekSettings.style.display = 'none';
-  } else {
-    kmSettings.style.display = 'none';
-    weekSettings.style.display = 'block';
-  }
+    const kmSettings = document.getElementById('kmSettings');
+    const weekSettings = document.getElementById('weekSettings');
+    
+    if (unit === 'km') {
+        kmSettings.style.display = 'block';
+        weekSettings.style.display = 'none';
+    } else {
+        kmSettings.style.display = 'none';
+        weekSettings.style.display = 'block';
+    }
 },
 
 // Updated save maintenance item
 saveMaintenanceItem: function() {
-  const name = document.getElementById("newMaintenanceName").value.trim();
-  const unit = document.querySelector('input[name="maintenanceUnit"]:checked').value;
-  
-  let interval, progress, unitLabel;
-  
-  if (unit === 'km') {
-    interval = parseInt(document.getElementById("newMaintenanceInterval").value);
-    progress = 0; // Start at 0 km
-    unitLabel = 'km';
-  } else {
-    interval = parseInt(document.getElementById("newMaintenanceWeeks").value);
-    progress = 0; // Start at 0 weeks passed
-    unitLabel = 'weeks';
-  }
-  
-  if (!name) {
-    alert('Please enter a maintenance item name');
-    return;
-  }
-  
-  if (!interval || interval <= 0) {
-    alert('Please set a valid interval');
-    return;
-  }
+    const name = document.getElementById("newMaintenanceName").value.trim();
+    const unit = document.querySelector('input[name="maintenanceUnit"]:checked').value;
+    
+    let interval, progress, unitLabel, lastReset;
+    
+    if (unit === 'km') {
+        interval = parseInt(document.getElementById("newMaintenanceInterval").value);
+        progress = 0; // Start at 0 km
+        unitLabel = 'km';
+    } else {
+        interval = parseInt(document.getElementById("newMaintenanceWeeks").value);
+        progress = 0; // Start at 0 weeks passed
+        unitLabel = 'weeks';
+    }
+    
+    if (!name) {
+        alert('Please enter a maintenance item name');
+        return;
+    }
+    
+    if (!interval || interval <= 0) {
+        alert('Please set a valid interval');
+        return;
+    }
 
-  this.maintenanceItems.push({ 
-    name, 
-    interval, 
-    progress, 
-    unit: unitLabel,
-    createdAt: Date.now(),
-    lastReset: Date.now()
-  });
-  
-  this.updateMaintenanceList();
-  
-  // Clear form
-  document.getElementById("newMaintenanceName").value = "";
-  document.getElementById("newMaintenanceInterval").value = "5000";
-  document.getElementById("newMaintenanceWeeks").value = "4";
-  document.getElementById("intervalValue").textContent = "5000 km";
-  document.getElementById("weeksValue").textContent = "4 weeks";
-  
-  this.log(`Maintenance item added: ${name} - every ${interval} ${unitLabel}`);
+    // Create maintenance item
+    const maintenanceItem = { 
+        id: Date.now(), // Unique ID
+        name, 
+        interval, 
+        progress, 
+        unit: unitLabel,
+        createdAt: Date.now(),
+        lastReset: Date.now(),
+        totalResets: 0
+    };
+
+    this.maintenanceItems.push(maintenanceItem);
+    
+    // SAVE TO STORAGE
+    this.saveMaintenanceToStorage();
+    
+    // Update display
+    this.updateMaintenanceList();
+    
+    // Clear form
+    document.getElementById("newMaintenanceName").value = "";
+    document.getElementById("newMaintenanceInterval").value = "5000";
+    document.getElementById("newMaintenanceWeeks").value = "4";
+    document.getElementById("intervalValue").textContent = "5000 km";
+    document.getElementById("weeksValue").textContent = "4 weeks";
+    
+    this.log(`Maintenance item added: ${name} - every ${interval} ${unitLabel}`);
+    this.showAlertNotification(`✅ Added: ${name} (every ${interval} ${unitLabel})`, 'success');
 },
 
 // Enhanced maintenance list display
 updateMaintenanceList: function() {
-  const list = document.getElementById("maintenanceList");
-  
-  if (this.maintenanceItems.length === 0) {
-    list.innerHTML = `
-      <div style="text-align: center; padding: 20px; color: #aaa;">
-        No maintenance items added yet.<br>
-        Add your first maintenance item above.
-      </div>
-    `;
-    return;
-  }
-
-  list.innerHTML = this.maintenanceItems.map((item, index) => {
-    const progressPercent = (item.progress / item.interval) * 100;
-    const progressColor = progressPercent < 70 ? 'var(--success-color)' : 
-                         progressPercent < 90 ? 'var(--warning-color)' : 'var(--error-color)';
+    const list = document.getElementById("maintenanceList");
     
-    let timeInfo = '';
-    if (item.unit === 'weeks') {
-      const weeksPassed = Math.floor((Date.now() - item.lastReset) / (7 * 24 * 60 * 60 * 1000));
-      timeInfo = `<div style="font-size: 0.8em; color: #aaa;">${weeksPassed} weeks passed</div>`;
-    } else {
-      timeInfo = `<div style="font-size: 0.8em; color: #aaa;">${item.progress}/${item.interval} km</div>`;
+    if (this.maintenanceItems.length === 0) {
+        list.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: #aaa;">
+                No maintenance items added yet.<br>
+                Add your first maintenance item above.
+            </div>
+        `;
+        return;
     }
-    
-    return `
-      <div class="maintenance-item" data-index="${index}">
-        <div style="flex: 1;">
-          <div style="font-weight: bold; margin-bottom: 5px;">${item.name}</div>
-          <div style="font-size: 0.9em; color: #ccc;">Every ${item.interval} ${item.unit}</div>
-          ${timeInfo}
-        </div>
-        <div class="maintenance-progress">
-          <div class="maintenance-progress-bar" style="width: ${progressPercent}%; background: ${progressColor};"></div>
-        </div>
-        <div style="margin-left: 10px;">
-          <button onclick="MotoFindBack.resetMaintenanceItem(${index})" title="Reset" style="background: var(--accent-color);">🔄</button>
-          <button onclick="MotoFindBack.removeMaintenanceItem(${index})" title="Remove" style="background: #ff3333;">🗑️</button>
-        </div>
-      </div>
-    `;
-  }).join('');
-},
 
-// Reset individual maintenance item
+    list.innerHTML = this.maintenanceItems.map((item, index) => {
+        let progressPercent, progressText, progressColor;
+        
+        if (item.unit === 'km') {
+            progressPercent = (item.progress / item.interval) * 100;
+            progressText = `${item.progress}/${item.interval} km`;
+        } else {
+            // For weeks, calculate how many weeks have passed since last reset
+            const weeksPassed = Math.floor((Date.now() - item.lastReset) / (7 * 24 * 60 * 60 * 1000));
+            progressPercent = (weeksPassed / item.interval) * 100;
+            progressText = `${weeksPassed} of ${item.interval} weeks`;
+            // Update progress for display
+            item.progress = weeksPassed;
+        }
+        
+        // Set color based on progress
+        if (progressPercent < 70) {
+            progressColor = 'var(--success-color)';
+        } else if (progressPercent < 90) {
+            progressColor = 'var(--warning-color)';
+        } else {
+            progressColor = 'var(--error-color)';
+        }
+        
+        // Calculate days until due
+        let dueInfo = '';
+        if (item.unit === 'km') {
+            const kmRemaining = item.interval - item.progress;
+            dueInfo = `<div style="font-size: 0.8em; color: #aaa;">${kmRemaining} km remaining</div>`;
+        } else {
+            const weeksRemaining = item.interval - item.progress;
+            const daysRemaining = weeksRemaining * 7;
+            dueInfo = `<div style="font-size: 0.8em; color: #aaa;">${daysRemaining} days remaining</div>`;
+        }
+        
+        return `
+            <div class="maintenance-item" data-id="${item.id}">
+                <div style="flex: 1;">
+                    <div style="font-weight: bold; margin-bottom: 5px;">${item.name}</div>
+                    <div style="font-size: 0.9em; color: #ccc;">Every ${item.interval} ${item.unit}</div>
+                    <div style="font-size: 0.8em; color: #aaa;">${progressText}</div>
+                    ${dueInfo}
+                </div>
+                <div class="maintenance-progress">
+                    <div class="maintenance-progress-bar" style="width: ${Math.min(100, progressPercent)}%; background: ${progressColor};"></div>
+                </div>
+                <div style="margin-left: 10px; display: flex; flex-direction: column; gap: 5px;">
+                    <button onclick="MotoFindBack.resetMaintenanceItem(${index})" title="Reset" style="background: var(--accent-color); padding: 5px;">🔄</button>
+                    <button onclick="MotoFindBack.removeMaintenanceItem(${index})" title="Remove" style="background: #ff3333; padding: 5px;">🗑️</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+},
+  
 resetMaintenanceItem: function(index) {
-  if (index >= 0 && index < this.maintenanceItems.length) {
-    this.maintenanceItems[index].progress = 0;
-    this.maintenanceItems[index].lastReset = Date.now();
-    this.updateMaintenanceList();
-    this.log(`Reset maintenance item: ${this.maintenanceItems[index].name}`);
-  }
-},
-
-// Remove individual maintenance item
-removeMaintenanceItem: function(index) {
-  if (index >= 0 && index < this.maintenanceItems.length && confirm('Remove this maintenance item?')) {
-    const itemName = this.maintenanceItems[index].name;
-    this.maintenanceItems.splice(index, 1);
-    this.updateMaintenanceList();
-    this.log(`Removed maintenance item: ${itemName}`);
-  }
-},
-
-// Update maintenance progress based on distance or time
-updateMaintenanceProgress: function() {
-  const now = Date.now();
-  
-  this.maintenanceItems.forEach(item => {
-    if (item.unit === 'km') {
-      // Update based on distance (you'll need to track distance since last reset)
-      // This would need to be integrated with your distance tracking
-    } else {
-      // Update based on time (weeks)
-      const weeksPassed = Math.floor((now - item.lastReset) / (7 * 24 * 60 * 60 * 1000));
-      item.progress = weeksPassed;
+    if (index >= 0 && index < this.maintenanceItems.length) {
+        const item = this.maintenanceItems[index];
+        item.progress = 0;
+        item.lastReset = Date.now();
+        item.totalResets = (item.totalResets || 0) + 1;
+        
+        // SAVE TO STORAGE
+        this.saveMaintenanceToStorage();
+        
+        this.updateMaintenanceList();
+        this.log(`Reset maintenance item: ${item.name}`);
+        this.showAlertNotification(`🔄 Reset: ${item.name}`, 'success');
     }
-  });
-  
-  this.updateMaintenanceList();
 },
 
+removeMaintenanceItem: function(index) {
+    if (index >= 0 && index < this.maintenanceItems.length && confirm('Remove this maintenance item?')) {
+        const itemName = this.maintenanceItems[index].name;
+        this.maintenanceItems.splice(index, 1);
+        
+        // SAVE TO STORAGE
+        this.saveMaintenanceToStorage();
+        
+        this.updateMaintenanceList();
+        this.log(`Removed maintenance item: ${itemName}`);
+        this.showAlertNotification(`🗑️ Removed: ${itemName}`, 'success');
+    }
+},
+  
+  updateMaintenanceProgress: function(distanceKm) {
+    let updated = false;
+    
+    this.maintenanceItems.forEach(item => {
+        if (item.unit === 'km') {
+            const oldProgress = item.progress;
+            item.progress += distanceKm;
+            
+            // Check if maintenance is due
+            if (item.progress >= item.interval && oldProgress < item.interval) {
+                this.showMaintenanceAlert(item);
+            }
+            
+            updated = true;
+        }
+    });
+    
+    if (updated) {
+        this.saveMaintenanceToStorage();
+        this.updateMaintenanceList();
+    }
+},
+  
+showMaintenanceAlert: function(item) {
+    const alertMessage = `🚨 MAINTENANCE DUE: ${item.name}\n\nInterval: ${item.interval} ${item.unit}\nCurrent: ${item.progress.toFixed(1)} ${item.unit}\n\nWould you like to reset this maintenance item?`;
+    
+    if (confirm(alertMessage)) {
+        this.resetMaintenanceItem(this.maintenanceItems.findIndex(i => i.id === item.id));
+    } else {
+        this.showAlertNotification(`⚠️ Maintenance Due: ${item.name}`, 'warning');
+    }
+},
 
   saveMaintenanceItem: function() {
     const name = document.getElementById("newMaintenanceName").value;

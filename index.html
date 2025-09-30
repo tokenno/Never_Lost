@@ -883,10 +883,10 @@ input[type="range"]::-webkit-slider-thumb {
       </div>
     </div>
     <div class="tabs">
-      <div class="tab active" data-tab="metrics">Metrics</div>
-      <div class="tab" data-tab="navigation">Nav</div>
+      <div class="tab active" data-tab="metrics">METRICS</div>
+      <div class="tab" data-tab="navigation">NAV</div>
       <div class="tab" data-tab="emergency">SOS</div>
-      <div class="tab" data-tab="maintenance">Upkeep</div>
+      <div class="tab" data-tab="maintenance">MAINT</div>
     </div>
  <div class="tab-content active" id="metrics-tab">
   <div class="panel">
@@ -896,8 +896,10 @@ input[type="range"]::-webkit-slider-thumb {
     <div class="panel">
       <h3>Ride Session Management</h3>
       <div class="control-group"> 
+        
+        <button id="startRideBtn" class="primary-btn">Let's Ride!</button> 
+        <button id="testBtn" class="primary-btn">Lock Position</button>
         <button id="startSessionBtn" class="primary-btn" onclick="MotoFindBack.startNewSession()">🏁 Start New Session</button> 
-        <button id="startRideBtn" class="primary-btn">Start Ride</button> 
         <button id="saveSessionBtn" class="secondary-btn" onclick="MotoFindBack.saveCurrentSession()">💾 Save Session</button> 
         <button id="quickSaveBtn" class="secondary-btn" onclick="MotoFindBack.quickSaveSession()">⚡ Quick Save</button> 
         <button id="calibrateBtn" class="secondary-btn">Calibrate Sensors</button>
@@ -906,6 +908,7 @@ input[type="range"]::-webkit-slider-thumb {
      
       </div>
        <div id="calibrateStatus" class="status" style="margin-top: 10px;">Sensors not calibrated</div>
+       <div id="gpsLockStatus" class="status" style="display: none;">GPS: Position not locked</div>
       <div id="sessionInfo" class="session-info" style="display: none;">
         <h4>Current Session</h4>
         <div class="session-stats">
@@ -1149,7 +1152,7 @@ input[type="range"]::-webkit-slider-thumb {
     </div>
   </div>
 </div>
-      </div>
+  
     <div class="tab-content" id="navigation-tab">
       <div class="panel">
         <h2>GPS Navigation</h2>
@@ -1347,7 +1350,7 @@ input[type="range"]::-webkit-slider-thumb {
         metrics, emergency features, maintenance tracking, and engine sound
         analysis. The spinning wheel in the header rotates to reflect your
         current speed, spinning faster as you ride faster.
-        <h2>🚀 Navigation Tab</h2>
+        <h2>🚀 Navigation Tab - NAV -</h2>
         <strong>GPS Navigation:</strong> Lock your position and navigate back
         with audio cues.<br>
         <strong>Calibrate Sensors:</strong> Place phone on bike in riding
@@ -1363,7 +1366,7 @@ input[type="range"]::-webkit-slider-thumb {
         position and navigate back with audio cues (initially muted for safety).<br>
         <strong>Mute Sound:</strong> Toggle audio feedback on/off. Starts muted
         to prevent unexpected sounds.<br>
-        <h2>📊 Metrics Tab</h2>
+        <h2>📊 Metrics Tab - METRIC -</h2>
         <strong>Ride Metrics:</strong> Track speed, distance, acceleration, and
         lean angles with real-time updates.<br>
         <strong>Cornering Analysis:</strong> Detects corners using GPS curvature
@@ -1396,7 +1399,7 @@ input[type="range"]::-webkit-slider-thumb {
         <strong>Quick Save:</strong> Instant save without prompts.<br>
         <strong>Export Session:</strong> Download ride data as JSON file.<br>
         <strong>Session History:</strong> Browse and manage all past rides.
-        <h2>🚨 Emergency Tab</h2>
+        <h2>🚨 Emergency Tab - SOS -</h2>
         <strong>Emergency Alert:</strong> Send your location to emergency
         contacts manually.<br>
         <strong>Crash Detection:</strong> Automatically sends location to
@@ -1407,7 +1410,7 @@ input[type="range"]::-webkit-slider-thumb {
         details.<br>
         <strong>Emergency Call:</strong> Direct access to 112/911 emergency
         services.
-        <h2>🔧 Maintenance Tab</h2>
+        <h2>🔧 Maintenance Tab - MAINT -</h2>
         <strong>Maintenance Alerts:</strong> Track service intervals based on
         mileage.<br>
         <strong>Progress Indicators:</strong> Visual progress bars for each
@@ -1670,6 +1673,7 @@ const MotoFindBack = {
 init: async function() {
   // Setup event listeners FIRST
   this.setupEventListeners();
+  this.updateGpsLockStatus();
  
   
   // Load data BEFORE any processing
@@ -3814,6 +3818,112 @@ updateWheelAnimation: function() {
     }
   },
 
+// Method to update GPS lock status display
+updateGpsLockStatus: function() {
+  const gpsLockStatus = document.getElementById('gpsLockStatus');
+  
+  if (!gpsLockStatus) return;
+  
+  if (this.isActive && this.lockPosition) {
+    gpsLockStatus.style.display = 'block';
+    gpsLockStatus.textContent = `GPS: Position locked at ${this.lockPosition.lat.toFixed(6)}, ${this.lockPosition.lon.toFixed(6)}`;
+    gpsLockStatus.className = 'status success';
+  } else {
+    gpsLockStatus.style.display = 'block';
+    gpsLockStatus.textContent = 'GPS: Position not locked';
+    gpsLockStatus.className = 'status';
+  }
+},
+
+// Method to show GPS lock success
+showGpsLockSuccess: function() {
+  const gpsLockStatus = document.getElementById('gpsLockStatus');
+  if (gpsLockStatus) {
+    gpsLockStatus.style.display = 'block';
+    gpsLockStatus.textContent = `GPS: Position locked!`;
+    gpsLockStatus.className = 'status success';
+    
+    // Update with coordinates after a short delay
+    setTimeout(() => {
+      if (this.lockPosition) {
+        gpsLockStatus.textContent = `GPS: Locked at ${this.lockPosition.lat.toFixed(6)}, ${this.lockPosition.lon.toFixed(6)}`;
+      }
+    }, 1000);
+  }
+},
+
+// Method to show GPS lock cleared
+showGpsLockCleared: function() {
+  const gpsLockStatus = document.getElementById('gpsLockStatus');
+  if (gpsLockStatus) {
+    gpsLockStatus.style.display = 'block';
+    gpsLockStatus.textContent = 'GPS: Position not locked';
+    gpsLockStatus.className = 'status';
+  }
+},
+
+quickGpsLock: function() {
+  this.log("📍 Smart GPS lock initiated...");
+  
+  const lockBtn = document.getElementById("testBtn");
+  const originalText = lockBtn.textContent;
+  
+  try {
+    // Step 1: Initialize audio if needed
+    if (!this.audioCtx || this.audioCtx.state === 'suspended') {
+      this.log("Initializing audio system...");
+      this.initAudio();
+      lockBtn.textContent = "⏳ Initializing Audio...";
+    }
+    
+    // Step 2: Check GPS readiness
+    const gpsStatus = this.isGPSReadyForLock();
+    
+    if (!gpsStatus.ready) {
+      lockBtn.textContent = "❌ No GPS Signal";
+      lockBtn.style.background = "linear-gradient(to bottom, #ff3333, #cc0000)";
+      
+      this.showAlertNotification(`GPS Not Ready: ${gpsStatus.reason}`, 'error');
+      this.log(`GPS lock failed: ${gpsStatus.reason}`, true);
+      
+      setTimeout(() => {
+        lockBtn.textContent = originalText;
+        lockBtn.style.background = "";
+      }, 2000);
+      return;
+    }
+    
+    // Step 3: Perform the lock
+    lockBtn.textContent = "⏳ Locking...";
+    this.lockCurrentPosition(); // This will now update the GPS status display
+    
+    // Step 4: Show success on button
+    lockBtn.textContent = "✅ Locked!";
+    lockBtn.style.background = "linear-gradient(to bottom, #00cc66, #00aa55)";
+    
+    // GPS status is now handled by lockCurrentPosition method
+    
+    // Reset button after 2 seconds
+    setTimeout(() => {
+      lockBtn.textContent = "🔓 Unlock Position";
+      lockBtn.style.background = "linear-gradient(to bottom, #ff6600, #e55d00)";
+    }, 2000);
+    
+  } catch (error) {
+    this.log(`Smart GPS lock error: ${error.message}`, true);
+    
+    lockBtn.textContent = "❌ Failed";
+    lockBtn.style.background = "linear-gradient(to bottom, #ff3333, #cc0000)";
+    
+    this.showAlertNotification(`Lock Failed: ${error.message}`, 'error');
+    
+    setTimeout(() => {
+      lockBtn.textContent = originalText;
+      lockBtn.style.background = "";
+    }, 2000);
+  }
+},
+
 initDeviceOrientation: function() {
   if (window.DeviceOrientationEvent) {
     window.addEventListener('deviceorientation', (event) => {
@@ -3907,9 +4017,10 @@ tabs.forEach(tab => {
   document.getElementById("quickSaveBtn").addEventListener("click", () => this.quickSaveSession());
   document.getElementById("exportSessionBtn").addEventListener("click", () => this.exportSession());
   document.getElementById("startRecordingBtn").addEventListener("click", () => this.startRecordingCalibration());
-
 document.getElementById("calibrationMonitorBtn").addEventListener("click", () => this.startCalibrationMonitor());
-
+document.getElementById("testBtn").addEventListener("click", () => {
+  this.quickGpsLock(); // Replace the old functionality with the new smart lock
+});
   document.querySelectorAll('input[name="maintenanceUnit"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
       this.toggleMaintenanceUnit(e.target.value);
@@ -4186,7 +4297,6 @@ lockCurrentPosition: function() {
   if (!this.lastPosition) {
     this.log("No position available to lock", true);
     
-    // Show helpful message based on whether GPS is active
     if (this.isRideActive) {
       alert("⌛ GPS is active but no position yet. Wait a few seconds for GPS to acquire your location.");
     } else {
@@ -4218,6 +4328,10 @@ lockCurrentPosition: function() {
   document.getElementById("muteBtn").disabled = false;
   
   this.updateGpsStatus("Position locked - audio guidance active");
+  
+  // UPDATE GPS LOCK STATUS IN METRICS TAB
+  this.showGpsLockSuccess();
+  
   this.log(`🎯 Position locked! Audio guidance started`);
   
   // Start audio guidance
@@ -4226,6 +4340,7 @@ lockCurrentPosition: function() {
   // Show visual confirmation
   this.showAlertNotification('📍 Position Locked! Audio guidance active', 'success');
 },
+  
   
   // Check if GPS is ready for locking
 isGPSReadyForLock: function() {
@@ -4461,37 +4576,42 @@ startRide: function() {
     document.getElementById("directionStatus").textContent = `Direction: ${angle.toFixed(0)}°`;
   },
 
-  stop: function() {
-    if (this.watchId) {
-      navigator.geolocation.clearWatch(this.watchId);
-      this.watchId = null;
-    }
-    clearTimeout(this.bleepTimer);
-    this.isActive = false;
-    this.isRideActive = false;
-    document.getElementById("startRideBtn").textContent = "Start Ride";
-    document.getElementById("startRideBtn").disabled = false;
-    document.getElementById("stopBtn").disabled = true;
-    document.getElementById("muteBtn").disabled = true;
-    document.getElementById("lockStatus").textContent = "Lock Status: Not locked";
-    document.getElementById("lockStatus").className = "status";
-    this.lockPosition = null;
-    this.updateWheelAnimation();
-    this.log("Tracking stopped");
-    if (this.rideStartTime) {
-      this.rideHistory.push({
-        startTime: this.rideStartTime,
-        distance: this.todayDistance,
-        maxSpeed: this.maxSpeed,
-        avgSpeed: this.calculateAverageSpeed(),
-        acceleration: this.calculateAccelerationTime(),
-        corners: this.corners.length,
-        elevationGain: this.elevationGain
-      });
-      this.rideStartTime = null;
-    }
-    this.updateRideHistory();
-  },
+stop: function() {
+  if (this.watchId) {
+    navigator.geolocation.clearWatch(this.watchId);
+    this.watchId = null;
+  }
+  clearTimeout(this.bleepTimer);
+  this.isActive = false;
+  this.isRideActive = false;
+  document.getElementById("startRideBtn").textContent = "Start Ride";
+  document.getElementById("startRideBtn").disabled = false;
+  document.getElementById("stopBtn").disabled = true;
+  document.getElementById("muteBtn").disabled = true;
+  document.getElementById("lockStatus").textContent = "Lock Status: Not locked";
+  document.getElementById("lockStatus").className = "status";
+  
+  // CLEAR GPS LOCK STATUS IN METRICS TAB
+  this.showGpsLockCleared();
+  
+  this.lockPosition = null;
+  this.updateWheelAnimation();
+  this.log("Tracking stopped");
+  
+  if (this.rideStartTime) {
+    this.rideHistory.push({
+      startTime: this.rideStartTime,
+      distance: this.todayDistance,
+      maxSpeed: this.maxSpeed,
+      avgSpeed: this.calculateAverageSpeed(),
+      acceleration: this.calculateAccelerationTime(),
+      corners: this.corners.length,
+      elevationGain: this.elevationGain
+    });
+    this.rideStartTime = null;
+  }
+  this.updateRideHistory();
+},
 
   resetMetrics: function() {
     this.maxSpeed = 0;

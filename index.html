@@ -1030,7 +1030,8 @@ input[type="range"]::-webkit-slider-thumb {
       <div class="panel">
         <h3>Engine Sound Analysis</h3>
         <div class="control-group"> <button id="startEngineAnalysis" class="primary-btn">Start
-            Engine Analysis</button> <button id="calibrateEngine" class="secondary-btn">Calibrate
+            Engine Analysis</button>   <button onclick="MotoFindBack.stopEngineAnalysis()" class="secondary-btn">Stop
+            Analysis</button> <button id="calibrateEngine" class="secondary-btn">Calibrate
             Engine</button> </div>
         <div class="dashboard">
           <div class="dashboard-item">
@@ -1050,15 +1051,9 @@ input[type="range"]::-webkit-slider-thumb {
             <div class="dashboard-value" id="engineVolume">-- dB</div>
           </div>
         </div>
-        <div class="control-group">
-          <div class="control-item">
-            <h4>Shift Analysis</h4>
-            <div>Total Shifts: <span id="totalShifts">0</span></div>
-            <div>Last Shift Quality: <span id="lastShiftQuality">--</span></div>
-            <div>Avg Shift RPM: <span id="avgShiftRPM">--</span></div>
-          </div>
+   
         </div>
-        <!-- Replace the calibration section with this -->
+      
         <div class="control-item">
           <h4>Impulse Response Calibration</h4>
           <div class="control-group"> <button id="startRecordingBtn" class="primary-btn"
@@ -1066,6 +1061,15 @@ input[type="range"]::-webkit-slider-thumb {
               🎤 Record Engine Sample </button> <button class="secondary-btn"
               onclick="MotoFindBack.stopRecordingCalibration()">
               Stop Recording </button> </div>
+          <!-- Add to your engine analysis section -->
+<div style="border: 1px solid #ff6600; padding: 10px; margin: 10px 0; border-radius: 5px;">
+  <h4>🔧 Calibration Debug</h4>
+<button id="calibrationMonitorBtn" onclick="MotoFindBack.startCalibrationMonitor()" class="secondary-btn">Start Monitor</button>
+  <button onclick="MotoFindBack.manualCalibration()" class="secondary-btn">Manual Calibration</button>
+  
+<button onclick="MotoFindBack.resetCalibration()" class="secondary-btn" style="background: var(--error-color);">
+  Reset Calibration
+</button>
           <div class="recording-instructions">
             <p><strong>How to calibrate:</strong></p>
             <ol style="text-align: left; font-size: 0.9em; color: #ccc;">
@@ -1075,43 +1079,34 @@ input[type="range"]::-webkit-slider-thumb {
               <li>System will auto-analyze your engine sound</li>
             </ol>
           </div>
+         <!-- Real-time frequency visualization -->
+        <div class="control-item">
+          <h4>Sound Spectrum</h4>
+          <canvas id="frequencyCanvas" width="100%" height="100" style="background: #222; border-radius: 5px;"></canvas>
+        </div>
+   
           <div class="calibration-info">
             <div>Bike Profile: <span id="bikeProfileName">Uncalibrated</span></div>
             <div>Calibration: <span id="calibrationStatus">Not calibrated</span></div>
             <div>Detected Range: <span id="detectedRange">--</span></div>
             <div>Calibration Factor: <span id="calibrationMultiplier">--</span></div>
-          </div>
-        </div>
-        <!-- Add manual override section -->
-        <div class="control-item">
-          <h4>Manual Calibration Override</h4>
-          <label>Reference RPM: <span id="referenceRpmValue">0</span></label> <input
-            id="referenceRpm"
-            min="1000"
-            max="12000"
-            step="100"
-            value="5000"
-            oninput="MotoFindBack.updateReferenceRPM(this.value)"
-            type="range">
-          <label>Volume Threshold: <span id="volumeThresholdValue">20</span> dB</label>
-          <input id="volumeThreshold" min="1" max="50" step="1" value="20" oninput="MotoFindBack.updateVolumeThreshold(this.value)"
-            type="range">
-          <button onclick="MotoFindBack.applyManualCalibration()" class="secondary-btn">
-            Apply Manual Calibration </button> </div>
+          </div> 
+  
         <div class="control-item">
           <h4>Debug Info</h4>
           <div>Microphone Status: <span id="micStatus">Not Started</span></div>
           <div>Dominant Frequency: <span id="debugFreq">0</span> Hz</div>
           <div>Max Volume: <span id="debugVolume">0</span></div>
           <div>Total Energy: <span id="debugEnergy">0</span></div>
-          <button onclick="MotoFindBack.stopEngineAnalysis()" class="secondary-btn">Stop
-            Analysis</button> </div>
-        <!-- Real-time frequency visualization -->
-        <div class="control-item">
-          <h4>Sound Spectrum</h4>
-          <canvas id="frequencyCanvas" width="100%" height="100" style="background: #222; border-radius: 5px;"></canvas>
-        </div>
-      </div>
+         </div>  
+               <div class="control-group">
+          <div class="control-item">
+            <h4>Shift Analysis</h4>
+            <div>Total Shifts: <span id="totalShifts">0</span></div>
+            <div>Last Shift Quality: <span id="lastShiftQuality">--</span></div>
+            <div>Avg Shift RPM: <span id="avgShiftRPM">--</span></div>
+          </div></div>
+ 
       <div class="panel">
         <h3>Cornering Analysis</h3>
         <!-- Add this canvas for the corner chart --> <canvas id="cornerChart"
@@ -1506,7 +1501,7 @@ input[type="range"]::-webkit-slider-thumb {
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
 const MotoFindBack = {
-  maintenanceItems: [],
+  maintenanceItems: [], 
   audioCtx: null,
   watchId: null,
   bleepTimer: null,
@@ -1520,18 +1515,17 @@ const MotoFindBack = {
   currentTempo: 1000,
   emergencyEnabled: true,
   autoLockEnabled: false,
-    loadPreviousSessions: true,
+  loadPreviousSessions: true,
   showSessionPrompt: true,
   autoLockDebounce: null,
   currentSpeed: 0,
   reachedPointDisplayed: false,
-  isMuted: false,
+  isMuted: true, 
   isStationary: false,
   lastStationaryTime: null,
   lastStationaryPosition: null,
   speedThreshold: 10,
   maxSpeed: 0,
-   isMuted: true,
   totalDistance: 0,
   todayDistance: 0,
   weekDistance: 0,
@@ -1549,7 +1543,6 @@ const MotoFindBack = {
   corners: [],
   cornerEntrySpeeds: [],
   cornerExitSpeeds: [],
-  maintenanceItems: [],
   emergencyContacts: [],
   rideHistory: [],
   isCalibrating: false,
@@ -1566,23 +1559,21 @@ const MotoFindBack = {
   line: null,
   accelTarget: 100,
   elevationHistory: [],
-  canvas: null, // Will store the canvas element
+  canvas: null,
   cornerChart: null,
   tripleTapCount: 0,
   tripleTapTimeout: null,
   lastTapTime: 0,
   isOverlayVisible: false,
   
-  
   accelerationPopup: {
-  visible: false,
-  achievedTime: null,
-  startTime: null,
-  element: null
-},
+    visible: false,
+    achievedTime: null,
+    startTime: null,
+    element: null
+  },
 
-  
-  // Session data structure - MOVED OUTSIDE audioAnalysis
+  // Session data structure
   sessionTemplate: {
     id: null,
     name: '',
@@ -1624,7 +1615,7 @@ const MotoFindBack = {
     maxDb: 0,
     frequencyData: new Uint8Array(1024),
     
-    // Calibration and recording moved INSIDE audioAnalysis
+   
     calibration: {
       isCalibrated: false,
       recordedSample: null,
@@ -1632,26 +1623,25 @@ const MotoFindBack = {
       referenceRPM: 0,
       frequencyResponse: [],
       volumeThreshold: 20,
-      minRPM: 1000,
-      maxRPM: 12000,
+      minRPM: 800,
+      maxRPM: 16000,
       bikeProfile: {
         name: 'Uncalibrated',
         type: 'unknown',
-        redline: 8000,
-        idleRPM: 1500
+        redline: 12000,
+        idleRPM: 1200
       }
-      
-    },
+    }, 
+    
     recording: {
       isRecording: false,
       recordingBuffer: [],
       recordingStartTime: 0,
-      sampleDuration: 3000, // 3 seconds
+      sampleDuration: 3000,
       analysisBuffer: null
-    }
+    }  
     
   },
-  
  
 init: async function() {
   // Setup event listeners FIRST
@@ -1673,6 +1663,7 @@ init: async function() {
   this.initMap();
   this.loadContactsFromStorage();
   this.setupTripleTapDetection();
+  this.loadCalibrationFromStorage();
   
   // Auto-start session when ride starts
   const originalStartRide = this.startRide;
@@ -2461,7 +2452,8 @@ stopEngineAnalysis: function() {
   this.log("Engine sound analysis stopped");
 },
   
-  // Recording-based calibration
+
+// Enhanced recording with better feedback
 startRecordingCalibration: function() {
   if (!this.audioAnalysis.isListening) {
     alert('Please start engine analysis first');
@@ -2472,18 +2464,41 @@ startRecordingCalibration: function() {
   this.audioAnalysis.recording.recordingBuffer = [];
   this.audioAnalysis.recording.recordingStartTime = Date.now();
   
-  document.getElementById('calibrationStatus').textContent = '🎤 Recording... Rev engine steadily for 3 seconds';
+  // Reset volume threshold for calibration
+  this.audioAnalysis.calibration.volumeThreshold = 10; // Lower threshold for calibration
+  
+  document.getElementById('calibrationStatus').textContent = '🎤 Recording... Rev engine steadily (3 seconds)';
   document.getElementById('calibrationStatus').style.color = 'var(--warning-color)';
   document.getElementById('startRecordingBtn').textContent = 'Recording...';
   document.getElementById('startRecordingBtn').style.background = 'linear-gradient(to bottom, #ff3333, #cc0000)';
   
-  this.log('Started recording calibration sample');
+  console.log('=== CALIBRATION RECORDING STARTED ===');
   
+  // Show real-time feedback during recording
+  let feedbackCount = 0;
+  const feedbackInterval = setInterval(() => {
+    if (!this.audioAnalysis.recording.isRecording) {
+      clearInterval(feedbackInterval);
+      return;
+    }
+    
+    const currentFreq = this.findDominantFrequency();
+    const currentDb = this.audioAnalysis.maxDb;
+    
+    document.getElementById('calibrationStatus').textContent = 
+      `🎤 Recording... Freq: ${currentFreq.toFixed(1)}Hz, Vol: ${currentDb}dB (${feedbackCount + 1}/3)`;
+    
+    feedbackCount++;
+  }, 1000);
+
   // Set timeout to stop recording automatically
   setTimeout(() => {
     if (this.audioAnalysis.recording.isRecording) {
+      console.log('=== CALIBRATION RECORDING COMPLETED ===');
+      console.log('Samples recorded:', this.audioAnalysis.recording.recordingBuffer.length);
       this.stopRecordingCalibration();
     }
+    clearInterval(feedbackInterval);
   }, this.audioAnalysis.recording.sampleDuration);
 },
 
@@ -2525,72 +2540,116 @@ processRecordedSample: function() {
   }
 },
 
+// Enhanced analyzeRecordedSample with debugging
 analyzeRecordedSample: function(recordingBuffer) {
+  console.log('=== CALIBRATION DEBUG START ===');
+  console.log('Recording buffer length:', recordingBuffer.length);
+  
   try {
-    // Extract frequency characteristics from recording
+    const validSamples = recordingBuffer.filter(sample => 
+      sample.maxDb > this.audioAnalysis.calibration.volumeThreshold
+    );
+    
+    if (validSamples.length === 0) {
+      return {
+        success: false,
+        error: 'No engine sound detected - rev engine louder'
+      };
+    }
+
     const frequencyStats = this.analyzeFrequencyCharacteristics(recordingBuffer);
     const amplitudeStats = this.analyzeAmplitudeCharacteristics(recordingBuffer);
+
+    // Enhanced validation with motorcycle knowledge
+    if (frequencyStats.dominantFreq < 30) { // ~1800 RPM minimum
+      return {
+        success: false,
+        error: 'Engine sound too low - rev higher (above 1800 RPM)'
+      };
+    }
     
-    // Determine engine type based on frequency profile
+    if (frequencyStats.dominantFreq > 266) { // ~16,000 RPM maximum
+      return {
+        success: false,
+        error: 'Unrealistically high RPM detected - check microphone'
+      };
+    }
+
     const engineType = this.classifyEngineType(frequencyStats);
-    
-    // Estimate RPM range based on frequency content
     const rpmEstimate = this.estimateRPMFromFrequency(frequencyStats.dominantFreq, engineType);
     
-    // Calculate RPM range
-    const idleRPM = Math.max(800, rpmEstimate * 0.15);
-    const redlineRPM = rpmEstimate * 1.8;
+    // Validate against motorcycle reality
+    const validatedRPM = this.validateRPMEstimate(rpmEstimate, engineType);
     
-    // Create frequency response profile
+    if (!validatedRPM.valid) {
+      return {
+        success: false,
+        error: validatedRPM.reason
+      };
+    }
+
     const frequencyResponse = this.buildFrequencyResponse(recordingBuffer);
+    
+    console.log('=== CALIBRATION DEBUG END - SUCCESS ===');
     
     return {
       success: true,
       dominantFrequency: frequencyStats.dominantFreq,
-      estimatedRPM: rpmEstimate,
+      estimatedRPM: validatedRPM.rpm,
       engineType: engineType,
-      idleRPM: idleRPM,
-      redlineRPM: redlineRPM,
+      idleRPM: this.calculateIdleRPM(validatedRPM.rpm, engineType),
+      redlineRPM: this.calculateRedlineRPM(validatedRPM.rpm, engineType),
       frequencyResponse: frequencyResponse,
       harmonics: frequencyStats.harmonics,
       volumeRange: amplitudeStats
     };
     
   } catch (error) {
+    console.error('Calibration error:', error);
     return {
       success: false,
-      error: error.message
+      error: 'Analysis failed: ' + error.message
     };
   }
 },
 
+// Enhanced frequency analysis
 analyzeFrequencyCharacteristics: function(recordingBuffer) {
   let dominantFreq = 0;
   let maxAmplitude = 0;
   const harmonics = [];
-  
+  const allFrequencies = [];
+
   // Analyze frequency content across all samples
   recordingBuffer.forEach(sample => {
-    if (sample.maxDb > maxAmplitude) {
-      maxAmplitude = sample.maxDb;
-      dominantFreq = sample.dominantFreq;
-    }
-    
-    // Collect harmonic information
-    if (sample.dominantFreq > 50) { // Ignore very low frequencies
-      harmonics.push({
-        freq: sample.dominantFreq,
-        amplitude: sample.maxDb,
-        time: sample.timestamp
-      });
+    if (sample.maxDb > this.audioAnalysis.calibration.volumeThreshold) {
+      allFrequencies.push(sample.dominantFreq);
+      
+      if (sample.maxDb > maxAmplitude) {
+        maxAmplitude = sample.maxDb;
+        dominantFreq = sample.dominantFreq;
+      }
+      
+      // Collect harmonic information for frequencies above 50Hz
+      if (sample.dominantFreq > 50) {
+        harmonics.push({
+          freq: sample.dominantFreq,
+          amplitude: sample.maxDb,
+          time: sample.timestamp
+        });
+      }
     }
   });
-  
+
+  console.log('All detected frequencies:', allFrequencies);
+  console.log('Dominant frequency:', dominantFreq, 'Amplitude:', maxAmplitude);
+
   return {
     dominantFreq: dominantFreq,
     maxAmplitude: maxAmplitude,
     harmonics: harmonics,
-    frequencyVariance: this.calculateFrequencyVariance(harmonics)
+    frequencyVariance: this.calculateFrequencyVariance(harmonics),
+    validSamples: allFrequencies.length
   };
 },
 
@@ -2607,6 +2666,17 @@ analyzeAmplitudeCharacteristics: function(recordingBuffer) {
     dynamicRange: maxAmplitude - minAmplitude
   };
 },
+  
+  // Add this method to fix the calibration error
+calculateFrequencyVariance: function(harmonics) {
+  if (!harmonics || harmonics.length === 0) return 0;
+  
+  const frequencies = harmonics.map(h => h.freq);
+  const mean = frequencies.reduce((a, b) => a + b, 0) / frequencies.length;
+  const variance = frequencies.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / frequencies.length;
+  
+  return variance;
+},
 
 classifyEngineType: function(frequencyStats) {
   const dominantFreq = frequencyStats.dominantFreq;
@@ -2617,22 +2687,95 @@ classifyEngineType: function(frequencyStats) {
   return 'high-rev';
 },
 
+// Enhanced RPM estimation with motorcycle knowledge
 estimateRPMFromFrequency: function(dominantFreq, engineType) {
   // Base RPM estimation with engine type adjustments
-  const baseRPM = dominantFreq * 60; // Basic conversion
+  let baseRPM = dominantFreq * 60; // Basic conversion (Hz to RPM)
   
-  switch(engineType) {
-    case 'cruiser':
-      return Math.min(6000, baseRPM * 0.8);
-    case 'standard':
-      return Math.min(9000, baseRPM * 1.0);
-    case 'sport':
-      return Math.min(12000, baseRPM * 1.2);
-    case 'high-rev':
-      return Math.min(14000, baseRPM * 1.4);
-    default:
-      return Math.min(10000, baseRPM * 1.0);
+  // Engine type specific multipliers based on real motorcycle data
+  const multipliers = {
+    'cruiser': 0.7,    // Lower revving
+    'standard': 1.0,   // Average
+    'sport': 1.3,      // Higher revving
+    'high-rev': 1.6    // Very high revving
+  };
+  
+  const multiplier = multipliers[engineType] || 1.0;
+  const estimatedRPM = baseRPM * multiplier;
+  
+  return this.normalizeRPMToMotorcycleRange(estimatedRPM);
+},
+  
+  // Validate RPM estimate against known motorcycle ranges
+validateRPMEstimate: function(rpm, engineType) {
+  const engineLimits = {
+    'cruiser': { min: 800, max: 7000 },
+    'standard': { min: 1000, max: 10000 },
+    'sport': { min: 1200, max: 14000 },
+    'high-rev': { min: 1500, max: 16000 }
+  };
+  
+  const limits = engineLimits[engineType] || { min: 800, max: 16000 };
+  
+  if (rpm < limits.min) {
+    return {
+      valid: false,
+      reason: `RPM too low for ${engineType} (${rpm.toFixed(0)} < ${limits.min}) - rev higher`
+    };
   }
+  
+  if (rpm > limits.max) {
+    return {
+      valid: false,
+      reason: `RPM too high for ${engineType} (${rpm.toFixed(0)} > ${limits.max}) - unusual engine`
+    };
+  }
+  
+  return { valid: true, rpm: rpm };
+},
+
+  // Calculate realistic idle RPM based on engine type
+calculateIdleRPM: function(calibrationRPM, engineType) {
+  const idleRatios = {
+    'cruiser': 0.15,    // 15% of calibration RPM
+    'standard': 0.18,   // 18% of calibration RPM  
+    'sport': 0.20,      // 20% of calibration RPM
+    'high-rev': 0.25    // 25% of calibration RPM
+  };
+  
+  const ratio = idleRatios[engineType] || 0.18;
+  const calculatedIdle = calibrationRPM * ratio;
+  
+  // Ensure idle is within motorcycle ranges
+  return Math.max(800, Math.min(2000, calculatedIdle));
+},
+
+// Calculate realistic redline RPM based on engine type
+calculateRedlineRPM: function(calibrationRPM, engineType) {
+  const redlineRatios = {
+    'cruiser': 1.4,     // 40% above calibration
+    'standard': 1.6,    // 60% above calibration
+    'sport': 1.8,       // 80% above calibration
+    'high-rev': 2.0     // 100% above calibration
+  };
+  
+  const ratio = redlineRatios[engineType] || 1.6;
+  const calculatedRedline = calibrationRPM * ratio;
+  
+  // Ensure redline is within motorcycle ranges
+  return Math.max(6000, Math.min(16000, calculatedRedline));
+},
+
+// Enhanced engine type classification
+classifyEngineType: function(frequencyStats) {
+  const dominantFreq = frequencyStats.dominantFreq;
+  const baseRPM = dominantFreq * 60;
+  
+  // Classify based on both frequency and RPM characteristics
+  if (baseRPM < 5000) return 'cruiser';
+  if (baseRPM < 8000) return 'standard'; 
+  if (baseRPM < 12000) return 'sport';
+  return 'high-rev';
 },
 
 buildFrequencyResponse: function(recordingBuffer) {
@@ -2652,6 +2795,30 @@ buildFrequencyResponse: function(recordingBuffer) {
   return response;
 },
 
+  resetCalibration: function() {
+  if (confirm('Reset engine calibration? This cannot be undone.')) {
+    this.audioAnalysis.calibration = {
+      isCalibrated: false,
+      recordedSample: null,
+      referenceFrequency: 0,
+      referenceRPM: 0,
+      frequencyResponse: [],
+      volumeThreshold: 20,
+      minRPM: 1000,
+      maxRPM: 12000,
+      bikeProfile: {
+        name: 'Uncalibrated',
+        type: 'unknown',
+        redline: 8000,
+        idleRPM: 1500
+      }
+    };
+    localStorage.removeItem('engineCalibration');
+    this.updateEngineDisplay();
+    this.log('Calibration reset');
+  }
+},
+  
 applyCalibrationProfile: function(analysis) {
   this.audioAnalysis.calibration.isCalibrated = true;
   this.audioAnalysis.calibration.referenceFrequency = analysis.dominantFrequency;
@@ -2660,6 +2827,7 @@ applyCalibrationProfile: function(analysis) {
   this.audioAnalysis.calibration.minRPM = analysis.idleRPM;
   this.audioAnalysis.calibration.maxRPM = analysis.redlineRPM;
   this.audioAnalysis.calibration.volumeThreshold = analysis.volumeRange.average * 0.3;
+   this.saveCalibrationToStorage();
   
   this.audioAnalysis.calibration.bikeProfile = {
     name: `Calibrated ${analysis.engineType}`,
@@ -2688,6 +2856,33 @@ frequencyToRPM: function(frequency) {
     return this.frequencyToRPMBasic(frequency);
   }
 },
+  
+  // Realistic RPM calculation with motorcycle-specific ranges
+frequencyToRPMRealistic: function(frequency) {
+  // Basic calculation for uncalibrated state
+  const baseRPM = frequency * 60;
+  
+  // Apply motorcycle-specific limits
+  return this.normalizeRPMToMotorcycleRange(baseRPM);
+},
+
+  // Normalize RPM to realistic motorcycle ranges
+normalizeRPMToMotorcycleRange: function(rpm) {
+  // Motorcycle-specific limits
+  const MIN_MOTORCYCLE_RPM = 800;
+  const MAX_MOTORCYCLE_RPM = 16000;
+  const MIN_POSSIBLE_RPM = 500;   // Absolute minimum for any engine
+  const MAX_POSSIBLE_RPM = 20000; // Absolute maximum for any motorcycle
+  
+  // If RPM is way outside motorcycle ranges, it's probably noise
+  if (rpm < MIN_POSSIBLE_RPM || rpm > MAX_POSSIBLE_RPM) {
+    return 0;
+  }
+  
+  // Clamp to motorcycle ranges
+  return Math.max(MIN_MOTORCYCLE_RPM, Math.min(MAX_MOTORCYCLE_RPM, rpm));
+},
+
 
 calculateRPMFromCalibration: function(currentFrequency) {
   const cal = this.audioAnalysis.calibration;
@@ -2737,6 +2932,98 @@ updateReferenceRPM: function(rpm) {
   document.getElementById('referenceRpmValue').textContent = rpm;
   this.manualReferenceRPM = parseInt(rpm);
 },
+  
+  // Manual calibration as fallback
+manualCalibration: function() {
+  const manualRPM = prompt('Enter the RPM your engine was at during recording (e.g., 5000):');
+  if (!manualRPM || isNaN(manualRPM)) {
+    alert('Please enter a valid RPM number');
+    return;
+  }
+
+  const rpm = parseInt(manualRPM);
+  if (rpm < 1000 || rpm > 15000) {
+    alert('Please enter a realistic RPM (1000-15000)');
+    return;
+  }
+
+  // Use current frequency reading
+  const currentFreq = this.findDominantFrequency();
+  if (currentFreq < 20) {
+    alert('No engine sound detected. Please start engine analysis and rev engine.');
+    return;
+  }
+
+  this.audioAnalysis.calibration.isCalibrated = true;
+  this.audioAnalysis.calibration.referenceFrequency = currentFreq;
+  this.audioAnalysis.calibration.referenceRPM = rpm;
+  this.audioAnalysis.calibration.minRPM = Math.max(800, rpm * 0.15);
+  this.audioAnalysis.calibration.maxRPM = rpm * 1.8;
+    this.saveCalibrationToStorage();
+
+
+  document.getElementById('calibrationStatus').textContent = `✅ Manual Calibration: ${rpm} RPM`;
+  document.getElementById('calibrationStatus').style.color = 'var(--success-color)';
+  document.getElementById('detectedRange').textContent = `${this.audioAnalysis.calibration.minRPM.toFixed(0)}-${this.audioAnalysis.calibration.maxRPM.toFixed(0)} RPM`;
+
+  this.log(`Manual calibration applied: ${currentFreq.toFixed(1)} Hz = ${rpm} RPM`);
+},
+  
+  // Real-time monitoring for debugging
+startCalibrationMonitor: function() {
+  if (!this.audioAnalysis.isListening) {
+    alert('Start engine analysis first');
+    return;
+  }
+
+  console.log('=== STARTING CALIBRATION MONITOR ===');
+  let monitorCount = 0;
+  const monitorInterval = setInterval(() => {
+    const dominantFreq = this.findDominantFrequency();
+    const maxDb = this.audioAnalysis.maxDb;
+    
+    console.log(`Monitor [${monitorCount++}]: Freq: ${dominantFreq.toFixed(1)}Hz, Volume: ${maxDb}dB`);
+    
+    // Visual feedback
+    document.getElementById('calibrationStatus').textContent = 
+      `Monitoring... Freq: ${dominantFreq.toFixed(1)}Hz, Vol: ${maxDb}dB`;
+    
+    if (monitorCount > 20) { // Stop after 20 readings
+      clearInterval(monitorInterval);
+      console.log('=== CALIBRATION MONITOR ENDED ===');
+      document.getElementById('calibrationStatus').textContent = 'Monitor completed - check console';
+    }
+  }, 500);
+},
+
+// Add to your MotoFindBack object
+saveCalibrationToStorage: function() {
+  if (this.audioAnalysis.calibration.isCalibrated) {
+    localStorage.setItem('engineCalibration', JSON.stringify(this.audioAnalysis.calibration));
+    this.log('Calibration saved to storage');
+  }
+},
+
+loadCalibrationFromStorage: function() {
+  const saved = localStorage.getItem('engineCalibration');
+  if (saved) {
+    try {
+      const calibration = JSON.parse(saved);
+      this.audioAnalysis.calibration = { ...this.audioAnalysis.calibration, ...calibration };
+      
+      // Update UI
+      document.getElementById('bikeProfileName').textContent = this.audioAnalysis.calibration.bikeProfile.name;
+      document.getElementById('calibrationStatus').textContent = 'Calibrated (loaded)';
+      document.getElementById('calibrationStatus').style.color = 'var(--success-color)';
+      document.getElementById('detectedRange').textContent = 
+        `${this.audioAnalysis.calibration.minRPM.toFixed(0)}-${this.audioAnalysis.calibration.maxRPM.toFixed(0)} RPM`;
+      
+      this.log('Calibration loaded from storage');
+    } catch (error) {
+      this.log('Error loading calibration: ' + error.message, true);
+    }
+  }
+}, 
 
 applyManualCalibration: function() {
   if (!this.audioAnalysis.isListening) {
@@ -2759,6 +3046,7 @@ applyManualCalibration: function() {
   this.audioAnalysis.calibration.isCalibrated = true;
   this.audioAnalysis.calibration.referenceFrequency = currentFreq;
   this.audioAnalysis.calibration.referenceRPM = this.manualReferenceRPM;
+  this.saveCalibrationToStorage();
   
   document.getElementById('calibrationStatus').textContent = `Manual: ${this.manualReferenceRPM} RPM`;
   document.getElementById('calibrationStatus').style.color = 'var(--success-color)';
@@ -3571,6 +3859,9 @@ setupEventListeners: function() {
   document.getElementById("quickSaveBtn").addEventListener("click", () => this.quickSaveSession());
   document.getElementById("exportSessionBtn").addEventListener("click", () => this.exportSession());
   document.getElementById("startRecordingBtn").addEventListener("click", () => this.startRecordingCalibration());
+
+document.getElementById("calibrationMonitorBtn").addEventListener("click", () => this.startCalibrationMonitor());
+
   document.querySelectorAll('input[name="maintenanceUnit"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
       this.toggleMaintenanceUnit(e.target.value);

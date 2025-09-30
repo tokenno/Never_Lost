@@ -897,7 +897,10 @@ input[type="range"]::-webkit-slider-thumb {
               onclick="MotoFindBack.startNewSession()">🏁
               Start New Session</button> <button id="startRideBtn" class="primary-btn">Start
               Ride</button> <button id="saveSessionBtn" class="secondary-btn" onclick="MotoFindBack.saveCurrentSession()">💾
-              Save Session</button> <button id="quickSaveBtn" class="secondary-btn"
+              Save Session</button>  <button id="calibrateBtn" class="secondary-btn">Calibrate
+            Sensors</button> <button onclick="MotoFindBack.toggleEmergency()"
+            class="secondary-btn">
+            Emergency: <span id="emergencyStatus">ENABLED</span> </button>  <button id="quickSaveBtn" class="secondary-btn"
               onclick="MotoFindBack.quickSaveSession()">⚡
               Quick Save</button> <button id="exportSessionBtn" class="secondary-btn"
               onclick="MotoFindBack.exportSession()">📤
@@ -913,6 +916,16 @@ input[type="range"]::-webkit-slider-thumb {
             </div>
           </div>
         </div>
+        <div class="panel">
+    <h3>Sensor Calibration Status</h3>
+    <div class="calibration-info">
+        <div id="calibrateStatus" class="status">Sensors not calibrated</div>
+        <div>Lean Offset: <span id="calibrationLeanOffset">0°</span></div>
+        <div>Normal Riding Position: <span id="calibrationNormalBeta">--°</span></div>
+        <div>Crash Threshold: <span id="calibrationCrashThreshold">--°</span></div>
+        <div>Current Deviation: <span id="currentDeviation">--°</span></div>
+    </div>
+</div>
         <!-- Session History -->
         <div class="panel">
           <h3>Session History</h3>
@@ -981,8 +994,6 @@ input[type="range"]::-webkit-slider-thumb {
           <span id="accelTargetValue">100 km/h</span> </div>
         <div style="margin: 10px 0;"> <button onclick="MotoFindBack.testAccelerationPopup()"
             class="secondary-btn">Test
-            Popup</button> <button onclick="MotoFindBack.hideAccelerationPopup()"
-            class="secondary-btn">Clear
             Popup</button> </div>
       </div>
       <!-- Lean Angle Display -->
@@ -1140,8 +1151,7 @@ input[type="range"]::-webkit-slider-thumb {
         <h2>GPS Navigation</h2>
         <p class="warning">LOCK POSITION</p>
         <div class="control-group"> <button id="testBtn" class="primary-btn">Lock
-            Position</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
-            Sensors</button> <button id="autoLockBtn" class="secondary-btn" disabled="disabled">Auto-Lock
+            Position</button><button id="autoLockBtn" class="secondary-btn" disabled="disabled">Auto-Lock
             Mode</button> <button id="muteBtn" class="secondary-btn" disabled="disabled">Mute
             Sound</button> <button id="stopBtn" class="secondary-btn" disabled="disabled">Stop</button>
         </div>
@@ -1210,9 +1220,7 @@ input[type="range"]::-webkit-slider-thumb {
         <h2>Emergency Features</h2>
         <div class="control-group"> <button id="emergencyBtn" class="emergency-btn">EMERGENCY
             ALERT</button> </div>
-        <div class="control-group"> <button onclick="MotoFindBack.toggleEmergency()"
-            class="secondary-btn">
-            Emergency: <span id="emergencyStatus">ENABLED</span> </button> </div>
+      
         <div id="crashStatus" class="status">Crash Detection: Inactive</div>
         <div class="control-group">
           <div class="control-item"> <label for="emergencyMessage">Emergency
@@ -1662,7 +1670,7 @@ const MotoFindBack = {
 init: async function() {
   // Setup event listeners FIRST
   this.setupEventListeners();
- 
+ this.loadCalibrationFromStorage();
   
   // Load data BEFORE any processing
   await this.loadSessionsFromStorage();
@@ -3807,45 +3815,107 @@ updateWheelAnimation: function() {
   },
 
 initDeviceOrientation: function() {
+  // Initialize crash detection variables
+  this.crashDetected = false;
+  this.crashStartTime = null;
+  this.lastBeta = 0;
+  
   if (window.DeviceOrientationEvent) {
-    window.addEventListener('deviceorientation', (event) => {
-      if (this.isCalibrating) {
-        this.calibrationSamples.push(event.gamma || 0);
-        return;
-      }
-      if (event.gamma !== null) {
-        this.currentLeanAngle = Math.round(Math.abs(event.gamma - this.leanOffset));
-        this.updateLeanAngleDisplay();
-        if (this.currentLeanAngle > this.maxLeanAngle) this.maxLeanAngle = this.currentLeanAngle;
-        const speedMs = this.currentSpeed;
-        this.currentCornerG = this.calculateCornerG(speedMs, this.currentLeanAngle);
-        this.detectCorner(this.lastPosition?.lat, this.lastPosition?.lon, speedMs * 3.6, this.currentLeanAngle, this.currentCornerG);
-      }
-      if (event.beta !== null && !this.crashDetected) {
-        const betaAbs = Math.abs(event.beta);
-        if (betaAbs > 70) {
-          if (!this.crashStartTime) {
-            this.crashStartTime = Date.now();
-            document.getElementById('crashStatus').textContent = 'Possible crash detected... Confirming';
-            document.getElementById('crashStatus').className = 'status warning';
-            this.log('Possible crash detected, confirming for 5 seconds');
+    // Request permission for device orientation on iOS
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(permissionState => {
+          if (permissionState === 'granted') {
+            window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this));
+            this.log("Device orientation permission granted");
+          } else {
+            this.log("Device orientation permission denied", true);
           }
-          if (Date.now() - this.crashStartTime > 5000) {
-            this.crashDetected = true;
-            this.triggerCrashAlert();
-          }
-        } else if (this.crashStartTime) {
-          this.crashStartTime = null;
-          document.getElementById('crashStatus').textContent = 'Crash Detection: Inactive';
-          document.getElementById('crashStatus').className = 'status';
-          this.log('Crash condition cleared');
-        }
-      }
-    });
+        })
+        .catch(console.error);
+    } else {
+      // Non-iOS devices
+      window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this));
+    }
+    
+    document.getElementById('crashStatus').textContent = 'Crash Detection: Active';
+    document.getElementById('crashStatus').className = 'status success';
+    this.log("Crash detection initialized and active");
   } else {
     this.log("Device orientation not supported", true);
     document.getElementById('crashStatus').textContent = 'Crash Detection: Not supported';
     document.getElementById('crashStatus').className = 'status error';
+  }
+},
+
+// Add this new method to handle device orientation
+handleDeviceOrientation: function(event) {
+  if (this.isCalibrating) {
+    this.calibrationSamples.push(event.gamma || 0);
+    return;
+  }
+
+  // Handle lean angle (gamma)
+  if (event.gamma !== null) {
+    this.currentLeanAngle = Math.round(Math.abs(event.gamma - this.leanOffset));
+    this.updateLeanAngleDisplay();
+    if (this.currentLeanAngle > this.maxLeanAngle) this.maxLeanAngle = this.currentLeanAngle;
+    const speedMs = this.currentSpeed;
+    this.currentCornerG = this.calculateCornerG(speedMs, this.currentLeanAngle);
+    this.detectCorner(this.lastPosition?.lat, this.lastPosition?.lon, speedMs * 3.6, this.currentLeanAngle, this.currentCornerG);
+  }
+  
+  // CRASH DETECTION - Handle beta (front-to-back tilt)
+  if (event.beta !== null && this.normalBeta !== null) {
+    const currentBeta = event.beta;
+    
+    // Calculate how far we are from the normal riding position
+    const deviationFromNormal = Math.abs(currentBeta - this.normalBeta);
+    
+    // Update deviation display (moved from separate block)
+    document.getElementById('currentDeviation').textContent = deviationFromNormal.toFixed(1) + '°';
+    
+    // Color code based on severity
+    const deviationElement = document.getElementById('currentDeviation');
+    if (deviationFromNormal > this.crashThreshold) {
+        deviationElement.style.color = 'var(--error-color)';
+    } else if (deviationFromNormal > this.betaTolerance) {
+        deviationElement.style.color = 'var(--warning-color)';
+    } else {
+        deviationElement.style.color = 'var(--success-color)';
+    }
+    
+    // Crash condition: significant deviation from normal position AND we're moving
+    const isCrashed = deviationFromNormal > this.crashThreshold;
+    const isMoving = this.currentSpeed > 2; // More than 2 m/s (~7 km/h)
+    
+    if (isCrashed && isMoving && !this.crashDetected) {
+        if (!this.crashStartTime) {
+            this.crashStartTime = Date.now();
+            document.getElementById('crashStatus').textContent = 
+                `Crash detected! ${deviationFromNormal.toFixed(1)}° from normal position`;
+            document.getElementById('crashStatus').className = 'status warning';
+            this.log(`Crash detected: ${deviationFromNormal.toFixed(1)}° deviation from normal position`);
+        }
+        
+        // Confirm crash after 3 seconds of sustained abnormal position
+        if (Date.now() - this.crashStartTime > 3000) {
+            this.crashDetected = true;
+            this.triggerCrashAlert(deviationFromNormal);
+        }
+    } else {
+        // Reset if we're back to normal position
+        if (this.crashStartTime && deviationFromNormal < this.betaTolerance) {
+            this.crashStartTime = null;
+            document.getElementById('crashStatus').textContent = 'Crash Detection: Active (Normal)';
+            document.getElementById('crashStatus').className = 'status success';
+            this.log('Back to normal position - crash condition cleared');
+        }
+    }
+    
+    // Update debug info
+    document.getElementById('debug').innerHTML += 
+        `<div style="color: #ccc">Beta: ${currentBeta.toFixed(1)}° | Deviation: ${deviationFromNormal.toFixed(1)}° | Normal: ${this.normalBeta.toFixed(1)}°</div>`;
   }
 },
 
@@ -3947,26 +4017,91 @@ document.getElementById("calibrationMonitorBtn").addEventListener("click", () =>
 
 
 
-  calibrateSensors: function() {
+calibrateSensors: function() {
     this.isCalibrating = true;
     this.calibrationSamples = [];
-    document.getElementById('calibrateStatus').textContent = 'Calibrating... Keep phone steady for 5 seconds.';
-    this.log('Starting sensor calibration');
-    setTimeout(() => {
-      if (this.calibrationSamples.length > 0) {
+    this.betaSamples = []; // Add beta samples for crash detection calibration
+    
+    document.getElementById('calibrateStatus').textContent = 'Calibrating... Keep phone in NORMAL RIDING POSITION for 5 seconds.';
+    document.getElementById('calibrateStatus').className = 'status warning';
+    
+    this.log('Starting sensor calibration - ensure phone is mounted in riding position');
+    
+    // Create a more informative calibration dialog
+    if (confirm('IMPORTANT: Place your phone in its normal riding position on the motorcycle.\n\nClick OK to start 5-second calibration.')) {
+        let calibrationCount = 5;
+        const countdownInterval = setInterval(() => {
+            document.getElementById('calibrateStatus').textContent = 
+                `Calibrating... Keep steady (${calibrationCount}s) - Riding Position`;
+            calibrationCount--;
+            
+            if (calibrationCount < 0) {
+                clearInterval(countdownInterval);
+                this.finalizeCalibration();
+            }
+        }, 1000);
+
+        // Collect samples for both lean and crash detection
+        const calibrationListener = (event) => {
+            if (event.gamma !== null) {
+                this.calibrationSamples.push(event.gamma);
+            }
+            if (event.beta !== null) {
+                this.betaSamples.push(event.beta);
+            }
+        };
+
+        window.addEventListener('deviceorientation', calibrationListener);
+
+        // Stop calibration after 5 seconds
+        setTimeout(() => {
+            window.removeEventListener('deviceorientation', calibrationListener);
+            if (this.isCalibrating) {
+                this.finalizeCalibration();
+            }
+        }, 5000);
+    } else {
+        this.isCalibrating = false;
+        document.getElementById('calibrateStatus').textContent = 'Calibration cancelled';
+        document.getElementById('calibrateStatus').className = 'status';
+    }
+},
+
+finalizeCalibration: function() {
+    this.isCalibrating = false;
+    
+    if (this.calibrationSamples.length > 0 && this.betaSamples.length > 0) {
+        // Calculate offsets
         const avgGamma = this.calibrationSamples.reduce((a, b) => a + b, 0) / this.calibrationSamples.length;
+        const avgBeta = this.betaSamples.reduce((a, b) => a + b, 0) / this.betaSamples.length;
+        
         this.leanOffset = avgGamma;
-        document.getElementById('calibrateStatus').textContent = 'Calibrated! Offset: ' + this.leanOffset.toFixed(1) + '°';
+        this.normalBeta = avgBeta; // Store normal riding position beta
+        
+        // Calculate thresholds for crash detection
+        this.crashThreshold = 45; // Degrees from normal position to consider as crash
+        this.betaTolerance = 15; // Tolerance range for normal position
+        
+        // Save calibration to storage
+        this.saveCalibrationToStorage();
+        
+        document.getElementById('calibrateStatus').textContent = 
+            `Calibrated! Lean offset: ${this.leanOffset.toFixed(1)}° | Riding position: ${this.normalBeta.toFixed(1)}°`;
         document.getElementById('calibrateStatus').className = 'status success';
-        this.log('Calibration complete: offset ' + this.leanOffset.toFixed(1) + '°');
-      } else {
-        document.getElementById('calibrateStatus').textContent = 'Calibration failed - no data';
+        
+        this.log(`Calibration complete - Lean offset: ${this.leanOffset.toFixed(1)}°, Normal beta: ${this.normalBeta.toFixed(1)}°`);
+        this.log(`Crash detection will trigger when tilt exceeds ${this.crashThreshold}° from normal position`);
+        
+        // Update crash detection status
+        document.getElementById('crashStatus').textContent = 'Crash Detection: Active (Calibrated)';
+        document.getElementById('crashStatus').className = 'status success';
+        
+    } else {
+        document.getElementById('calibrateStatus').textContent = 'Calibration failed - no sensor data';
         document.getElementById('calibrateStatus').className = 'status error';
-        this.log('Calibration failed');
-      }
-      this.isCalibrating = false;
-    }, 5000);
-  },
+        this.log('Calibration failed - no data received');
+    }
+},
 
 
 
@@ -4760,32 +4895,39 @@ async queueEmergencyForBackground(alertData) {
 
 
 // Enhanced crash detection with actual alert sending
-triggerCrashAlert: function() {
-  if (!this.emergencyEnabled) return;
-  document.getElementById('crashStatus').textContent = 'Crash detected! Sending alert...';
-  document.getElementById('crashStatus').className = 'status error';
-  this.log('Crash confirmed, triggering emergency alert');
-  
-  if (this.lastPosition) {
-    const message = `🚨 CRASH DETECTED! ${document.getElementById('emergencyMessage').value} 
+triggerCrashAlert: function(deviation = 0) {
+    if (!this.emergencyEnabled) return;
+    
+    document.getElementById('crashStatus').textContent = `CRASH CONFIRMED! Sending alerts...`;
+    document.getElementById('crashStatus').className = 'status error';
+    
+    this.log(`Crash confirmed! ${deviation.toFixed(1)}° deviation from normal position`);
+    
+    if (this.lastPosition) {
+        const message = `🚨 MOTORCYCLE CRASH DETECTED! 
+
+Position deviation: ${deviation.toFixed(1)}° from normal
 Location: https://maps.google.com/?q=${this.lastPosition.lat},${this.lastPosition.lon}
-Lat: ${this.lastPosition.lat.toFixed(6)}, Lon: ${this.lastPosition.lon.toFixed(6)}`;
-    
-    // Send actual emergency alerts
-    this.sendEmergencyAlert(message);
-    
-    // Also try to make an emergency call if possible
-    setTimeout(() => {
-      if (confirm('Crash detected! Call emergency services?')) {
-        window.open('tel:112', '_blank'); // Europe emergency
-        // window.open('tel:911', '_blank'); // US emergency
-      }
-    }, 1000);
-    
-  } else {
-    this.log('No recent position available for crash alert', true);
-    document.getElementById('crashStatus').textContent = 'Crash detected, but no position available';
-  }
+Coordinates: ${this.lastPosition.lat.toFixed(6)}, ${this.lastPosition.lon.toFixed(6)}
+Speed at detection: ${(this.currentSpeed * 3.6).toFixed(1)} km/h
+Time: ${new Date().toLocaleString()}
+
+${document.getElementById('emergencyMessage').value}`;
+        
+        // Send emergency alerts
+        this.sendEmergencyAlert(message);
+        
+        // Make emergency call after short delay
+        setTimeout(() => {
+            if (confirm(`CRASH DETECTED! \n\nCall emergency services?`)) {
+                window.open('tel:112', '_blank');
+            }
+        }, 2000);
+        
+    } else {
+        this.log('Crash detected but no GPS position available', true);
+        document.getElementById('crashStatus').textContent = 'Crash detected - No GPS position';
+    }
 },
 
 callEmergency: function() {
@@ -4796,6 +4938,42 @@ callEmergency: function() {
   if (confirm(`Call emergency services (${number})?`)) {
     window.open(`tel:${number}`, '_blank');
   }
+},
+
+saveCalibrationToStorage: function() {
+    const calibrationData = {
+        leanOffset: this.leanOffset,
+        normalBeta: this.normalBeta,
+        crashThreshold: this.crashThreshold,
+        betaTolerance: this.betaTolerance,
+        calibratedAt: Date.now()
+    };
+    localStorage.setItem('sensorCalibration', JSON.stringify(calibrationData));
+    this.log('Sensor calibration saved to storage');
+},
+
+loadCalibrationFromStorage: function() {
+    const saved = localStorage.getItem('sensorCalibration');
+    if (saved) {
+        try {
+            const calibration = JSON.parse(saved);
+            this.leanOffset = calibration.leanOffset || 0;
+            this.normalBeta = calibration.normalBeta;
+            this.crashThreshold = calibration.crashThreshold || 45;
+            this.betaTolerance = calibration.betaTolerance || 15;
+            
+            document.getElementById('calibrateStatus').textContent = 
+                `Calibration loaded | Normal position: ${this.normalBeta.toFixed(1)}°`;
+            document.getElementById('calibrateStatus').className = 'status success';
+            
+            document.getElementById('crashStatus').textContent = 'Crash Detection: Active (Calibrated)';
+            document.getElementById('crashStatus').className = 'status success';
+            
+            this.log('Sensor calibration loaded from storage');
+        } catch (error) {
+            this.log('Error loading calibration: ' + error.message, true);
+        }
+    }
 },
 
 // Maintenance unit toggle

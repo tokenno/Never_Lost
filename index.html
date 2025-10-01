@@ -3944,28 +3944,25 @@ handleDeviceOrientation: function(event) {
   
 startRideAndSession: function() {
   if (this.isRideActive) {
-    // If ride is active, stop it and save session
-    this.stop();
-    if (this.currentSession) {
-      this.saveCurrentSession();
-    }
+    // Stop ride if already active
+    this.stopRideAndSave();
     return;
   }
   
-  // Start new session first
+  // Start new session
   if (!this.currentSession) {
     this.startNewSession();
   }
   
-  // Then start the ride (without auto-locking position)
-  this.startRideWithoutLock();
-  
-  this.log("Ride and session started simultaneously");
+  // Start ride tracking
+  this.startRideTracking();
 },
-  
-  startRideWithoutLock: function() {
+
+startRideTracking: function() {
   this.isRideActive = true;
   this.rideStartTime = Date.now();
+  
+  // Reset ride-specific metrics
   this.movementHistory = [];
   this.corners = [];
   this.cornerEntrySpeeds = [];
@@ -3978,20 +3975,55 @@ startRideAndSession: function() {
   this.maxCornerSpeed = 0;
   this.accelerationTimes = [];
   
-  // Update button to show stop function
-  document.getElementById("startRideBtn").textContent = "Stop Ride & Save";
-  document.getElementById("startRideBtn").style.background = "linear-gradient(to bottom, #ff3333, #cc0000)";
-  document.getElementById("startRideBtn").disabled = false;
+  // Update UI
+  this.updateRideButtonState();
   
-  // Start GPS tracking but DON'T auto-lock position
+  // Start GPS
   this.watchId = navigator.geolocation.watchPosition(
     pos => this.updatePosition(pos),
     err => this.handleGpsError(err),
     { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
   );
   
-  this.log("Ride started without auto-locking position");
+  this.log("Ride tracking started");
 },
+
+stopRideAndSave: function() {
+  // Stop GPS
+  if (this.watchId) {
+    navigator.geolocation.clearWatch(this.watchId);
+    this.watchId = null;
+  }
+  
+  this.isRideActive = false;
+  
+  // Save to ride history
+  if (this.rideStartTime) {
+    this.rideHistory.push({
+      startTime: this.rideStartTime,
+      endTime: Date.now(),
+      distance: this.todayDistance,
+      maxSpeed: this.maxSpeed,
+      avgSpeed: this.calculateAverageSpeed(),
+      acceleration: this.calculateAccelerationTime(),
+      corners: this.corners.length,
+      elevationGain: this.elevationGain
+    });
+    this.rideStartTime = null;
+  }
+  
+  // Update UI
+  this.updateRideButtonState();
+  this.updateRideHistory();
+  
+  // Offer to save session
+  if (this.currentSession && confirm("Save this ride session?")) {
+    this.saveCurrentSession();
+  }
+  
+  this.log("Ride stopped and saved");
+},
+
 
 
 setupEventListeners: function() {
@@ -4043,12 +4075,12 @@ tabs.forEach(tab => {
   document.getElementById("resetMaintenanceBtn").addEventListener("click", () => this.resetMaintenance());
   document.getElementById("saveMaintenanceBtn").addEventListener("click", () => this.saveMaintenanceItem());
   document.getElementById("startEngineAnalysis").addEventListener("click", () => this.startEngineAnalysis());
-  document.getElementById("calibrateEngine").addEventListener("click", () => this.calibrateEngine());
+ document.getElementById("calibrateEngine").addEventListener("click", () => this.calibrateEngine());
   document.getElementById("saveSessionBtn").addEventListener("click", () => this.saveCurrentSession());
   document.getElementById("quickSaveBtn").addEventListener("click", () => this.quickSaveSession());
   document.getElementById("exportSessionBtn").addEventListener("click", () => this.exportSession());
   document.getElementById("startRecordingBtn").addEventListener("click", () => this.startRecordingCalibration());
-  document.getElementById("startRideBtn").addEventListener("click", () => this.startRideAndSession());
+document.getElementById("startRideBtn").addEventListener("click", () => this.startRideAndSession());
 
 
 document.getElementById("calibrationMonitorBtn").addEventListener("click", () => this.startCalibrationMonitor());
@@ -4146,6 +4178,12 @@ calibrateSensors: function() {
         document.getElementById('calibrateStatus').textContent = 'Calibration cancelled';
         document.getElementById('calibrateStatus').className = 'status';
     }
+},
+  
+  calibrateEngine: function() {
+  // This is just a wrapper for starting the calibration process
+  this.startRecordingCalibration();
+  this.log("Engine calibration started via calibrateEngine button");
 },
 
 finalizeCalibration: function() {
@@ -4597,7 +4635,7 @@ startRide: function() {
   this.log("Ride started");
 },
 
-  updatePosition: function(pos) {
+updatePosition: function(pos) {
     this.prevPosition = this.lastPosition;
     this.checkAccelerationAchievement();
     this.lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude, alt: pos.coords.altitude || 0 };
@@ -4606,24 +4644,27 @@ startRide: function() {
     this.movementHistory.push({ lat: this.lastPosition.lat, lon: this.lastPosition.lon, speed: this.currentSpeed, alt: this.lastPosition.alt, time: Date.now() });
 
     if (this.prevPosition) {
-      const distance = this.calculateDistance(this.prevPosition, this.lastPosition) / 1000;
-      this.totalDistance += distance;
-      this.todayDistance += distance;
-      this.weekDistance += distance;
-      this.monthDistance += distance;
+        const distance = this.calculateDistance(this.prevPosition, this.lastPosition) / 1000;
+        this.totalDistance += distance;
+        this.todayDistance += distance;
+        this.weekDistance += distance;
+        this.monthDistance += distance;
 
-      if (this.prevPosition.alt && this.lastPosition.alt && this.lastPosition.alt > this.prevPosition.alt) {
-        this.elevationGain += this.lastPosition.alt - this.prevPosition.alt;
-      }
-      this.elevationHistory.push({ elev: this.lastPosition.alt, time: Date.now() });
+        // UPDATE MAINTENANCE PROGRESS
+        this.updateMaintenanceProgress(distance);
+
+        if (this.prevPosition.alt && this.lastPosition.alt && this.lastPosition.alt > this.prevPosition.alt) {
+            this.elevationGain += this.lastPosition.alt - this.prevPosition.alt;
+        }
+        this.elevationHistory.push({ elev: this.lastPosition.alt, time: Date.now() });
     }
 
     if (this.isRideActive && this.currentSpeed * 3.6 >= this.accelTarget && this.accelerationStartTime && !this.accelerationTimes.some(t => t)) {
-      const accelTime = (Date.now() - this.accelerationStartTime) / 1000;
-      this.accelerationTimes.push(accelTime);
-      this.accelerationStartTime = null;
+        const accelTime = (Date.now() - this.accelerationStartTime) / 1000;
+        this.accelerationTimes.push(accelTime);
+        this.accelerationStartTime = null;
     } else if (this.currentSpeed * 3.6 < this.accelTarget && !this.accelerationStartTime) {
-      this.accelerationStartTime = Date.now();
+        this.accelerationStartTime = Date.now();
     }
 
     this.userMarker.setLatLng([this.lastPosition.lat, this.lastPosition.lon]);
@@ -4631,41 +4672,45 @@ startRide: function() {
     this.map.panTo([this.lastPosition.lat, this.lastPosition.lon]);
 
     if (this.lockPosition) {
-      const distance = this.calculateDistance(this.lastPosition, this.lockPosition);
-      document.getElementById("distance").textContent = distance.toFixed(0);
-      document.getElementById("accuracy").textContent = pos.coords.accuracy.toFixed(1);
-      if (distance < 5 && !this.reachedPointDisplayed) {
-        document.getElementById("reachedMessage").style.display = "block";
-        this.reachedPointDisplayed = true;
-        setTimeout(() => {
-          document.getElementById("reachedMessage").style.display = "none";
-          this.reachedPointDisplayed = false;
-        }, 5000);
-        this.stop();
-      }
-      this.updateDirection();
+        const distance = this.calculateDistance(this.lastPosition, this.lockPosition);
+        document.getElementById("distance").textContent = distance.toFixed(0);
+        document.getElementById("accuracy").textContent = pos.coords.accuracy.toFixed(1);
+        
+        if (distance < 5 && !this.reachedPointDisplayed) {
+            document.getElementById("reachedMessage").style.display = "block";
+            this.reachedPointDisplayed = true;
+            setTimeout(() => {
+                document.getElementById("reachedMessage").style.display = "none";
+                this.reachedPointDisplayed = false;
+            }, 5000);
+            
+            // DON'T stop the ride automatically - just notify the user
+            this.log("Reached locked position - ride continues");
+        }
+        
+        this.updateDirection();
     }
 
-// Auto-lock functionality - Only activate if user explicitly enabled it
-if (this.autoLockEnabled && this.autoLockExplicitlyEnabled) {
-  if (this.currentSpeed * 3.6 < this.speedThreshold) {
-    if (!this.lastStationaryTime) {
-      this.lastStationaryTime = Date.now();
-      this.lastStationaryPosition = this.lastPosition;
-    } else if (Date.now() - this.lastStationaryTime > parseInt(document.getElementById("stationaryTime").value) * 1000) {
-      this.lockCurrentPosition();
-      this.toggleAutoLock();
+    // Auto-lock functionality - Only activate if user explicitly enabled it
+    if (this.autoLockEnabled && this.autoLockExplicitlyEnabled) {
+        if (this.currentSpeed * 3.6 < this.speedThreshold) {
+            if (!this.lastStationaryTime) {
+                this.lastStationaryTime = Date.now();
+                this.lastStationaryPosition = this.lastPosition;
+            } else if (Date.now() - this.lastStationaryTime > parseInt(document.getElementById("stationaryTime").value) * 1000) {
+                this.lockCurrentPosition();
+                this.toggleAutoLock();
+            }
+        } else {
+            this.lastStationaryTime = null;
+            this.lastStationaryPosition = null;
+        }
     }
-  } else {
-    this.lastStationaryTime = null;
-    this.lastStationaryPosition = null;
-  }
-}
 
     this.updateWheelAnimation();
     this.updateUI();
     this.startBleep();
-  },
+},
 
   handleGpsError: function(err) {
     this.log(`GPS error: ${err.message}`, true);
@@ -4682,14 +4727,18 @@ if (this.autoLockEnabled && this.autoLockExplicitlyEnabled) {
   },
     
     
-    updateRideButtonState: function() {
+updateRideButtonState: function() {
   const rideBtn = document.getElementById("startRideBtn");
+  if (!rideBtn) return;
+  
   if (this.isRideActive) {
     rideBtn.textContent = "Stop Ride & Save";
     rideBtn.style.background = "linear-gradient(to bottom, #ff3333, #cc0000)";
+    rideBtn.disabled = false;
   } else {
     rideBtn.textContent = "🏁 Start Ride & Session";
     rideBtn.style.background = "";
+    rideBtn.disabled = false;
   }
 },
   
@@ -4700,11 +4749,11 @@ stop: function() {
   }
   clearTimeout(this.bleepTimer);
   this.isActive = false;
-  this.isRideActive = false;
+ 
   
   // Reset button to start state
-  document.getElementById("startRideBtn").textContent = "🏁 Start Ride & Session";
-  document.getElementById("startRideBtn").style.background = "";
+
+
   document.getElementById("startRideBtn").disabled = false;
   
   document.getElementById("stopBtn").disabled = true;
@@ -4717,20 +4766,7 @@ stop: function() {
   
   this.updateWheelAnimation();
   this.log("Tracking stopped");
-  
-  if (this.rideStartTime) {
-    this.rideHistory.push({
-      startTime: this.rideStartTime,
-      distance: this.todayDistance,
-      maxSpeed: this.maxSpeed,
-      avgSpeed: this.calculateAverageSpeed(),
-      acceleration: this.calculateAccelerationTime(),
-      corners: this.corners.length,
-      elevationGain: this.elevationGain
-    });
-    this.rideStartTime = null;
-  }
-  this.updateRideHistory();
+
 },
 
   resetMetrics: function() {

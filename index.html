@@ -4645,41 +4645,110 @@ finalizeCalibration: function() {
   }
 },
 
-  calculateCornerG: function(speedMs, leanAngle) {
-    return Math.tan(leanAngle * Math.PI / 180);
-  },
+calculateCornerG: function(speedMs, leanAngle) {
+    const speedKmh = speedMs * 3.6;
+    const leanRad = leanAngle * Math.PI / 180;
+    
+    // Realistic physics: g = v² / (r * g) where r is estimated from lean angle
+    // For motorcycles, typical cornering G ranges from 0.3g to 1.2g
+    const estimatedRadius = this.estimateCornerRadius(leanAngle);
+    const gForce = (speedMs * speedMs) / (estimatedRadius * 9.81);
+    
+    // Clamp to realistic motorcycle limits
+    return Math.min(1.5, Math.max(0.1, gForce));
+},
+  
+  estimateCornerRadius: function(leanAngle) {
+    // Estimate corner radius based on lean angle and typical motorcycle geometry
+    // More lean = tighter radius
+    if (leanAngle < 10) return 100; // Gentle curve
+    if (leanAngle < 20) return 50;  // Moderate curve
+    if (leanAngle < 30) return 25;  // Sharp curve
+    if (leanAngle < 40) return 15;  // Very sharp
+    return 10; // Extreme lean
+},
 
-  detectCorner: function(lat, lon, speedKmh, leanAngle, cornerG) {
-    if (!lat || !lon || this.movementHistory.length < 3 || leanAngle < 5) return;
-    const recent = this.movementHistory.slice(-3);
-    const avgBearingChange = recent.reduce((sum, item, idx) => {
-      if (idx === 0) return sum;
-      const dLon = recent[idx].lon - recent[idx - 1].lon;
-      const dLat = recent[idx].lat - recent[idx - 1].lat;
-      return sum + Math.atan2(dLon, dLat) * 180 / Math.PI;
-    }, 0) / 2;
-    if (Math.abs(avgBearingChange) > 2 && cornerG > 0.2) {
-      const cornerType = leanAngle > 30 ? 'Tight' : leanAngle > 15 ? 'Medium' : 'Sweeping';
-      const corner = {
-        startLat: recent[0].lat,
-        startLon: recent[0].lon,
-        speed: parseFloat(speedKmh),
-        entrySpeed: parseFloat(recent[0].speed * 3.6),
-        exitSpeed: parseFloat(speedKmh),
-        g: cornerG,
-        lean: leanAngle,
-        type: cornerType,
-        time: Date.now()
-      };
-      this.corners.push(corner);
-      this.cornerEntrySpeeds.push(corner.entrySpeed);
-      this.cornerExitSpeeds.push(corner.exitSpeed);
-      if (speedKmh > this.maxCornerSpeed) this.maxCornerSpeed = parseFloat(speedKmh);
-      if (cornerG > this.maxCornerG) this.maxCornerG = cornerG;
-      this.updateCornerDisplay();
+
+detectCorner: function(lat, lon, speedKmh, leanAngle, cornerG) {
+    if (!lat || !lon || this.movementHistory.length < 5 || leanAngle < 15) return;
+    
+    const recent = this.movementHistory.slice(-5);
+    
+    // Calculate bearing changes more accurately
+    let totalBearingChange = 0;
+    let validPoints = 0;
+    
+    for (let i = 1; i < recent.length; i++) {
+        const bearingChange = this.calculateBearingChange(recent[i-1], recent[i]);
+        if (Math.abs(bearingChange) > 1) { // Ignore tiny changes
+            totalBearingChange += Math.abs(bearingChange);
+            validPoints++;
+        }
     }
-  },
+    
+    if (validPoints === 0) return;
+    
+    const avgBearingChange = totalBearingChange / validPoints;
+    
+    // Realistic corner detection thresholds
+    const isSignificantTurn = avgBearingChange > 3; // degrees per point
+    const isProperLean = leanAngle > 15;
+    const isMeaningfulSpeed = speedKmh > 20;
+    const isSignificantG = cornerG > 0.3;
+    
+    if (isSignificantTurn && isProperLean && isMeaningfulSpeed && isSignificantG) {
+        const cornerType = this.classifyCorner(leanAngle, cornerG);
+        const corner = {
+            startLat: recent[0].lat,
+            startLon: recent[0].lon,
+            speed: parseFloat(speedKmh),
+            entrySpeed: parseFloat(recent[0].speed * 3.6),
+            exitSpeed: parseFloat(speedKmh),
+            g: parseFloat(cornerG.toFixed(2)),
+            lean: parseFloat(leanAngle.toFixed(1)),
+            type: cornerType,
+            bearingChange: parseFloat(avgBearingChange.toFixed(1)),
+            time: Date.now()
+        };
+        
+        this.corners.push(corner);
+        
+        // Update max values only for meaningful corners
+        if (speedKmh > this.maxCornerSpeed) {
+            this.maxCornerSpeed = parseFloat(speedKmh);
+        }
+        if (cornerG > this.maxCornerG) {
+            this.maxCornerG = parseFloat(cornerG.toFixed(2));
+        }
+        
+        this.cornerEntrySpeeds.push(corner.entrySpeed);
+        this.cornerExitSpeeds.push(corner.exitSpeed);
+        this.updateCornerDisplay();
+        
+        this.log(`🔄 Corner detected: ${cornerType} - ${speedKmh.toFixed(1)} km/h, ${cornerG.toFixed(2)}g, ${leanAngle}° lean`);
+    }
+},
 
+  calculateBearingChange: function(pos1, pos2) {
+    const dLon = (pos2.lon - pos1.lon) * Math.PI / 180;
+    const lat1 = pos1.lat * Math.PI / 180;
+    const lat2 = pos2.lat * Math.PI / 180;
+    
+    const y = Math.sin(dLon) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - 
+              Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+    
+    const bearing = Math.atan2(y, x) * 180 / Math.PI;
+    return (bearing + 360) % 360;
+},
+  
+  classifyCorner: function(leanAngle, cornerG) {
+    if (leanAngle > 35 && cornerG > 0.8) return 'Aggressive';
+    if (leanAngle > 25 && cornerG > 0.5) return 'Sport';
+    if (leanAngle > 15 && cornerG > 0.3) return 'Moderate';
+    return 'Gentle';
+},
+  
   updateCornerDisplay: function() {
     document.getElementById('currentCornerG').textContent = this.currentCornerG.toFixed(2) + ' g';
     document.getElementById('maxCornerSpeed').textContent = this.maxCornerSpeed.toFixed(1) + ' km/h';

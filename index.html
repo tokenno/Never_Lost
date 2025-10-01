@@ -1686,6 +1686,8 @@ init: async function() {
   this.loadContactsFromStorage();
   this.setupTripleTapDetection();
   this.loadCalibrationFromStorage();
+
+this.autoLockExplicitlyEnabled = false;
   
   // Auto-start session when ride starts
   const originalStartRide = this.startRide;
@@ -4267,33 +4269,35 @@ toggleMute: function() {
   }
 },
 
-  toggleAutoLock: function() {
-    this.autoLockEnabled = !this.autoLockEnabled;
-    if (this.autoLockEnabled) {
-      document.getElementById("autoLockBtn").textContent = "Auto-Lock: ON";
-      document.getElementById("autoLockBtn").style.backgroundColor = "#ff6600";
-      document.getElementById("autoLockBtn").style.color = "#000";
-      document.getElementById("autoLockSettings").style.display = "block";
-      this.log("Auto-lock enabled - will lock when stopped for specified time");
-      this.updateGpsStatus("Auto-lock enabled - will lock when stopped");
-    } else {
-      document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
-      document.getElementById("autoLockBtn").style.backgroundColor = "";
-      document.getElementById("autoLockBtn").style.color = "";
-      document.getElementById("autoLockSettings").style.display = "none";
-      clearTimeout(this.autoLockDebounce);
-      this.autoLockDebounce = null;
-      this.isStationary = false;
-      this.lastStationaryTime = null;
-      this.lastStationaryPosition = null;
-      this.speedThreshold = 10;
-      document.getElementById("speedThreshold").value = 10;
-      document.getElementById("speedThresholdValue").textContent = "10 km/h";
-      this.log("Auto-lock disabled");
-      this.updateGpsStatus("Auto-lock disabled");
-    }
-    this.updateUI();
-  },
+toggleAutoLock: function() {
+  this.autoLockEnabled = !this.autoLockEnabled;
+  this.autoLockExplicitlyEnabled = this.autoLockEnabled; // Track if user explicitly enabled it
+  
+  if (this.autoLockEnabled) {
+    document.getElementById("autoLockBtn").textContent = "Auto-Lock: ON";
+    document.getElementById("autoLockBtn").style.backgroundColor = "#ff6600";
+    document.getElementById("autoLockBtn").style.color = "#000";
+    document.getElementById("autoLockSettings").style.display = "block";
+    this.log("Auto-lock enabled - will lock when stopped for specified time");
+    this.updateGpsStatus("Auto-lock enabled - will lock when stopped");
+  } else {
+    document.getElementById("autoLockBtn").textContent = "Auto-Lock Mode";
+    document.getElementById("autoLockBtn").style.backgroundColor = "";
+    document.getElementById("autoLockBtn").style.color = "";
+    document.getElementById("autoLockSettings").style.display = "none";
+    clearTimeout(this.autoLockDebounce);
+    this.autoLockDebounce = null;
+    this.isStationary = false;
+    this.lastStationaryTime = null;
+    this.lastStationaryPosition = null;
+    this.speedThreshold = 10;
+    document.getElementById("speedThreshold").value = 10;
+    document.getElementById("speedThresholdValue").textContent = "10 km/h";
+    this.log("Auto-lock disabled");
+    this.updateGpsStatus("Auto-lock disabled");
+  }
+  this.updateUI();
+},
 
 initAudio: function() {
   if (this.audioCtx) {
@@ -4400,7 +4404,8 @@ lockCurrentPosition: function() {
   this.startBleep();
   
   // Show visual confirmation
-  this.showAlertNotification('📍 Position Locked! Audio guidance active', 'success');
+  alert('📍 Position Locked! Audio guidance active');
+// remove the line completely if you don't want any notification
 },
   
   // Check if GPS is ready for locking
@@ -4604,20 +4609,21 @@ startRide: function() {
       this.updateDirection();
     }
 
-    if (this.autoLockEnabled) {
-      if (this.currentSpeed * 3.6 < this.speedThreshold) {
-        if (!this.lastStationaryTime) {
-          this.lastStationaryTime = Date.now();
-          this.lastStationaryPosition = this.lastPosition;
-        } else if (Date.now() - this.lastStationaryTime > parseInt(document.getElementById("stationaryTime").value) * 1000) {
-          this.lockCurrentPosition();
-          this.toggleAutoLock();
-        }
-      } else {
-        this.lastStationaryTime = null;
-        this.lastStationaryPosition = null;
-      }
+// Auto-lock functionality - Only activate if user explicitly enabled it
+if (this.autoLockEnabled && this.autoLockExplicitlyEnabled) {
+  if (this.currentSpeed * 3.6 < this.speedThreshold) {
+    if (!this.lastStationaryTime) {
+      this.lastStationaryTime = Date.now();
+      this.lastStationaryPosition = this.lastPosition;
+    } else if (Date.now() - this.lastStationaryTime > parseInt(document.getElementById("stationaryTime").value) * 1000) {
+      this.lockCurrentPosition();
+      this.toggleAutoLock();
     }
+  } else {
+    this.lastStationaryTime = null;
+    this.lastStationaryPosition = null;
+  }
+}
 
     this.updateWheelAnimation();
     this.updateUI();

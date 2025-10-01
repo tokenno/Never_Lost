@@ -1027,6 +1027,8 @@ input[type="range"]::-webkit-slider-thumb {
         <div class="elevation-profile"> <canvas id="elevationCanvas"></canvas>
         </div>
         <p>Total Elevation Gain: <span id="totalElevationGain">0 m</span></p>
+         <p>Max Elevation: <span id="maxElevation">0 m</span></p>
+  <p>Min Elevation: <span id="minElevation">0 m</span></p>
       </div>
       <!-- Statistics -->
       <div class="control-group">
@@ -3688,20 +3690,43 @@ updateWheelAnimation: function() {
   }
 },
 
- updateElevationProfile: function() {
+ 
+
+  // Remaining methods (unchanged from previous response)
+  initMap: function() {
+    this.map = L.map('map').setView([51.505, -0.09], 15);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(this.map);
+
+    const userIcon = L.divIcon({ className: 'user-marker', html: '📍', iconSize: [24, 24] });
+    const lockIcon = L.divIcon({ className: 'lock-marker', html: '🔒', iconSize: [24, 24] });
+    this.userMarker = L.marker([0, 0], { icon: userIcon }).addTo(this.map);
+    this.lockMarker = L.marker([0, 0], { icon: lockIcon }).addTo(this.map);
+    this.line = L.polyline([], { color: '#ff6600', weight: 2 }).addTo(this.map);
+  },
+
+updateElevationProfile: function() {
+  // Check if canvas element exists
+  this.canvas = document.getElementById('elevationCanvas');
   if (!this.canvas) {
-    this.log("Error: elevationCanvas element not found", true);
+    console.warn('Elevation canvas element not found');
     return;
   }
   
   const ctx = this.canvas.getContext('2d');
   if (!ctx) {
-    this.log("Error: Unable to get 2D context for elevationCanvas", true);
+    console.warn('Unable to get 2D context for elevation canvas');
     return;
   }
   
-  // Get the container dimensions
+  // Get the container dimensions safely
   const container = this.canvas.parentElement;
+  if (!container) {
+    console.warn('Elevation canvas container not found');
+    return;
+  }
+  
   this.canvas.width = container.clientWidth;
   this.canvas.height = container.clientHeight;
   
@@ -3718,7 +3743,6 @@ updateWheelAnimation: function() {
     ctx.font = '14px Arial';
     ctx.textAlign = 'center';
     ctx.fillText('Not enough elevation data', w / 2, h / 2);
-    this.log("Not enough elevation data to plot");
     return;
   }
 
@@ -3769,26 +3793,26 @@ updateWheelAnimation: function() {
   ctx.lineTo(w, h - 10);
   ctx.stroke();
 
-  // Update elevation stats
-  document.getElementById('totalElevationGain').textContent = this.elevationGain.toFixed(0) + ' m';
-  document.getElementById('elevationGain').textContent = this.elevationGain.toFixed(0) + ' m';
-    document.getElementById('maxElevation').textContent = maxElev.toFixed(0) + ' m';
-    document.getElementById('minElevation').textContent = minElev.toFixed(0) + ' m';
-  },
+  // Update elevation stats safely
+  this.updateElevationStatsSafely(this.elevationGain, maxElev, minElev);
+},
 
-  // Remaining methods (unchanged from previous response)
-  initMap: function() {
-    this.map = L.map('map').setView([51.505, -0.09], 15);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(this.map);
-
-    const userIcon = L.divIcon({ className: 'user-marker', html: '📍', iconSize: [24, 24] });
-    const lockIcon = L.divIcon({ className: 'lock-marker', html: '🔒', iconSize: [24, 24] });
-    this.userMarker = L.marker([0, 0], { icon: userIcon }).addTo(this.map);
-    this.lockMarker = L.marker([0, 0], { icon: lockIcon }).addTo(this.map);
-    this.line = L.polyline([], { color: '#ff6600', weight: 2 }).addTo(this.map);
-  },
+// Add this helper function
+updateElevationStatsSafely: function(elevationGain, maxElev, minElev) {
+  const elements = {
+    'totalElevationGain': elevationGain.toFixed(0) + ' m',
+    'elevationGain': elevationGain.toFixed(0) + ' m',
+    'maxElevation': maxElev.toFixed(0) + ' m',
+    'minElevation': minElev.toFixed(0) + ' m'
+  };
+  
+  Object.keys(elements).forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.textContent = elements[id];
+    }
+  });
+},
 
   setupTabs: function() {
     const tabs = document.querySelectorAll('.tab');
@@ -4504,6 +4528,13 @@ smartLockPosition: function() {
     this.updateEnlargedWheelAnimation();
   }
   },
+    
+    safeUpdateElement: function(elementId, value) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.textContent = value;
+  }
+},
 
   calculateAverageSpeed: function() {
     if (this.movementHistory.length < 2) return 0;

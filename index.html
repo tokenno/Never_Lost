@@ -1689,6 +1689,7 @@ init: async function() {
   this.setupTripleTapDetection();
   this.loadCalibrationFromStorage();
   this.loadMaintenanceFromStorage();
+   this.startMaintenanceTimeTracker();
 
 this.autoLockExplicitlyEnabled = false;
   
@@ -1768,6 +1769,42 @@ this.autoLockExplicitlyEnabled = false;
 
 },  
 
+  // Add this to your init function to start automatic time tracking
+startMaintenanceTimeTracker: function() {
+    // Update time-based maintenance every hour
+    setInterval(() => {
+        this.updateTimeBasedMaintenance();
+    }, 60 * 60 * 1000); // Check every hour
+    
+    // Also update immediately
+    this.updateTimeBasedMaintenance();
+},
+
+updateTimeBasedMaintenance: function() {
+    let updated = false;
+    const now = Date.now();
+    
+    this.maintenanceItems.forEach(item => {
+        if (item.unit === 'weeks') {
+            const weeksPassed = Math.floor((now - item.lastReset) / (7 * 24 * 60 * 60 * 1000));
+            const oldProgress = item.progress;
+            item.progress = weeksPassed;
+            
+            // Check if maintenance is due
+            if (item.progress >= item.interval && oldProgress < item.interval) {
+                this.showMaintenanceAlert(item);
+                updated = true;
+            }
+        }
+    });
+    
+    if (updated) {
+        this.saveMaintenanceToStorage();
+        this.updateMaintenanceList();
+    }
+},
+  
+  
   
   // Simple lock that doesn't depend on audio
 forceLockPosition: function() {
@@ -5275,16 +5312,21 @@ updateMaintenanceList: function() {
     }
 
     list.innerHTML = this.maintenanceItems.map((item, index) => {
-        let progressPercent, progressText, progressColor;
+        let progressPercent, progressText, progressColor, dueInfo;
         
         if (item.unit === 'km') {
             progressPercent = (item.progress / item.interval) * 100;
             progressText = `${item.progress.toFixed(0)}/${item.interval} km`;
+            const kmRemaining = item.interval - item.progress;
+            dueInfo = `<div style="font-size: 0.8em; color: #aaa;">${kmRemaining.toFixed(0)} km remaining</div>`;
         } else {
             // For weeks, calculate weeks passed
             const weeksPassed = Math.floor((Date.now() - item.lastReset) / (7 * 24 * 60 * 60 * 1000));
             progressPercent = (weeksPassed / item.interval) * 100;
-            progressText = `${weeksPassed}/${item.interval} weeks`;
+            progressText = `${weeksPassed} of ${item.interval} weeks`;
+            const weeksRemaining = Math.max(0, item.interval - weeksPassed);
+            const daysRemaining = weeksRemaining * 7;
+            dueInfo = `<div style="font-size: 0.8em; color: #aaa;">${daysRemaining} days remaining</div>`;
             item.progress = weeksPassed; // Update for display
         }
         
@@ -5296,15 +5338,33 @@ updateMaintenanceList: function() {
                 <div style="flex: 1;">
                     <div style="font-weight: bold; margin-bottom: 5px;">${item.name}</div>
                     <div style="font-size: 0.9em; color: #ccc;">Every ${item.interval} ${item.unit}</div>
-                    <div style="font-size: 0.8em; color: #aaa;">${progressText}</div>
+                    <div style="font-size: 0.9em; color: ${progressColor}; margin: 5px 0;">${progressText}</div>
+                    ${dueInfo}
                 </div>
                 <div class="maintenance-progress">
                     <div class="maintenance-progress-bar" style="width: ${Math.min(100, progressPercent)}%; background: ${progressColor};"></div>
+                </div>
+                <div style="margin-left: 10px;">
+                    <button onclick="MotoFindBack.deleteMaintenanceItem(${index})" title="Delete" style="background: #ff3333; border: none; border-radius: 4px; padding: 8px; cursor: pointer; color: white;">🗑️</button>
                 </div>
             </div>
         `;
     }).join('');
 },
+  
+  deleteMaintenanceItem: function(index) {
+    if (index >= 0 && index < this.maintenanceItems.length) {
+        const itemName = this.maintenanceItems[index].name;
+        if (confirm(`Delete maintenance item: ${itemName}?`)) {
+            this.maintenanceItems.splice(index, 1);
+            this.saveMaintenanceToStorage(); // Save changes
+            this.updateMaintenanceList();
+            this.log(`Deleted maintenance item: ${itemName}`);
+            alert(`🗑️ Deleted: ${itemName}`);
+        }
+    }
+},
+  
 
 // Reset individual maintenance item
 resetMaintenanceItem: function(index) {
@@ -5347,6 +5407,37 @@ updateMaintenanceProgress: function(distanceKm) {
     if (updated) {
         this.saveMaintenanceToStorage(); // Save progress updates
         this.updateMaintenanceList();
+    }
+},
+  
+  showMaintenanceAlert: function(item) {
+    let alertMessage;
+    
+    if (item.unit === 'km') {
+        alertMessage = `🚨 MAINTENANCE DUE: ${item.name}\n\nInterval: ${item.interval} km\nCurrent: ${item.progress.toFixed(1)} km\n\nWould you like to reset this maintenance item?`;
+    } else {
+        alertMessage = `🚨 MAINTENANCE DUE: ${item.name}\n\nInterval: ${item.interval} weeks\nCurrent: ${item.progress} weeks passed\n\nWould you like to reset this maintenance item?`;
+    }
+    
+    if (confirm(alertMessage)) {
+        this.resetSingleMaintenanceItem(this.maintenanceItems.findIndex(i => i.id === item.id));
+    } else {
+        // Show persistent notification
+        this.showAlertNotification(`⚠️ Maintenance Due: ${item.name}`, 'warning');
+    }
+},
+
+resetSingleMaintenanceItem: function(index) {
+    if (index >= 0 && index < this.maintenanceItems.length) {
+        const item = this.maintenanceItems[index];
+        item.progress = 0;
+        item.lastReset = Date.now();
+        item.totalResets = (item.totalResets || 0) + 1;
+        
+        this.saveMaintenanceToStorage();
+        this.updateMaintenanceList();
+        this.log(`Reset maintenance item: ${item.name}`);
+        this.showAlertNotification(`🔄 Reset: ${item.name}`, 'success');
     }
 },
 

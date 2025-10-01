@@ -1688,6 +1688,7 @@ init: async function() {
   this.loadContactsFromStorage();
   this.setupTripleTapDetection();
   this.loadCalibrationFromStorage();
+  this.loadMaintenanceFromStorage();
 
 this.autoLockExplicitlyEnabled = false;
   
@@ -4012,18 +4013,31 @@ stopRideAndSave: function() {
     this.rideStartTime = null;
   }
   
+  // END THE CURRENT SESSION
+  if (this.currentSession) {
+    this.currentSession.endTime = Date.now();
+    this.currentSession.duration = this.currentSession.endTime - this.currentSession.startTime;
+    
+    // Update session data one last time
+    this.updateCurrentSessionData();
+  }
+  
   // Update UI
   this.updateRideButtonState();
   this.updateRideHistory();
+  this.updateSessionDisplay(); // Make sure this gets called
   
   // Offer to save session
   if (this.currentSession && confirm("Save this ride session?")) {
     this.saveCurrentSession();
+  } else {
+    // If not saving, clear the current session
+    this.currentSession = null;
+    document.getElementById("sessionInfo").style.display = "none";
   }
   
   this.log("Ride stopped and saved");
 },
-
 
 
 setupEventListeners: function() {
@@ -5139,98 +5153,157 @@ toggleMaintenanceUnit: function(unit) {
   }
 },
 
+// Save maintenance items to localStorage
+saveMaintenanceToStorage: function() {
+    try {
+        const maintenanceData = {
+            items: this.maintenanceItems,
+            lastUpdated: Date.now(),
+            version: 1
+        };
+        localStorage.setItem('maintenanceData', JSON.stringify(maintenanceData));
+        console.log('Maintenance items saved to storage:', this.maintenanceItems.length, 'items');
+    } catch (error) {
+        console.error('Error saving maintenance data:', error);
+    }
+},
+
+// Load maintenance items from localStorage
+loadMaintenanceFromStorage: function() {
+    try {
+        const saved = localStorage.getItem('maintenanceData');
+        if (saved) {
+            const data = JSON.parse(saved);
+            this.maintenanceItems = data.items || [];
+            console.log('Loaded maintenance items from storage:', this.maintenanceItems.length, 'items');
+            
+            // Update the display
+            this.updateMaintenanceList();
+        } else {
+            this.maintenanceItems = [];
+            console.log('No saved maintenance data found');
+        }
+    } catch (error) {
+        console.error('Error loading maintenance data:', error);
+        this.maintenanceItems = [];
+    }
+},
+
 // Updated save maintenance item
 saveMaintenanceItem: function() {
-  const name = document.getElementById("newMaintenanceName").value.trim();
-  const unit = document.querySelector('input[name="maintenanceUnit"]:checked').value;
-  
-  let interval, progress, unitLabel;
-  
-  if (unit === 'km') {
-    interval = parseInt(document.getElementById("newMaintenanceInterval").value);
-    progress = 0; // Start at 0 km
-    unitLabel = 'km';
-  } else {
-    interval = parseInt(document.getElementById("newMaintenanceWeeks").value);
-    progress = 0; // Start at 0 weeks passed
-    unitLabel = 'weeks';
-  }
-  
-  if (!name) {
-    alert('Please enter a maintenance item name');
-    return;
-  }
-  
-  if (!interval || interval <= 0) {
-    alert('Please set a valid interval');
-    return;
-  }
+    const nameInput = document.getElementById("newMaintenanceName");
+    const name = nameInput.value.trim();
+    
+    if (!name) {
+        alert('Please enter a maintenance item name');
+        nameInput.focus();
+        return;
+    }
+    
+    // Get the selected unit
+    const unitRadios = document.querySelectorAll('input[name="maintenanceUnit"]');
+    let selectedUnit = 'km';
+    unitRadios.forEach(radio => {
+        if (radio.checked) {
+            selectedUnit = radio.value;
+        }
+    });
+    
+    let interval;
+    if (selectedUnit === 'km') {
+        interval = parseInt(document.getElementById("newMaintenanceInterval").value);
+    } else {
+        interval = parseInt(document.getElementById("newMaintenanceWeeks").value);
+    }
+    
+    if (!interval || interval <= 0) {
+        alert('Please set a valid interval');
+        return;
+    }
 
-  this.maintenanceItems.push({ 
-    name, 
-    interval, 
-    progress, 
-    unit: unitLabel,
-    createdAt: Date.now(),
-    lastReset: Date.now()
-  });
-  
-  this.updateMaintenanceList();
-  
-  // Clear form
-  document.getElementById("newMaintenanceName").value = "";
-  document.getElementById("newMaintenanceInterval").value = "5000";
-  document.getElementById("newMaintenanceWeeks").value = "4";
-  document.getElementById("intervalValue").textContent = "5000 km";
-  document.getElementById("weeksValue").textContent = "4 weeks";
-  
-  this.log(`Maintenance item added: ${name} - every ${interval} ${unitLabel}`);
+    // Create maintenance item
+    const maintenanceItem = { 
+        id: 'maint_' + Date.now(), // Unique ID
+        name: name, 
+        interval: interval, 
+        progress: 0, 
+        unit: selectedUnit,
+        createdAt: Date.now(),
+        lastReset: Date.now(),
+        totalResets: 0
+    };
+
+    // Add to array
+    this.maintenanceItems.push(maintenanceItem);
+    
+    // SAVE TO STORAGE IMMEDIATELY
+    this.saveMaintenanceToStorage();
+    
+    // Update display
+    this.updateMaintenanceList();
+    
+    // Clear form
+    nameInput.value = "";
+    
+    // Reset form to defaults
+    document.getElementById("newMaintenanceInterval").value = "5000";
+    document.getElementById("newMaintenanceWeeks").value = "4";
+    document.getElementById("intervalValue").textContent = "5000 km";
+    document.getElementById("weeksValue").textContent = "4 weeks";
+    
+    // Reset to km by default
+    document.querySelector('input[name="maintenanceUnit"][value="km"]').checked = true;
+    this.toggleMaintenanceUnit('km');
+    
+    this.log(`Maintenance item added: ${name} - every ${interval} ${selectedUnit}`);
+    alert(`✅ Added: ${name} (every ${interval} ${selectedUnit})`);
 },
 
 // Enhanced maintenance list display
 updateMaintenanceList: function() {
-  const list = document.getElementById("maintenanceList");
-  
-  if (this.maintenanceItems.length === 0) {
-    list.innerHTML = `
-      <div style="text-align: center; padding: 20px; color: #aaa;">
-        No maintenance items added yet.<br>
-        Add your first maintenance item above.
-      </div>
-    `;
-    return;
-  }
-
-  list.innerHTML = this.maintenanceItems.map((item, index) => {
-    const progressPercent = (item.progress / item.interval) * 100;
-    const progressColor = progressPercent < 70 ? 'var(--success-color)' : 
-                         progressPercent < 90 ? 'var(--warning-color)' : 'var(--error-color)';
+    const list = document.getElementById("maintenanceList");
+    if (!list) return;
     
-    let timeInfo = '';
-    if (item.unit === 'weeks') {
-      const weeksPassed = Math.floor((Date.now() - item.lastReset) / (7 * 24 * 60 * 60 * 1000));
-      timeInfo = `<div style="font-size: 0.8em; color: #aaa;">${weeksPassed} weeks passed</div>`;
-    } else {
-      timeInfo = `<div style="font-size: 0.8em; color: #aaa;">${item.progress}/${item.interval} km</div>`;
+    if (this.maintenanceItems.length === 0) {
+        list.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: #aaa;">
+                No maintenance items added yet.<br>
+                Add your first maintenance item above.
+            </div>
+        `;
+        return;
     }
-    
-    return `
-      <div class="maintenance-item" data-index="${index}">
-        <div style="flex: 1;">
-          <div style="font-weight: bold; margin-bottom: 5px;">${item.name}</div>
-          <div style="font-size: 0.9em; color: #ccc;">Every ${item.interval} ${item.unit}</div>
-          ${timeInfo}
-        </div>
-        <div class="maintenance-progress">
-          <div class="maintenance-progress-bar" style="width: ${progressPercent}%; background: ${progressColor};"></div>
-        </div>
-        <div style="margin-left: 10px;">
-          <button onclick="MotoFindBack.resetMaintenanceItem(${index})" title="Reset" style="background: var(--accent-color);">🔄</button>
-          <button onclick="MotoFindBack.removeMaintenanceItem(${index})" title="Remove" style="background: #ff3333;">🗑️</button>
-        </div>
-      </div>
-    `;
-  }).join('');
+
+    list.innerHTML = this.maintenanceItems.map((item, index) => {
+        let progressPercent, progressText, progressColor;
+        
+        if (item.unit === 'km') {
+            progressPercent = (item.progress / item.interval) * 100;
+            progressText = `${item.progress.toFixed(0)}/${item.interval} km`;
+        } else {
+            // For weeks, calculate weeks passed
+            const weeksPassed = Math.floor((Date.now() - item.lastReset) / (7 * 24 * 60 * 60 * 1000));
+            progressPercent = (weeksPassed / item.interval) * 100;
+            progressText = `${weeksPassed}/${item.interval} weeks`;
+            item.progress = weeksPassed; // Update for display
+        }
+        
+        progressColor = progressPercent < 70 ? 'var(--success-color)' : 
+                       progressPercent < 90 ? 'var(--warning-color)' : 'var(--error-color)';
+        
+        return `
+            <div class="maintenance-item" data-id="${item.id}">
+                <div style="flex: 1;">
+                    <div style="font-weight: bold; margin-bottom: 5px;">${item.name}</div>
+                    <div style="font-size: 0.9em; color: #ccc;">Every ${item.interval} ${item.unit}</div>
+                    <div style="font-size: 0.8em; color: #aaa;">${progressText}</div>
+                </div>
+                <div class="maintenance-progress">
+                    <div class="maintenance-progress-bar" style="width: ${Math.min(100, progressPercent)}%; background: ${progressColor};"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
 },
 
 // Reset individual maintenance item
@@ -5254,31 +5327,38 @@ removeMaintenanceItem: function(index) {
 },
 
 // Update maintenance progress based on distance or time
-updateMaintenanceProgress: function() {
-  const now = Date.now();
-  
-  this.maintenanceItems.forEach(item => {
-    if (item.unit === 'km') {
-      // Update based on distance (you'll need to track distance since last reset)
-      // This would need to be integrated with your distance tracking
-    } else {
-      // Update based on time (weeks)
-      const weeksPassed = Math.floor((now - item.lastReset) / (7 * 24 * 60 * 60 * 1000));
-      item.progress = weeksPassed;
+updateMaintenanceProgress: function(distanceKm) {
+    let updated = false;
+    
+    this.maintenanceItems.forEach(item => {
+        if (item.unit === 'km') {
+            const oldProgress = item.progress;
+            item.progress += distanceKm;
+            
+            // Check if maintenance is due
+            if (item.progress >= item.interval && oldProgress < item.interval) {
+                this.showMaintenanceAlert(item);
+            }
+            
+            updated = true;
+        }
+    });
+    
+    if (updated) {
+        this.saveMaintenanceToStorage(); // Save progress updates
+        this.updateMaintenanceList();
     }
-  });
-  
-  this.updateMaintenanceList();
 },
 
-
-
-  resetMaintenance: function() {
-    this.maintenanceItems = [];
-    this.updateMaintenanceList();
-    this.log("Maintenance items reset");
-  },
-
+resetMaintenance: function() {
+    if (confirm('Are you sure you want to reset ALL maintenance items? This cannot be undone.')) {
+        this.maintenanceItems = [];
+        this.saveMaintenanceToStorage(); // Save empty array
+        this.updateMaintenanceList();
+        this.log("All maintenance items reset");
+        alert("All maintenance items have been reset");
+    }
+},
  
   updateRideHistory: function() {
     const history = document.getElementById("rideHistory");

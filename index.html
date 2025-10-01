@@ -5043,8 +5043,17 @@ updatePosition: function(pos) {
     this.prevPosition = this.lastPosition;
     this.checkAccelerationAchievement();
     this.lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude, alt: pos.coords.altitude || 0 };
-    this.currentSpeed = pos.coords.speed || 0;
-    if (this.currentSpeed > this.maxSpeed) this.maxSpeed = this.currentSpeed * 3.6;
+    
+    // 🎯 FIXED: Proper speed handling with safety checks
+    const gpsSpeedMps = pos.coords.speed; // GPS provides speed in m/s
+    this.currentSpeed = gpsSpeedMps || 0;
+    const currentSpeedKmh = this.currentSpeed * 3.6; // Convert to km/h
+    
+    // Update max speed with safety validation
+    if (currentSpeedKmh > this.maxSpeed && currentSpeedKmh < 300) { // 300 km/h sanity check
+        this.maxSpeed = currentSpeedKmh;
+    }
+    
     this.movementHistory.push({ lat: this.lastPosition.lat, lon: this.lastPosition.lon, speed: this.currentSpeed, alt: this.lastPosition.alt, time: Date.now() });
 
     if (this.prevPosition) {
@@ -5063,11 +5072,11 @@ updatePosition: function(pos) {
         this.elevationHistory.push({ elev: this.lastPosition.alt, time: Date.now() });
     }
 
-    if (this.isRideActive && this.currentSpeed * 3.6 >= this.accelTarget && this.accelerationStartTime && !this.accelerationTimes.some(t => t)) {
+    if (this.isRideActive && currentSpeedKmh >= this.accelTarget && this.accelerationStartTime && !this.accelerationTimes.some(t => t)) {
         const accelTime = (Date.now() - this.accelerationStartTime) / 1000;
         this.accelerationTimes.push(accelTime);
         this.accelerationStartTime = null;
-    } else if (this.currentSpeed * 3.6 < this.accelTarget && !this.accelerationStartTime) {
+    } else if (currentSpeedKmh < this.accelTarget && !this.accelerationStartTime) {
         this.accelerationStartTime = Date.now();
     }
 
@@ -5097,7 +5106,7 @@ updatePosition: function(pos) {
 
     // Auto-lock functionality - Only activate if user explicitly enabled it
     if (this.autoLockEnabled && this.autoLockExplicitlyEnabled) {
-        if (this.currentSpeed * 3.6 < this.speedThreshold) {
+        if (currentSpeedKmh < this.speedThreshold) {
             if (!this.lastStationaryTime) {
                 this.lastStationaryTime = Date.now();
                 this.lastStationaryPosition = this.lastPosition;
@@ -5115,7 +5124,7 @@ updatePosition: function(pos) {
     this.updateUI();
     this.startBleep();
 },
-
+  
   handleGpsError: function(err) {
     this.log(`GPS error: ${err.message}`, true);
     this.updateGpsStatus(`Error: ${err.message}`);

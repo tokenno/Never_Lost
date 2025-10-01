@@ -4033,7 +4033,13 @@ tabs.forEach(tab => {
   document.getElementById("emergencyBtn").addEventListener("click", () => this.sendEmergencyAlert());
   document.getElementById("testEmergencyBtn").addEventListener("click", () => this.testEmergency());
   document.getElementById("addContactBtn").addEventListener("click", () => this.addEmergencyContact());
-  document.getElementById("addMaintenanceBtn").addEventListener("click", () => this.showMaintenanceForm());
+ document.getElementById("addMaintenanceBtn").addEventListener("click", () => {
+  // Just focus on the maintenance form input
+  const nameInput = document.getElementById("newMaintenanceName");
+  if (nameInput) {
+    nameInput.focus();
+  }
+});
   document.getElementById("resetMaintenanceBtn").addEventListener("click", () => this.resetMaintenance());
   document.getElementById("saveMaintenanceBtn").addEventListener("click", () => this.saveMaintenanceItem());
   document.getElementById("startEngineAnalysis").addEventListener("click", () => this.startEngineAnalysis());

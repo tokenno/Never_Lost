@@ -785,6 +785,31 @@ input[type="range"]::-webkit-slider-thumb {
 .tab-content.active {
   display: block;
 }
+     
+      /* Fullscreen Map Styles */
+#fullScreenMap {
+  background: var(--bg-primary);
+}
+
+#focusMap {
+  width: 100%;
+  height: 100%;
+}
+
+/* Ensure map tiles are visible in dark mode */
+.leaflet-container {
+  background: var(--bg-secondary);
+}
+
+.leaflet-popup-content {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.leaflet-control-attribution {
+  background: rgba(0, 0, 0, 0.7) !important;
+  color: var(--text-secondary) !important;
+}
       
     @media (max-width: 768px) {
       .dashboard {
@@ -893,7 +918,9 @@ input[type="range"]::-webkit-slider-thumb {
         <!-- Session Management -->
         <div class="panel">
           <h3>Ride Session Management</h3>
-          <div class="control-group">  <button id="startRideBtn" class="primary-btn">🏁 Start Ride & Session</button>  <button id="saveSessionBtn" class="secondary-btn" onclick="MotoFindBack.saveCurrentSession()">💾
+          <div class="control-group"> <button id="startRideBtn" class="primary-btn">🏁
+              Start Ride &amp; Session</button> <button id="saveSessionBtn" class="secondary-btn"
+              onclick="MotoFindBack.saveCurrentSession()">💾
               Save Session</button> <button id="calibrateBtn" class="secondary-btn">Calibrate
               Sensors</button> <button onclick="MotoFindBack.toggleEmergency()"
               class="secondary-btn">
@@ -1027,8 +1054,8 @@ input[type="range"]::-webkit-slider-thumb {
         <div class="elevation-profile"> <canvas id="elevationCanvas"></canvas>
         </div>
         <p>Total Elevation Gain: <span id="totalElevationGain">0 m</span></p>
-         <p>Max Elevation: <span id="maxElevation">0 m</span></p>
-  <p>Min Elevation: <span id="minElevation">0 m</span></p>
+        <p>Max Elevation: <span id="maxElevation">0 m</span></p>
+        <p>Min Elevation: <span id="minElevation">0 m</span></p>
       </div>
       <!-- Statistics -->
       <div class="control-group">
@@ -1171,7 +1198,6 @@ input[type="range"]::-webkit-slider-thumb {
             </div>
           </div>
         </div>
-     
         <div id="lockStatus" class="status">Lock Status: Not locked</div>
         <div id="audioStatus" class="status">Audio: Not initialized</div>
         <div id="gpsStatus" class="status">GPS: Ready</div>
@@ -1338,190 +1364,262 @@ input[type="range"]::-webkit-slider-thumb {
         <h2 class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
           Help Guide ▼ </h2>
         <div id="helpContent" style="display: none; text-align: left; padding: 10px;">
-   <h1>Spin - Motorcycle Companion</h1>
-<h2>Purpose:</h2>
-Comprehensive motorcycle-focused GPS navigation with advanced ride metrics, emergency features, maintenance tracking, and engine sound analysis. The spinning wheel in the header rotates to reflect your current speed, spinning faster as you ride faster.
-
-
-
-<h2>📊 Metrics Tab</h2>
-<strong>Ride Session Management:</strong> Single button to start/stop rides and sessions simultaneously.<br>
-<strong>Real-time Dashboard:</strong> Current speed, max speed, average speed, lean angles, distance, elevation.<br>
-<strong>Cornering Analysis:</strong> Detects corners using GPS curvature and lean angle, calculates cornering G-forces and speeds.<br>
-<strong>Elevation Profile:</strong> Live chart showing altitude changes with total elevation gain.<br>
-<strong>Lean Angle Indicator:</strong> Visual gauge showing current and maximum lean angles.<br>
-<strong>Acceleration Timer:</strong> Measures 0-100 km/h (customizable target) with achievement popup.<br>
-<strong>Statistics Display:</strong> Shows both current ride data and aggregated data from all saved sessions.<br>
-
-<h3>🎵 Engine Sound Analysis</h3>
-<strong>Real-time RPM Monitoring:</strong> Uses microphone to detect engine RPM from sound frequencies.<br>
-<strong>Gear Position Estimation:</strong> Automatically estimates current gear based on speed/RPM ratio.<br>
-<strong>Engine Health Monitoring:</strong> Detects engine knock, exhaust leaks, and unusual vibrations.<br>
-<strong>Gear Shift Detection:</strong> Tracks shift patterns and analyzes shift quality.<br>
-<strong>Impulse Response Calibration:</strong> Record your engine sound for precise RPM calibration (3-second sample).<br>
-<strong>Sound Spectrum Visualization:</strong> Real-time frequency display with waveform visualization.<br>
-<strong>Calibration Monitor:</strong> Debug tool to see real-time frequency and volume readings.<br>
-          
+          <h1>Spin - Motorcycle Companion</h1>
+          <h2>Purpose:</h2>
+          Comprehensive motorcycle-focused GPS navigation with advanced ride
+          metrics, emergency features, maintenance tracking, and engine sound
+          analysis. The spinning wheel in the header rotates to reflect your
+          current speed, spinning faster as you ride faster.
+          <h2>📊 Metrics Tab</h2>
+          <strong>Ride Session Management:</strong> Single button to start/stop
+          rides and sessions simultaneously.<br>
+          <strong>Real-time Dashboard:</strong> Current speed, max speed,
+          average speed, lean angles, distance, elevation.<br>
+          <strong>Cornering Analysis:</strong> Detects corners using GPS
+          curvature and lean angle, calculates cornering G-forces and speeds.<br>
+          <strong>Elevation Profile:</strong> Live chart showing altitude
+          changes with total elevation gain.<br>
+          <strong>Lean Angle Indicator:</strong> Visual gauge showing current
+          and maximum lean angles.<br>
+          <strong>Acceleration Timer:</strong> Measures 0-100 km/h (customizable
+          target) with achievement popup.<br>
+          <strong>Statistics Display:</strong> Shows both current ride data and
+          aggregated data from all saved sessions.<br>
+          <h3>🎵 Engine Sound Analysis</h3>
+          <strong>Real-time RPM Monitoring:</strong> Uses microphone to detect
+          engine RPM from sound frequencies.<br>
+          <strong>Gear Position Estimation:</strong> Automatically estimates
+          current gear based on speed/RPM ratio.<br>
+          <strong>Engine Health Monitoring:</strong> Detects engine knock,
+          exhaust leaks, and unusual vibrations.<br>
+          <strong>Gear Shift Detection:</strong> Tracks shift patterns and
+          analyzes shift quality.<br>
+          <strong>Impulse Response Calibration:</strong> Record your engine
+          sound for precise RPM calibration (3-second sample).<br>
+          <strong>Sound Spectrum Visualization:</strong> Real-time frequency
+          display with waveform visualization.<br>
+          <strong>Calibration Monitor:</strong> Debug tool to see real-time
+          frequency and volume readings.<br>
           <h2>🚀 Navigation Tab</h2>
-<strong>GPS Locator:</strong> Lock your position and navigate back with audio cues (initially muted for safety).<br>
-<strong>Calibrate Sensors:</strong> Place phone on bike in riding position and tap to set baseline for lean angle and crash detection calibration.<br>
-<strong>Auto-Lock Mode:</strong> Automatically locks position when motorcycle is stationary for specified time (user adjustable).<br>
-<strong>Direction Indicator:</strong> Visual compass pointing to locked position with real-time updates.<br>
-<strong>Sonar Locator Parameters:</strong> Adjust audio feedback frequency and maximum distance range.<br>
-<strong>Mute Sound:</strong> Toggle audio feedback on/off. Starts muted to prevent unexpected sounds.<br>
-<strong>Position Map:</strong> Real-time tracking with user marker (blue) and lock marker (red).<br>
-
-<h3>💾 Session Management</h3>
-<strong>Start Ride & Session:</strong> Single button combines ride tracking and session recording.<br>
-<strong>Auto-save:</strong> Automatically saves session data every 30 seconds during rides.<br>
-<strong>Save Session:</strong> Save ride with custom name and optional notes.<br>
-<strong>Quick Save:</strong> Instant save without prompts for quick recording.<br>
-<strong>Export Session:</strong> Download individual ride data as JSON file.<br>
-<strong>Session History:</strong> Browse, view, export, or delete all past rides.<br>
-<strong>General Statistics:</strong> Aggregated data from all sessions with best performance metrics.<br>
-
-<h2>🚨 Emergency Tab</h2>
-<strong>Emergency Alert:</strong> Send your GPS location to all emergency contacts with one tap.<br>
-<strong>Crash Detection:</strong> Automatically detects crashes when bike remains tilted >45° from normal position for 3+ seconds.<br>
-<strong>Emergency Contacts:</strong> Add multiple contacts with call/message buttons for quick access.<br>
-<strong>Custom Message:</strong> Edit the emergency message template with your personal details.<br>
-<strong>Emergency Call:</strong> Direct access to emergency services (112/911).<br>
-<strong>Test Features:</strong> Safe testing of emergency alerts and crash detection.<br>
-<strong>Toggle Emergency System:</strong> Enable/disable all emergency features as needed.<br>
-
-<h2>🔧 Maintenance Tab (Upkeep)</h2>
-<strong>Dual Tracking System:</strong> Track maintenance by kilometers OR weeks.<br>
-<strong>Automatic Progress Tracking:</strong> Kilometer-based items update automatically during rides.<br>
-<strong>Time-based Alerts:</strong> Week-based items track time automatically and alert when due.<br>
-<strong>Visual Progress Bars:</strong> Color-coded indicators (green/yellow/red) show maintenance status.<br>
-<strong>Custom Maintenance Items:</strong> Add any maintenance task with custom intervals.<br>
-<strong>Persistent Storage:</strong> All maintenance items saved automatically and persist between app sessions.<br>
-<strong>Individual Management:</strong> Delete specific items or reset all maintenance tasks.<br>
-<strong>Due Notifications:</strong> Get alerts when maintenance is due with option to reset.<br>
-
-<h2>🎛️ Advanced Features</h2>
-<strong>Triple-Tap Overlay:</strong> Quick triple-tap anywhere to show enlarged stats display with spinning wheel.<br>
-<strong>Real-time Wheel Animation:</strong> Header wheel spins according to your speed; stops when stationary.<br>
-<strong>Comprehensive Data Export:</strong> Export all metrics, sessions, and maintenance data in JSON format.<br>
-<strong>Offline Capable:</strong> Works without internet connection for basic GPS navigation and tracking.<br>
-<strong>Battery Efficient:</strong> Optimized sensors and GPS usage for longer battery life.<br>
-<strong>Crash Detection Calibration:</strong> Learns your normal riding position for accurate crash detection.<br>
-<strong>Session Load Prompts:</strong> Option to load previous sessions or start fresh on app launch.<br>
-
-<h2>🚀 Quick Start Guide</h2>
-<ol>
-    <li><strong>Basic Start:</strong>
-    <ul>
-      <li><strong>Mount phone securely on motorcycle in riding position</strong></li>
-      <li><strong>Tap "Calibrate Sensors" in Navigation tab - keep phone steady for 5 seconds</strong></li>
-      <li><strong>Press Start Ride</strong></li>
-      <li><strong>Stop Ride and Save Session at the end of your ride</strong></li>
-    </ul>
-  </li>
-  <li><strong>Initial Setup:</strong>
-    <ul>
-      <li>Mount phone securely on motorcycle in riding position</li>
-      <li>Tap "Calibrate Sensors" in Navigation tab - keep phone steady for 5 seconds</li>
-         <li>Calibation data are saved. You have to calibrate once and only if you later change phone position</li>
-      <li>For more accurate results, calibrate on each session/li>
-      <li>Add emergency contacts in Emergency tab</li>
-      <li>Set up maintenance items in Upkeep tab</li>
-    </ul>
-  </li>
-  <li><strong>Before Riding:</strong>
-    <ul>
-      <li>Tap "Start Ride & Session" and go to Navigation tab and tap "Lock Position"</li>
-      <li>For engine analysis: Start Engine Analysis and calibrate with "Record Engine Sample"</li>
-      <li>Test emergency features safely before riding</li>
-    </ul>
-  </li>
-  <li><strong>During Ride:</strong>
-    <ul>
-      <li>Monitor Metrics tab for real-time performance data</li>
-      <li>Use Navigation tab to lock parking positions when needed</li>
-      <li>Triple-tap screen for quick enlarged stats overlay</li>
-        <li>Watch header wheel animation match your speed</li>
-      <li>Use Quick Save for important moments during ride</li>
-    </ul>
-  </li>
-  <li><strong>After Ride:</strong>
-    <ul>
-      <li>Tap "Stop Ride & Save" to end recording</li>
-      <li>Save session with name and notes when prompted</li>
-      <li>Check maintenance progress in Upkeep tab</li>
-      <li>Export session data for analysis or backup</li>
-      <li>Review ride statistics in session history</li>
-    </ul>
-  </li>
-</ol>
-
-<h2>💡 Pro Tips</h2>
-<strong>For Best Results:</strong>
-<ul>
-  <li>Mount phone securely aligned with bike's centerline for accurate lean angles</li>
-  <li>Calibrate engine sound analysis in a quiet environment away from wind noise</li>
-  <li>Set realistic maintenance intervals: 5,000-10,000 km for oil, 1,000 km for chain lubrication</li>
-  <li>Test all emergency features in a safe environment before relying on them</li>
-  <li>Use quick save frequently during long rides to prevent data loss</li>
-  <li>Export session data regularly to backup your riding history</li>
-  <li>Calibrate crash detection with your specific phone mounting position</li>
-</ul>
-
-<strong>Safety Features:</strong>
-<ul>
-  <li>Crash detection requires proper phone mounting and sensor calibration</li>
-  <li>Emergency contacts should be set and tested before any ride</li>
-  <li>Test audio navigation in a safe area first to understand the cues</li>
-  <li>Keep phone charged - consider a motorcycle phone charger for long rides</li>
-  <li>Emergency features start disabled until you explicitly enable them</li>
-</ul>
-
-<strong>Performance Tracking:</strong>
-<ul>
-  <li>Monitor cornering G-forces to improve technique and find limits safely</li>
-  <li>Track acceleration times to measure performance improvements</li>
-  <li>Use elevation data to plan routes and track climbing performance</li>
-  <li>Analyze gear shift patterns to develop smoother riding habits</li>
-  <li>Compare session data to track progress over time</li>
-</ul>
-
-<h2>🔧 Troubleshooting</h2>
-<strong>Common Issues:</strong>
-<ul>
-  <li><em>No GPS signal:</em> Ensure location services are enabled and outdoors</li>
-  <li><em>No engine sound detection:</em> Allow microphone access and start engine analysis first</li>
-  <li><em>Inaccurate lean angles:</em> Recalibrate sensors with phone properly mounted</li>
-  <li><em>Audio not working:</em> Check phone volume, unmute in app, and grant audio permissions</li>
-  <li><em>Crash detection false positives:</em> Recalibrate with phone in exact riding position</li>
-  <li><em>Maintenance items not saving:</em> Ensure storage permissions are granted</li>
-  <li><em>Session data missing:</em> Use Save Session explicitly or enable auto-save</li>
-</ul>
-
-<strong>Support:</strong>
-<ul>
-  <li>Grant all requested permissions (location, microphone, storage) for full functionality</li>
-  <li>Use in landscape mode for better dashboard visibility while riding</li>
-  <li>Regularly export data to prevent loss from browser cache clearing</li>
-  <li>Report any issues for continuous improvement</li>
-</ul>
-
-<strong>Created:</strong>
-<ul>
-  <li>For ihearcolors.online</li>
-  <li>By Dimitris Barnias 2025</li>
-  <li>If you like this app, <strong>please support</strong> by buying me a cup of coffee (or two!)</li>
-  <li>Any donation is welcome: PayPal newtones@icloud.com</li>
-  <li><strong>Report</strong> any bugs or suggest new features at: dbarnias@gmail.com</li>
-</ul>
-
-<div style="background: rgba(255,102,0,0.1); padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 3px solid var(--primary-color);">
-  <strong>🎯 Remember:</strong> Spin is designed to enhance your riding experience, not replace safe riding practices. Always ride responsibly, within your limits, and in compliance with local laws and regulations. The developer is not responsible for how you use this application or any consequences thereof.
-</div>
-      </div>
-      <div id="debug"></div>
-      <!-- Leaflet JS -->
-      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-      <script>
+          <strong>GPS Locator:</strong> Lock your position and navigate back
+          with audio cues (initially muted for safety).<br>
+          <strong>Calibrate Sensors:</strong> Place phone on bike in riding
+          position and tap to set baseline for lean angle and crash detection
+          calibration.<br>
+          <strong>Auto-Lock Mode:</strong> Automatically locks position when
+          motorcycle is stationary for specified time (user adjustable).<br>
+          <strong>Direction Indicator:</strong> Visual compass pointing to
+          locked position with real-time updates.<br>
+          <strong>Sonar Locator Parameters:</strong> Adjust audio feedback
+          frequency and maximum distance range.<br>
+          <strong>Mute Sound:</strong> Toggle audio feedback on/off. Starts
+          muted to prevent unexpected sounds.<br>
+          <strong>Position Map:</strong> Real-time tracking with user marker
+          (blue) and lock marker (red).<br>
+          <h3>💾 Session Management</h3>
+          <strong>Start Ride &amp; Session:</strong> Single button combines ride
+          tracking and session recording.<br>
+          <strong>Auto-save:</strong> Automatically saves session data every 30
+          seconds during rides.<br>
+          <strong>Save Session:</strong> Save ride with custom name and optional
+          notes.<br>
+          <strong>Quick Save:</strong> Instant save without prompts for quick
+          recording.<br>
+          <strong>Export Session:</strong> Download individual ride data as JSON
+          file.<br>
+          <strong>Session History:</strong> Browse, view, export, or delete all
+          past rides.<br>
+          <strong>General Statistics:</strong> Aggregated data from all sessions
+          with best performance metrics.<br>
+          <h2>🚨 Emergency Tab</h2>
+          <strong>Emergency Alert:</strong> Send your GPS location to all
+          emergency contacts with one tap.<br>
+          <strong>Crash Detection:</strong> Automatically detects crashes when
+          bike remains tilted &gt;45° from normal position for 3+ seconds.<br>
+          <strong>Emergency Contacts:</strong> Add multiple contacts with
+          call/message buttons for quick access.<br>
+          <strong>Custom Message:</strong> Edit the emergency message template
+          with your personal details.<br>
+          <strong>Emergency Call:</strong> Direct access to emergency services
+          (112/911).<br>
+          <strong>Test Features:</strong> Safe testing of emergency alerts and
+          crash detection.<br>
+          <strong>Toggle Emergency System:</strong> Enable/disable all emergency
+          features as needed.<br>
+          <h2>🔧 Maintenance Tab (Upkeep)</h2>
+          <strong>Dual Tracking System:</strong> Track maintenance by kilometers
+          OR weeks.<br>
+          <strong>Automatic Progress Tracking:</strong> Kilometer-based items
+          update automatically during rides.<br>
+          <strong>Time-based Alerts:</strong> Week-based items track time
+          automatically and alert when due.<br>
+          <strong>Visual Progress Bars:</strong> Color-coded indicators
+          (green/yellow/red) show maintenance status.<br>
+          <strong>Custom Maintenance Items:</strong> Add any maintenance task
+          with custom intervals.<br>
+          <strong>Persistent Storage:</strong> All maintenance items saved
+          automatically and persist between app sessions.<br>
+          <strong>Individual Management:</strong> Delete specific items or reset
+          all maintenance tasks.<br>
+          <strong>Due Notifications:</strong> Get alerts when maintenance is due
+          with option to reset.<br>
+          <h2>🎛️ Advanced Features</h2>
+          <strong>Triple-Tap Overlay 1:</strong> Quick triple-tap on the  <strong>Right</strong>  side of the screen to show
+          enlarged stats display with spinning wheel.<br>
+          <strong>Real-time Wheel Animation:</strong> Header wheel spins
+          according to your speed; stops when stationary.<br>
+               <strong>Triple-Tap Overlay 2:</strong> Quick triple-tap on the  <strong>Left</strong>  side of the screen to show
+          enlarged position map.<br>
+          <strong>Comprehensive Data Export:</strong> Export all metrics,
+          sessions, and maintenance data in JSON format.<br>
+          <strong>Offline Capable:</strong> Works without internet connection
+          for basic GPS navigation and tracking.<br>
+          <strong>Battery Efficient:</strong> Optimized sensors and GPS usage
+          for longer battery life.<br>
+          <strong>Crash Detection Calibration:</strong> Learns your normal
+          riding position for accurate crash detection.<br>
+          <strong>Session Load Prompts:</strong> Option to load previous
+          sessions or start fresh on app launch.<br>
+          <h2>🚀 Quick Start Guide</h2>
+          <ol>
+            <li><strong>Basic Start:</strong>
+              <ul>
+                <li><strong>Mount phone securely on motorcycle in riding
+                    position</strong></li>
+                <li><strong>Tap "Calibrate Sensors" in Navigation tab - keep
+                    phone steady for 5 seconds</strong></li>
+                <li><strong>Press Start Ride</strong></li>
+                <li><strong>Stop Ride and Save Session at the end of your ride</strong></li>
+              </ul>
+            </li>
+            <li><strong>Initial Setup:</strong>
+              <ul>
+                <li>Mount phone securely on motorcycle in riding position</li>
+                <li>Tap "Calibrate Sensors" in Navigation tab - keep phone
+                  steady for 5 seconds</li>
+                <li>Calibation data are saved. You have to calibrate once and
+                  only if you later change phone position</li>
+                <li>For more accurate results, calibrate on each session/li&gt;
+                </li>
+                <li>Add emergency contacts in Emergency tab</li>
+                <li>Set up maintenance items in Upkeep tab</li>
+              </ul>
+            </li>
+            <li><strong>Before Riding:</strong>
+              <ul>
+                <li>Tap "Start Ride &amp; Session" and go to Navigation tab and
+                  tap "Lock Position"</li>
+                <li>For engine analysis: Start Engine Analysis and calibrate
+                  with "Record Engine Sample"</li>
+                <li>Test emergency features safely before riding</li>
+              </ul>
+            </li>
+            <li><strong>During Ride:</strong>
+              <ul>
+                <li>Monitor Metrics tab for real-time performance data</li>
+                <li>Use Navigation tab to lock parking positions when needed</li>
+                <li>Triple-tap screen for quick enlarged stats overlay</li>
+                <li>Watch header wheel animation match your speed</li>
+                <li>Use Quick Save for important moments during ride</li>
+              </ul>
+            </li>
+            <li><strong>After Ride:</strong>
+              <ul>
+                <li>Tap "Stop Ride &amp; Save" to end recording</li>
+                <li>Save session with name and notes when prompted</li>
+                <li>Check maintenance progress in Upkeep tab</li>
+                <li>Export session data for analysis or backup</li>
+                <li>Review ride statistics in session history</li>
+              </ul>
+            </li>
+          </ol>
+          <h2>💡 Pro Tips</h2>
+          <strong>For Best Results:</strong>
+          <ul>
+            <li>Mount phone securely aligned with bike's centerline for accurate
+              lean angles</li>
+            <li>Calibrate engine sound analysis in a quiet environment away from
+              wind noise</li>
+            <li>Set realistic maintenance intervals: 5,000-10,000 km for oil,
+              1,000 km for chain lubrication</li>
+            <li>Test all emergency features in a safe environment before relying
+              on them</li>
+            <li>Use quick save frequently during long rides to prevent data loss</li>
+            <li>Export session data regularly to backup your riding history</li>
+            <li>Calibrate crash detection with your specific phone mounting
+              position</li>
+          </ul>
+          <strong>Safety Features:</strong>
+          <ul>
+            <li>Crash detection requires proper phone mounting and sensor
+              calibration</li>
+            <li>Emergency contacts should be set and tested before any ride</li>
+            <li>Test audio navigation in a safe area first to understand the
+              cues</li>
+            <li>Keep phone charged - consider a motorcycle phone charger for
+              long rides</li>
+            <li>Emergency features start disabled until you explicitly enable
+              them</li>
+          </ul>
+          <strong>Performance Tracking:</strong>
+          <ul>
+            <li>Monitor cornering G-forces to improve technique and find limits
+              safely</li>
+            <li>Track acceleration times to measure performance improvements</li>
+            <li>Use elevation data to plan routes and track climbing performance</li>
+            <li>Analyze gear shift patterns to develop smoother riding habits</li>
+            <li>Compare session data to track progress over time</li>
+          </ul>
+          <h2>🔧 Troubleshooting</h2>
+          <strong>Common Issues:</strong>
+          <ul>
+            <li><em>No GPS signal:</em> Ensure location services are enabled and
+              outdoors</li>
+            <li><em>No engine sound detection:</em> Allow microphone access and
+              start engine analysis first</li>
+            <li><em>Inaccurate lean angles:</em> Recalibrate sensors with phone
+              properly mounted</li>
+            <li><em>Audio not working:</em> Check phone volume, unmute in app,
+              and grant audio permissions</li>
+            <li><em>Crash detection false positives:</em> Recalibrate with phone
+              in exact riding position</li>
+            <li><em>Maintenance items not saving:</em> Ensure storage
+              permissions are granted</li>
+            <li><em>Session data missing:</em> Use Save Session explicitly or
+              enable auto-save</li>
+          </ul>
+          <strong>Support:</strong>
+          <ul>
+            <li>Grant all requested permissions (location, microphone, storage)
+              for full functionality</li>
+            <li>Use in landscape mode for better dashboard visibility while
+              riding</li>
+            <li>Regularly export data to prevent loss from browser cache
+              clearing</li>
+            <li>Report any issues for continuous improvement</li>
+          </ul>
+          <strong>Created:</strong>
+          <ul>
+            <li>For ihearcolors.online</li>
+            <li>By Dimitris Barnias 2025</li>
+            <li>If you like this app, <strong>please support</strong> by buying
+              me a cup of coffee (or two!)</li>
+            <li>Any donation is welcome: PayPal newtones@icloud.com</li>
+            <li><strong>Report</strong> any bugs or suggest new features at:
+              dbarnias@gmail.com</li>
+          </ul>
+          <div style="background: rgba(255,102,0,0.1); padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 3px solid var(--primary-color);">
+            <strong>🎯 Remember:</strong> Spin is designed to enhance your
+            riding experience, not replace safe riding practices. Always ride
+            responsibly, within your limits, and in compliance with local laws
+            and regulations. The developer is not responsible for how you use
+            this application or any consequences thereof.
+          </div>
+        </div>
+        <div id="debug"></div>
+        <!-- Leaflet JS -->
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script>
 const MotoFindBack = {
   maintenanceItems: [], 
   audioCtx: null,
@@ -1586,6 +1684,14 @@ const MotoFindBack = {
   tripleTapCount: 0,
   tripleTapTimeout: null,
   lastTapTime: 0,
+  tapTimings: [],
+leftTapCount: 0,
+rightTapCount: 0,
+lastLeftTap: 0,
+lastRightTap: 0,
+leftTapTimeout: null,
+rightTapTimeout: null,
+  isMapFocused: false,
   isOverlayVisible: false,
   
   accelerationPopup: {
@@ -1891,7 +1997,8 @@ saveUserPreferences: function() {
     <div style="background: #333; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; border: 2px solid var(--primary-color);">
       <h3>Load Previous Sessions?</h3>
       <p style="color: #ccc; margin: 15px 0;">Found ${this.sessionHistory.length} saved ride sessions. Load them now?</p>
- <p style="color: #ccc; margin: 15px 0;">Hint: Triple Click -> Change Simpler UI</p>
+ <p style="color: #ccc; margin: 15px 0;">Hint: Triple Click Right Side -> Change to Simpler UI</p>
+<p style="color: #ccc; margin: 15px 0;">Hint: Triple Click LEft Side -> Map View</p>
       
       
       <div style="margin: 15px 0;">
@@ -3619,41 +3726,290 @@ setupTripleTapDetection: function() {
   document.getElementById('tripleTapOverlay').addEventListener('click', (e) => {
     this.hideOverlay();
   });
+  
+  // Close map focus when clicking on it
+  const fullScreenMap = document.getElementById('fullScreenMap');
+  if (fullScreenMap) {
+    fullScreenMap.addEventListener('click', (e) => {
+      if (e.target === fullScreenMap) {
+        this.hideMapFocus();
+      }
+    });
+  }
 },
 
 handleTripleTap: function(e) {
   const currentTime = Date.now();
-  const timeSinceLastTap = currentTime - this.lastTapTime;
+  const tapX = e.clientX;
+  const tapY = e.clientY;
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
   
-  // Reset if too much time passed between taps (500ms max between taps)
-  if (timeSinceLastTap > 500) {
-    this.tripleTapCount = 1;
+  // Define tap regions - LEFT side for MAP, RIGHT side for STATS
+  const isLeftSide = tapX < screenWidth * 0.5;  // Left 50% = MAP
+  const isRightSide = tapX >= screenWidth * 0.5; // Right 50% = STATS
+  
+  console.log(`👆 Tap at: ${tapX},${tapY} - Side: ${isLeftSide ? 'LEFT(MAP)' : 'RIGHT(STATS)'}`);
+  
+  if (isLeftSide) {
+    this.handleLeftSideTaps(currentTime);    // Map gestures
   } else {
-    this.tripleTapCount++;
+    this.handleRightSideTaps(currentTime);   // Stats gestures
+  }
+},
+
+handleLeftSideTaps: function(currentTime) {
+  const timeSinceLastTap = currentTime - this.lastLeftTap;
+  
+  // Reset if too much time passed between taps
+  if (timeSinceLastTap > 500) {
+    this.leftTapCount = 1;
+  } else {
+    this.leftTapCount++;
   }
   
-  this.lastTapTime = currentTime;
+  this.lastLeftTap = currentTime;
   
   // Clear existing timeout
-  if (this.tripleTapTimeout) {
-    clearTimeout(this.tripleTapTimeout);
+  if (this.leftTapTimeout) {
+    clearTimeout(this.leftTapTimeout);
   }
   
-  // Check for triple tap
-  if (this.tripleTapCount >= 3) {
-    this.tripleTapCount = 0;
+  // Triple-tap on left side = MAP FOCUS
+  if (this.leftTapCount >= 3) {
+    console.log(`🎯 Left side triple-tap: MAP FOCUS`);
+    this.leftTapCount = 0;
+    this.showMapFocus();
+    return;
+  }
+  
+  // Reset counter after timeout
+  this.leftTapTimeout = setTimeout(() => {
+    this.leftTapCount = 0;
+  }, 500);
+},
+
+handleRightSideTaps: function(currentTime) {
+  const timeSinceLastTap = currentTime - this.lastRightTap;
+  
+  // Reset if too much time passed between taps
+  if (timeSinceLastTap > 500) {
+    this.rightTapCount = 1;
+  } else {
+    this.rightTapCount++;
+  }
+  
+  this.lastRightTap = currentTime;
+  
+  // Clear existing timeout
+  if (this.rightTapTimeout) {
+    clearTimeout(this.rightTapTimeout);
+  }
+  
+  // Triple-tap on right side = STATS OVERLAY
+  if (this.rightTapCount >= 3) {
+    console.log(`📊 Right side triple-tap: STATS OVERLAY`);
+    this.rightTapCount = 0;
     this.showOverlay();
     return;
   }
   
   // Reset counter after timeout
-  this.tripleTapTimeout = setTimeout(() => {
-    this.tripleTapCount = 0;
+  this.rightTapTimeout = setTimeout(() => {
+    this.rightTapCount = 0;
   }, 500);
 },
 
+showMapFocus: function() {
+  if (this.isMapFocused) return;
+  
+  this.isMapFocused = true;
+  console.log("🎯 MAP FOCUS ACTIVATED - Showing fullscreen map");
+  
+  // Create fullscreen map overlay
+  const mapOverlay = document.createElement('div');
+  mapOverlay.id = 'mapFocusOverlay';
+  mapOverlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0a0a0a;
+    z-index: 10000;
+    cursor: pointer;
+  `;
+  
+  // Add map container
+  const mapContainer = document.createElement('div');
+  mapContainer.id = 'focusMap';
+  mapContainer.style.cssText = `
+    width: 100%;
+    height: 100%;
+  `;
+  
+  mapOverlay.appendChild(mapContainer);
+  document.body.appendChild(mapOverlay);
+  
+  // Close on single click anywhere
+  mapOverlay.addEventListener('click', () => {
+    this.hideMapFocus();
+  });
+  
+  // Initialize the fullscreen map
+  this.initializeFocusMap();
+  
+  console.log("🗺️ Tap anywhere to close fullscreen map");
+},
+
+hideMapFocus: function() {
+  if (!this.isMapFocused) return;
+  
+  this.isMapFocused = false;
+  
+  // Remove the overlay
+  const mapOverlay = document.getElementById('mapFocusOverlay');
+  if (mapOverlay) {
+    document.body.removeChild(mapOverlay);
+  }
+  
+  // Clean up the focus map
+  if (this.focusMap) {
+    this.focusMap.remove();
+    this.focusMap = null;
+  }
+  
+  console.log("🎯 Map focus closed");
+},
+
+
+showFullScreenMap: function() {
+  // Create or show fullscreen map container
+  let mapContainer = document.getElementById('fullScreenMap');
+  
+  if (!mapContainer) {
+    mapContainer = document.createElement('div');
+    mapContainer.id = 'fullScreenMap';
+    mapContainer.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-primary);
+      z-index: 10000;
+    `;
+    
+    // Add close button
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '✕';
+    closeButton.style.cssText = `
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      z-index: 10001;
+      cursor: pointer;
+    `;
+    closeButton.addEventListener('click', () => this.hideMapFocus());
+    
+    // Create map area
+    const mapArea = document.createElement('div');
+    mapArea.id = 'focusMap';
+    mapArea.style.cssText = `
+      width: 100%;
+      height: 100%;
+      background: var(--bg-secondary);
+    `;
+    
+    mapContainer.appendChild(closeButton);
+    mapContainer.appendChild(mapArea);
+    document.body.appendChild(mapContainer);
+  }
+  
+  // Show the container
+  mapContainer.style.display = 'block';
+  
+  // Initialize the map
+  this.initializeFocusMap();
+},
+
+initializeFocusMap: function() {
+  const mapElement = document.getElementById('focusMap');
+  if (!mapElement) return;
+  
+  if (this.lastPosition) {
+    // Create a NEW map instance for fullscreen (don't touch the original map)
+    this.focusMap = L.map('focusMap').setView([this.lastPosition.lat, this.lastPosition.lon], 16);
+    
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(this.focusMap);
+    
+    // Add user marker
+    const userIcon = L.divIcon({ 
+      className: 'user-marker', 
+      html: '📍', 
+      iconSize: [40, 40] 
+    });
+    L.marker([this.lastPosition.lat, this.lastPosition.lon], { icon: userIcon }).addTo(this.focusMap);
+    
+    // Add lock marker if position is locked
+    if (this.lockPosition) {
+      const lockIcon = L.divIcon({ 
+        className: 'lock-marker', 
+        html: '🔒', 
+        iconSize: [40, 40] 
+      });
+      L.marker([this.lockPosition.lat, this.lockPosition.lon], { icon: lockIcon }).addTo(this.focusMap);
+      
+      // Draw line to locked position
+      L.polyline([
+        [this.lastPosition.lat, this.lastPosition.lon],
+        [this.lockPosition.lat, this.lockPosition.lon]
+      ], { color: '#ff6600', weight: 4 }).addTo(this.focusMap);
+    }
+    
+    console.log("🗺️ Fullscreen map created with current position");
+  } else {
+    // No GPS data
+    mapElement.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #ccc; text-align: center;">
+        <div>
+          <div style="font-size: 4rem; margin-bottom: 1rem;">🗺️</div>
+          <div style="font-size: 1.2rem;">Waiting for GPS Signal</div>
+          <div style="font-size: 0.9rem; margin-top: 0.5rem;">Start a ride to get position data</div>
+        </div>
+      </div>
+    `;
+  }
+},
+
+
+
+getCurrentTab: function() {
+  const activeTab = document.querySelector('.tab-button.active');
+  return activeTab ? activeTab.getAttribute('data-tab') : 'metrics';
+},
+
+switchToTab: function(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+  document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+  
+  // Update content
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  document.getElementById(`${tabName}-tab`).classList.add('active');
+},
+
 showOverlay: function() {
-  if (this.isOverlayVisible) return;
+  if (this.isOverlayVisible || this.isMapFocused) return;
   
   this.isOverlayVisible = true;
   const overlay = document.getElementById('tripleTapOverlay');
@@ -3703,7 +4059,7 @@ updateEnlargedWheelAnimation: function() {
   }
 },
 
-// Update your existing updateWheelAnimation function to also update the enlarged wheel:
+// Update  existing updateWheelAnimation function to also update the enlarged wheel:
 updateWheelAnimation: function() {
   const wheel = document.querySelector('.spinning-wheel');
   const spokes = document.querySelectorAll('.wheel-spoke');
@@ -3727,9 +4083,7 @@ updateWheelAnimation: function() {
   }
 },
 
- 
 
-  // Remaining methods (unchanged from previous response)
   initMap: function() {
     this.map = L.map('map').setView([51.505, -0.09], 15);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -5469,6 +5823,6 @@ resetMaintenance: function() {
 };
       
 MotoFindBack.init();
-</script> </div>
+</script> </div> </div>
   </body>
 </html>

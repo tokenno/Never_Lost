@@ -2186,6 +2186,8 @@ state: {
   weatherData: null,
   isLoaded: false,
   refreshTimer: null
+  
+
 },
 
   // Crete weather stations
@@ -3588,7 +3590,7 @@ const MotoFindBack = {
     this.updateTimeBasedMaintenance();
   },
 
-  // ✅ ALSO ADD THIS DEPENDENCY METHOD
+ 
   updateTimeBasedMaintenance: function() {
     let updated = false;
     const now = Date.now();
@@ -3613,7 +3615,7 @@ const MotoFindBack = {
     }
   },
 
-  // ✅ AND THIS METHOD TOO
+  // 
   showMaintenanceAlert: function(item) {
     let alertMessage;
     
@@ -3631,7 +3633,7 @@ const MotoFindBack = {
     }
   },
 
-  // ✅ AND THIS METHOD
+  // 
   resetSingleMaintenanceItem: function(index) {
     if (index >= 0 && index < this.maintenanceItems.length) {
       const item = this.maintenanceItems[index];
@@ -3646,14 +3648,14 @@ const MotoFindBack = {
     }
   },
 
-  // ✅ ADD THIS HELPER METHOD IF MISSING
+  // 
   showAlertNotification: function(message, type) {
     // Simple notification implementation
     console.log(`[${type.toUpperCase()}] ${message}`);
     // You can enhance this with toast notifications later
   },
 
-  // Add this to your init function to start automatic time tracking
+  //  start automatic time tracking
 
 updateTimeBasedMaintenance: function() {
     let updated = false;
@@ -3959,10 +3961,23 @@ checkAccelerationAchievement: function() {
   const currentSpeedKmh = this.currentSpeed * 3.6;
   const targetSpeed = this.accelTarget; // User-defined target
   
-  // Start timing if we're below target and not already timing
-  if (currentSpeedKmh < targetSpeed && !this.accelerationPopup.startTime && !this.accelerationPopup.achievedTime) {
+  // Define the restart threshold (2 km/h as requested)
+  const restartThreshold = 2;
+  
+  // Reset timing if we're below the restart threshold (5 km/h)
+  if (currentSpeedKmh < restartThreshold) {
+    this.accelerationPopup.startTime = null;
+    this.accelerationPopup.achievedTime = null;
+    this.log(`Reset acceleration timer - speed below ${restartThreshold} km/h`);
+  }
+  
+  // Start timing if we're below target, not already timing, and above restart threshold
+  if (currentSpeedKmh < targetSpeed && 
+      !this.accelerationPopup.startTime && 
+      !this.accelerationPopup.achievedTime &&
+      currentSpeedKmh >= restartThreshold) {
     this.accelerationPopup.startTime = Date.now();
-    this.log(`Starting acceleration timer for 0-${targetSpeed} km/h`);
+    this.log(`Starting acceleration timer for 0-${targetSpeed} km/h (speed: ${currentSpeedKmh.toFixed(1)} km/h)`);
   }
   
   // Check if we reached the target speed
@@ -3986,12 +4001,6 @@ checkAccelerationAchievement: function() {
     
     this.accelerationPopup.achievedTime = Date.now();
   }
-  
-  // Reset if speed drops significantly below target (like after braking)
-  if (this.accelerationPopup.startTime && currentSpeedKmh < (targetSpeed * 0.3)) {
-    this.accelerationPopup.startTime = null;
-    this.accelerationPopup.achievedTime = null;
-  }
 },
 
 // Test method
@@ -4001,8 +4010,7 @@ testAccelerationPopup: function() {
   this.log('Test acceleration popup shown');
 },
               
-    
-    // Microphone initialization
+
 // Update the initMicrophone function to handle permissions better
 initMicrophone: function() {
   return new Promise((resolve, reject) => {
@@ -4057,7 +4065,6 @@ initMicrophone: function() {
 },
 
 
-// Modify analyzeEngineSound to handle recording
 analyzeEngineSound: function() {
   if (!this.audioAnalysis.analyser || !this.audioAnalysis.isListening) return;
   
@@ -4192,8 +4199,6 @@ frequencyToRPM: function(frequency) {
   }
 },
   
-
-
 // Engine health monitoring
 analyzeEngineHealth: function() {
   const frequencies = Array.from(this.audioAnalysis.frequencyData);
@@ -6357,7 +6362,6 @@ document.getElementById("calibrationMonitorBtn").addEventListener("click", () =>
 },
 
 
-
 calibrateSensors: function() {
     this.isCalibrating = true;
     this.calibrationSamples = [];
@@ -7463,8 +7467,6 @@ toggleMaintenanceUnit: function(unit) {
     weekSettings.style.display = 'block';
   }
 },
-
-
 
 
 // Save maintenance items to localStorage

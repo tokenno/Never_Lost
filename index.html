@@ -2129,24 +2129,42 @@ const CreteWeatherManager = {
 
 
 init: function() {
-  console.log('🔍 CreteWeatherManager.init() called');
-  this.checkHTMLElements(); 
-  this.loadConfig();
-  this.setupEventListeners();
-  this.updateDisplay();
-  
-  console.log('🔍 Auto refresh:', this.config.autoRefresh);
-  
-  // Load weather data immediately (no API key required)
-  console.log('🔍 Loading weather data from public endpoint');
-  this.loadWeatherData();
-
-  if (this.config.autoRefresh) {
-    console.log('🔍 Starting auto-refresh');
-    this.startAutoRefresh();
+  // Prevent multiple initializations
+  if (this._initialized) {
+    console.log('🔍 CreteWeatherManager already initialized, skipping');
+    return;
   }
+  
+  try {
+    console.log('🔍 CreteWeatherManager.init() called');
+    this._initialized = true; // Mark as initialized
+    
+    // Check if all required HTML elements exist
+    if (!this.checkAllElements()) {
+      this.log("Some HTML elements are missing - weather tab may not display correctly", true);
+    }
+    
+    this.loadConfig();
+    this.setupEventListeners();
+    this.updateDisplay();
+    
+    console.log('🔍 Auto refresh:', this.config.autoRefresh);
+    
+    // Load weather data immediately
+    console.log('🔍 Loading weather data from public endpoint');
+    this.loadWeatherData();
 
-  this.log("Crete Weather Manager initialized");
+    if (this.config.autoRefresh) {
+      console.log('🔍 Starting auto-refresh');
+      this.startAutoRefresh();
+    }
+
+    this.log("Crete Weather Manager initialized successfully");
+  } catch (error) {
+    console.error('❌ Crete Weather initialization failed:', error);
+    this.log("Crete Weather initialization failed: " + error.message, true);
+    this._initialized = false; // Reset on error
+  }
 },
 
 // Load configuration from localStorage
@@ -2405,28 +2423,6 @@ guessRegionFromName: function(stationName) {
     return 'unknown';
 },
 
-// Debug the real API data structure
-debugRealData: function(rawData) {
-    console.log('🔍 REAL API DATA STRUCTURE:');
-    console.log('First item:', rawData[0]);
-    console.log('Sample stations:', [...new Set(rawData.slice(0, 50).map(item => item.station))]);
-    console.log('Available properties:', Object.keys(rawData[0]));
-    
-    // Check what properties exist in the first few items
-    const sample = rawData.slice(0, 10);
-    sample.forEach((item, index) => {
-        console.log(`Item ${index}:`, {
-            station: item.station,
-            hasStation: !!item.station,
-            hasDate: !!item.date,
-            hasTemperature: 'temperature' in item,
-            hasWindSpeed: 'wind_speed' in item,
-            hasWindDirection: 'wind_direction' in item,
-            hasHumidity: 'humidity' in item,
-            hasPressure: 'pressure' in item
-        });
-    });
-},
 
 
   // Calculate riding risk for motorcyclists
@@ -2559,12 +2555,25 @@ debugRealData: function(rawData) {
     });
   },
 
-  // Update alerts display
+ 
 // Update alerts display
-updateAlertsDisplay: function(alerts) {
+updateAlertsDisplay: function() {
+  const container = document.getElementById('creteAlertsContainer');
+  if (!container) {
+    console.warn('❌ creteAlertsContainer not found');
+    return;
+  }
+  
+  // Safe alerts check
+  const alerts = this.state.activeAlerts || [];
+  
+  if (alerts.length === 0) {
+    container.innerHTML = '<div class="no-alerts">No active weather alerts</div>';
+    return;
+  }
   console.log('🔍 updateAlertsDisplay() called with', alerts.length, 'alerts');
   
-  const container = document.getElementById('creteAlertsContainer'); // MOVE THIS TO TOP
+
   if (!container) {
     console.log('🔍 creteAlertsContainer not found');
     return;
@@ -2922,52 +2931,68 @@ updateStationsDisplay: function() {
   },
 
   // Update overall display
-// Update overall display
+
 updateDisplay: function() {
   console.log('🔍 updateDisplay() called');
   console.log('🔍 Weather data available:', !!this.state.weatherData);
   
-  if (this.state.weatherData) {
-    console.log('🔍 Stations count:', Object.keys(this.state.weatherData.stations).length);
-    console.log('🔍 Alerts count:', this.state.activeAlerts.length);
-  }
-  
-  this.updateStationsDisplay();
-  
-  // Update stations count
-  if (this.state.weatherData) {
-    document.getElementById('creteStationsCount').textContent = 
-      Object.keys(this.state.weatherData.stations).length;
-  }
-  
-  // Update next refresh time
-  if (this.state.nextUpdate) {
-    document.getElementById('creteNextUpdate').textContent = 
-      this.formatTime(this.state.nextUpdate);
+  try {
+    // Safe logging
+    if (this.state.weatherData) {
+      console.log('🔍 Stations count:', Object.keys(this.state.weatherData.stations).length);
+      console.log('🔍 Alerts count:', this.state.activeAlerts ? this.state.activeAlerts.length : 0);
+    }
+    
+    this.updateStationsDisplay();
+    this.updateAlertsDisplay();
+    
+    // Update ALL status elements using your safe updateStatus function
+    this.updateStatus('creteApiStatus', this.state.weatherData ? '✅ Live Data' : '❌ No Data');
+    this.updateStatus('creteActiveAlerts', this.state.activeAlerts ? this.state.activeAlerts.length.toString() : '0');
+    this.updateStatus('creteStationsCount', this.state.weatherData ? Object.keys(this.state.weatherData.stations).length.toString() : '0');
+    this.updateStatus('creteAutoRefresh', this.config.autoRefresh ? 'ON' : 'OFF');
+    this.updateStatus('creteLastUpdate', this.formatTime(new Date()));
+    this.updateStatus('creteNextUpdate', this.state.nextUpdate ? this.formatTime(this.state.nextUpdate) : '--');
+    this.updateStatus('creteRiskLevel', this.state.weatherData && this.state.weatherData.summary ? this.state.weatherData.summary.overallRisk : 'unknown');
+    
+  } catch (error) {
+    console.error('❌ Error in updateDisplay:', error);
+    this.log("Update display error: " + error.message, true);
   }
 },
 
-  // Auto-refresh methods
-  startAutoRefresh: function() {
-    this.stopAutoRefresh();
-    
-    this.state.refreshTimer = setInterval(() => {
-      this.loadWeatherData();
-    }, this.config.refreshInterval);
-    
-    this.state.nextUpdate = new Date(Date.now() + this.config.refreshInterval);
-    this.updateStatus('creteAutoRefresh', 'ON');
-    document.getElementById('toggleAutoRefresh').textContent = '⏰ Auto: ON';
-  },
 
-  stopAutoRefresh: function() {
-    if (this.state.refreshTimer) {
-      clearInterval(this.state.refreshTimer);
-      this.state.refreshTimer = null;
-    }
-    this.updateStatus('creteAutoRefresh', 'OFF');
-    document.getElementById('toggleAutoRefresh').textContent = '⏰ Auto: OFF';
-  },
+
+startAutoRefresh: function() {
+  console.log('🔍 Starting auto-refresh');
+  
+  // Clear any existing interval
+  this.stopAutoRefresh();
+  
+  this.autoRefreshInterval = setInterval(() => {
+    console.log('🔄 Auto-refreshing weather data');
+    this.loadWeatherData();
+  }, this.config.refreshInterval);
+  
+  // Update status safely
+  this.updateStatus('creteAutoRefresh', 'ON');
+  
+  // Calculate and set next update time
+  this.state.nextUpdate = new Date(Date.now() + this.config.refreshInterval);
+  this.updateStatus('creteNextUpdate', this.formatTime(this.state.nextUpdate));
+},
+
+stopAutoRefresh: function() {
+  if (this.autoRefreshInterval) {
+    clearInterval(this.autoRefreshInterval);
+    this.autoRefreshInterval = null;
+    console.log('🛑 Auto-refresh stopped');
+  }
+  
+  // Update status safely - this was causing the error
+  this.updateStatus('creteAutoRefresh', 'OFF');
+  this.updateStatus('creteNextUpdate', '--');
+},
 
   toggleAutoRefresh: function() {
     this.config.autoRefresh = !this.config.autoRefresh;
@@ -3087,10 +3112,7 @@ updateSettingsUI: function() {
     }
   }
 };
-  
 
-
-// ✅ THEN define MotoFindBack as a SEPARATE object
 const MotoFindBack = {
   maintenanceItems: [], 
   audioCtx: null,

@@ -1751,30 +1751,63 @@ input[type="range"]::-webkit-slider-thumb {
         
         </div>
 
-        <!-- Display Settings -->
-        <div class="setting-group">
-          <h4>Display Settings</h4>
-          <div class="setting-item">
-            <label for="creteLanguage">Alert Language:</label>
-            <select id="creteLanguage">
-              <option value="both">Greek & English</option>
-              <option value="el">Greek Only</option>
-              <option value="en">English Only</option>
-            </select>
-          </div>
-          <div class="setting-item">
-            <label for="refreshInterval">Refresh Interval:</label>
-            <select id="refreshInterval">
-              <option value="300000">5 minutes</option>
-              <option value="900000" selected>15 minutes</option>
-              <option value="1800000">30 minutes</option>
-              <option value="3600000">1 hour</option>
-            </select>
-          </div>
-        </div>
-      </div>
+        <!-- In your Crete Weather settings section -->
+<div class="setting-group">
+    <h4>Weather Provider</h4>
+    <div class="setting-item">
+        <label>
+            <input type="radio" name="weatherProvider" value="crete" checked>
+            🏝️ Crete Official Data (Greek Government)
+        </label>
     </div>
-  </div>
+    <div class="setting-item">
+        <label>
+            <input type="radio" name="weatherProvider" value="openmeteo">
+            🌍 Open-Meteo (Global Coverage)
+        </label>
+    </div>
+</div>
+
+<div class="setting-group">
+    <h4>Risk Thresholds</h4>
+    <div class="setting-item">
+        <label>High Wind Alert (> <span id="windThresholdValue">30</span> km/h)</label>
+        <input type="range" id="windThreshold" min="20" max="60" value="30" step="5">
+    </div>
+    <div class="setting-item">
+        <label>Heavy Rain Alert (> <span id="rainThresholdValue">10</span> mm)</label>
+        <input type="range" id="rainThreshold" min="5" max="30" value="10" step="1">
+    </div>
+    <div class="setting-item">
+        <label>Heat Alert (> <span id="heatThresholdValue">35</span> °C)</label>
+        <input type="range" id="heatThreshold" min="25" max="45" value="35" step="1">
+    </div>
+    <div class="setting-item">
+        <label>Cold Alert (< <span id="coldThresholdValue">5</span> °C)</label>
+        <input type="range" id="coldThreshold" min="-10" max="10" value="5" step="1">
+    </div>
+</div>
+
+<div class="setting-group">
+    <h4>Display Settings</h4>
+    <div class="setting-item">
+        <label for="creteLanguage">Alert Language:</label>
+        <select id="creteLanguage">
+            <option value="both">Greek & English</option>
+            <option value="el">Greek Only</option>
+            <option value="en">English Only</option>
+        </select>
+    </div>
+    <div class="setting-item">
+        <label for="refreshInterval">Refresh Interval:</label>
+        <select id="refreshInterval">
+            <option value="300000">5 minutes</option>
+            <option value="900000" selected>15 minutes</option>
+            <option value="1800000">30 minutes</option>
+            <option value="3600000">1 hour</option>
+        </select>
+    </div>
+</div>
 
   <!-- Information Panel -->
   <div class="panel">
@@ -2082,38 +2115,40 @@ input[type="range"]::-webkit-slider-thumb {
         <!-- Leaflet JS -->
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <script>
-// ✅ FIRST define CreteWeatherManager as a SEPARATE object
+
 const CreteWeatherManager = {
   // Configuration
-  config: {
-    apiKey: null,
-    enabled: true,
-    autoRefresh: true,
-    refreshInterval: 900000, // 15 minutes
-    language: 'both',
-    alerts: {
-      wind: true,
-      rain: true,
-      heat: true,
-      cold: true
-    },
-    riskThresholds: {
-      wind: 30,    // km/h
-      rain: 10,    // mm
-      tempHigh: 35, // °C
-      tempLow: 5    // °C
-    }
-  },
 
-  // State
-  state: {
-    lastUpdate: null,
-    nextUpdate: null,
-    activeAlerts: [],
-    weatherData: null,
-    isLoaded: false,
-    refreshTimer: null
+config: {
+  apiKey: null,
+  enabled: true,
+  autoRefresh: true,
+  refreshInterval: 900000, // 15 minutes
+  language: 'both',
+  provider: 'crete', // 'crete' or 'openmeteo'
+  alerts: {
+    wind: true,
+    rain: true,
+    heat: true,
+    cold: true
   },
+  riskThresholds: {
+    wind: 30,    // km/h
+    rain: 10,    // mm
+    tempHigh: 35, // °C
+    tempLow: 5    // °C
+  }
+},
+
+// State
+state: {
+  lastUpdate: null,
+  nextUpdate: null,
+  activeAlerts: [],
+  weatherData: null,
+  isLoaded: false,
+  refreshTimer: null
+},
 
   // Crete weather stations
   stations: {
@@ -2129,41 +2164,32 @@ const CreteWeatherManager = {
 
 
 init: function() {
-  // Prevent multiple initializations
-  if (this._initialized) {
-    console.log('🔍 CreteWeatherManager already initialized, skipping');
-    return;
-  }
+  if (this._initialized) return;
   
   try {
-    console.log('🔍 CreteWeatherManager.init() called');
-    this._initialized = true; // Mark as initialized
-    
-    // Check if all required HTML elements exist
-    if (!this.checkAllElements()) {
-      this.log("Some HTML elements are missing - weather tab may not display correctly", true);
-    }
+    console.log('🔍 CreteWeatherManager initialized');
+    this._initialized = true;
     
     this.loadConfig();
     this.setupEventListeners();
+    this.updateSettingsUI();
     this.updateDisplay();
     
-    console.log('🔍 Auto refresh:', this.config.autoRefresh);
-    
-    // Load weather data immediately
-    console.log('🔍 Loading weather data from public endpoint');
-    this.loadWeatherData();
-
-    if (this.config.autoRefresh) {
-      console.log('🔍 Starting auto-refresh');
-      this.startAutoRefresh();
+    // Only load data if system is enabled
+    if (this.config.enabled) {
+      this.loadWeatherData();
+      if (this.config.autoRefresh) {
+        this.startAutoRefresh();
+      }
+    } else {
+      this.updateStatus('creteApiStatus', '❌ Disabled');
     }
 
-    this.log("Crete Weather Manager initialized successfully");
+    this.log("Crete Weather Manager ready");
   } catch (error) {
-    console.error('❌ Crete Weather initialization failed:', error);
-    this.log("Crete Weather initialization failed: " + error.message, true);
-    this._initialized = false; // Reset on error
+    console.error('❌ Init failed:', error);
+    this.log("Init failed: " + error.message, true);
+    this._initialized = false;
   }
 },
 
@@ -2185,34 +2211,56 @@ saveConfig: function() {
 
 // Setup event listeners
 setupEventListeners: function() {
-  // Load weather button
-  document.getElementById('loadCreteWeather')?.addEventListener('click', () => {
-    this.loadWeatherData();
+  // Provider selection
+document.querySelectorAll('input[name="weatherProvider"]').forEach(radio => {
+  radio.addEventListener('change', (e) => {
+    console.log('🔄 Provider changed to:', e.target.value);
+    this.config.provider = e.target.value;
+    this.saveConfig();
+    this.loadWeatherData(); // Switch providers
+  });
+});
+
+  // Risk threshold sliders
+  ['wind', 'rain', 'heat', 'cold'].forEach(type => {
+    const slider = document.getElementById(`${type}Threshold`);
+    const valueSpan = document.getElementById(`${type}ThresholdValue`);
+    
+    if (slider && valueSpan) {
+      slider.value = this.config.riskThresholds[type];
+      valueSpan.textContent = this.config.riskThresholds[type];
+      
+      slider.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value);
+        this.config.riskThresholds[type] = value;
+        valueSpan.textContent = value;
+        this.saveConfig();
+        
+        if (this.state.weatherData) {
+          this.regenerateAlerts();
+        }
+      });
+    }
   });
 
-  // Test alerts button
-  document.getElementById('testCreteAlerts')?.addEventListener('click', () => {
-    this.testAlertSystem();
+  // System toggles
+  document.getElementById('weatherEnabled')?.addEventListener('change', (e) => {
+    this.config.enabled = e.target.checked;
+    this.saveConfig();
+    this.toggleWeatherSystem();
   });
 
-  // Force reload button
-  document.getElementById('forceReloadWeather')?.addEventListener('click', () => {
-    this.loadWeatherData();
+  document.getElementById('autoRefreshToggle')?.addEventListener('change', (e) => {
+    this.config.autoRefresh = e.target.checked;
+    this.saveConfig();
+    this.toggleAutoRefresh();
   });
 
-  // Auto refresh toggle
-  const autoRefreshToggle = document.getElementById('toggleAutoRefresh');
-  if (autoRefreshToggle) {
-    autoRefreshToggle.addEventListener('click', () => {
-      this.toggleAutoRefresh();
-    });
-  }
-
-  // Settings changes
+  // Display settings
   document.getElementById('creteLanguage')?.addEventListener('change', (e) => {
     this.config.language = e.target.value;
     this.saveConfig();
-    this.updateDisplay(); // Refresh display with new language
+    this.updateDisplay();
   });
 
   document.getElementById('refreshInterval')?.addEventListener('change', (e) => {
@@ -2228,98 +2276,147 @@ setupEventListeners: function() {
         const alertType = id.replace('enable', '').replace('Alerts', '').toLowerCase();
         this.config.alerts[alertType] = e.target.checked;
         this.saveConfig();
-        // Re-evaluate alerts with new settings
-        if (this.weatherData) {
-          this.processAlerts(this.weatherData);
+        if (this.state.weatherData) {
+          this.regenerateAlerts();
         }
       });
     });
 },
 
-// Load weather data from public endpoint
 loadWeatherData: function() {
-  console.log('🔍 loadWeatherData() called - trying public endpoint');
-  this.updateStatus('creteApiStatus', '🔄 Loading...');
-  
-  // Use the public APDKriti Meteo endpoint (no API key required)
-  const publicEndpoint = 'https://data.gov.gr/api/v1/query/apdkriti-meteo?date_from=2024-01-01';
-  
-  fetch(publicEndpoint)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log('✅ Successfully loaded real weather data:', data.length, 'stations');
-      this.weatherData = data;
-      this.processWeatherData(data);
-      this.updateStatus('creteApiStatus', '✅ Live Data');
-      this.log("Real weather data loaded successfully");
-    })
-    .catch(error => {
-      console.log('❌ Error fetching public data:', error);
-      console.log('🔄 Using fallback data');
-      this.useFallbackData();
-      this.updateStatus('creteApiStatus', '⚠️ Using Demo Data');
-      this.log("Using fallback data - public endpoint unavailable");
-    });
-},
-
-// Load weather data from APDKriti API
-async loadWeatherData() {
-    console.log('🔍 loadWeatherData() called - trying multiple endpoints');
+    console.log('🔍 Loading weather data from:', this.config.provider);
     
-    // Use the endpoint that worked (first one)
-    const workingEndpoint = 'https://data.gov.gr/api/v1/query/apdkriti-meteo?date_from=2024-12-01&date_to=2024-12-10';
-    
-    console.log('🔍 Using working endpoint:', workingEndpoint);
-    
-    try {
-        const response = await fetch(workingEndpoint);
-        
-        if (response.ok) {
-            const weatherData = await response.json();
-            console.log('✅ Successfully loaded real weather data:', weatherData.length, 'stations');
-            
-            // Debug the real data structure
-            this.debugRealData(weatherData);
-            
-            // Process the real data
-            this.processWeatherData(weatherData);
-            return;
-        } else {
-            console.log('❌ Endpoint failed, status:', response.status);
-            this.useFallbackData();
-        }
-    } catch (error) {
-        console.log('❌ Error:', error);
-        this.useFallbackData();
+    switch(this.config.provider) {
+        case 'crete':
+            this.loadCreteData();
+            break;
+        case 'openmeteo':
+            this.loadOpenMeteoData();  // This will actually call Open-Meteo
+            break;
+        default:
+            this.loadCreteData();
     }
 },
 
-// Add this method to check HTML elements
-checkHTMLElements: function() {
-  console.log('🔍 Checking Crete Weather HTML elements:');
-  const elements = [
-    'creteStationsContainer',
-    'creteAlertsContainer', 
-    'creteApiStatus',
-    'creteActiveAlerts',
-    'creteStationsCount',
-    'creteAutoRefresh',
-    'creteLastUpdate',
-    'creteNextUpdate',
-    'creteRiskLevel'
-  ];
-  
-  elements.forEach(id => {
-    const element = document.getElementById(id);
-    console.log(`- ${id}:`, element ? 'FOUND' : 'MISSING');
-  });
+
+loadCreteData: function() {
+    const workingEndpoint = 'https://data.gov.gr/api/v1/query/apdkriti-meteo?date_from=2024-12-01&date_to=2024-12-10';
+    
+    fetch(workingEndpoint)
+        .then(response => {
+            if (response.ok) return response.json();
+            throw new Error('Crete API failed');
+        })
+        .then(data => {
+            console.log('✅ Crete data loaded:', data.length, 'stations');
+            this.processWeatherData(data);
+            this.updateStatus('creteApiStatus', '✅ Crete Data');
+        })
+        .catch(error => {
+            console.log('❌ Crete API failed:', error);
+            this.fallbackToOpenMeteo();
+        });
 },
 
+// Add these functions to your CreteWeatherManager:
+
+loadOpenMeteoData: function() {
+    console.log('🌍 Loading Open-Meteo data');
+    
+    // Use Crete coordinates as default, or get user's actual location
+    const latitude = 35.2401; // Crete center
+    const longitude = 24.8093;
+    
+    const openMeteoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_direction_10m&timezone=auto`;
+    
+    fetch(openMeteoUrl)
+        .then(response => {
+            if (!response.ok) throw new Error('Open-Meteo API failed');
+            return response.json();
+        })
+        .then(data => {
+            console.log('✅ Open-Meteo data loaded');
+            this.processOpenMeteoData(data);
+            this.updateStatus('creteApiStatus', '✅ Open-Meteo Data');
+        })
+        .catch(error => {
+            console.log('❌ Open-Meteo failed:', error);
+            this.useFallbackData();
+        });
+},
+
+processOpenMeteoData: function(data) {
+    console.log('🔍 Processing Open-Meteo data');
+    
+    const processed = {
+        stations: {
+            'current_location': {
+                name: 'Current Location',
+                lat: data.latitude,
+                lon: data.longitude,
+                region: this.getRegionFromCoordinates(data.latitude, data.longitude),
+                current: {
+                    temperature: data.current.temperature_2m,
+                    windSpeed: data.current.wind_speed_10m,
+                    windDirection: data.current.wind_direction_10m,
+                    humidity: data.current.relative_humidity_2m,
+                    precipitation: data.current.precipitation,
+                    condition: this.getOpenMeteoCondition(data.current.weather_code),
+                    ridingRisk: this.calculateRidingRisk({
+                        temperature: data.current.temperature_2m,
+                        windSpeed: data.current.wind_speed_10m,
+                        precipitation: data.current.precipitation
+                    })
+                }
+            }
+        },
+        alerts: [],
+        summary: {
+            overallRisk: 'low',
+            maxWind: data.current.wind_speed_10m,
+            maxTemp: data.daily?.temperature_2m_max?.[0] || data.current.temperature_2m,
+            minTemp: data.daily?.temperature_2m_min?.[0] || data.current.temperature_2m,
+            hasPrecipitation: data.current.precipitation > 0
+        }
+    };
+
+    // Generate alerts for Open-Meteo data
+    const stationAlerts = this.generateStationAlerts('current_location', processed.stations['current_location'].current);
+    processed.alerts.push(...stationAlerts);
+    
+    this.state.weatherData = processed;
+    this.state.activeAlerts = processed.alerts;
+    this.updateDisplay();
+},
+
+// Helper function to map Open-Meteo weather codes
+getOpenMeteoCondition: function(weatherCode) {
+    const conditions = {
+        0: 'clear', 1: 'clear', 2: 'partly_cloudy', 3: 'cloudy',
+        45: 'fog', 48: 'fog', 51: 'drizzle', 53: 'drizzle', 55: 'drizzle',
+        61: 'rain', 63: 'rain', 65: 'heavy_rain', 80: 'rain', 81: 'rain', 82: 'heavy_rain',
+        71: 'snow', 73: 'snow', 75: 'heavy_snow', 85: 'snow', 86: 'heavy_snow',
+        95: 'thunderstorm', 96: 'thunderstorm', 99: 'thunderstorm'
+    };
+    return conditions[weatherCode] || 'unknown';
+},
+
+// Helper to get region from coordinates
+getRegionFromCoordinates: function(lat, lon) {
+    // Crete regions approximation
+    if (lat > 35.4 && lon < 24.0) return 'chania';
+    if (lat > 35.2 && lon < 25.0) return 'rethymno';
+    if (lat > 35.1) return 'heraklion';
+    return 'lasithi';
+},
+
+
+// Fallback to Open-Meteo if Crete fails
+fallbackToOpenMeteo: function() {
+    console.log('🔄 Falling back to Open-Meteo');
+    this.updateStatus('creteApiStatus', '⚠️ Crete Failed, Using Open-Meteo');
+    this.loadOpenMeteoData();
+},
   
 processWeatherData: function(rawData) {
     console.log('🔍 Processing REAL API data with', rawData.length, 'readings');
@@ -2478,28 +2575,70 @@ guessRegionFromName: function(stationName) {
   },
 
   // Generate alerts for a station
- generateStationAlerts: function(stationName, reading) {
-    const alerts = [];
-    
-    // Add safety check
-    if (!reading) return alerts;
-    
-    // Check wind speed
-    if (reading.windSpeed > 30) { // 30 km/h threshold
-        alerts.push(this.createAlert(stationName, 'wind', 'high', reading.windSpeed));
+generateStationAlerts: function(stationName, reading) {
+  const alerts = [];
+  if (!reading) return alerts;
+
+  // Wind alerts (using configurable threshold)
+  if (this.config.alerts.wind && reading.windSpeed > this.config.riskThresholds.wind) {
+    alerts.push(this.createAlert('HIGH_WIND', stationName, reading));
+  }
+
+  // Rain alerts (using configurable threshold)
+  if (this.config.alerts.rain && reading.precipitation > this.config.riskThresholds.rain) {
+    alerts.push(this.createAlert('HEAVY_RAIN', stationName, reading));
+  }
+
+  // Heat alerts (using configurable threshold)
+  if (this.config.alerts.heat && reading.temperature > this.config.riskThresholds.tempHigh) {
+    alerts.push(this.createAlert('HEAT_WAVE', stationName, reading));
+  }
+
+  // Cold alerts (using configurable threshold)
+  if (this.config.alerts.cold && reading.temperature < this.config.riskThresholds.tempLow) {
+    alerts.push(this.createAlert('COLD', stationName, reading));
+  }
+
+  return alerts;
+},
+
+// Regenerate alerts when thresholds change
+regenerateAlerts: function() {
+  if (!this.state.weatherData) return;
+  
+  const allAlerts = [];
+  Object.values(this.state.weatherData.stations).forEach(station => {
+    const stationAlerts = this.generateStationAlerts(station.name, station.current);
+    allAlerts.push(...stationAlerts);
+  });
+  
+  this.state.activeAlerts = allAlerts;
+  this.updateDisplay();
+},
+
+toggleWeatherSystem: function() {
+  if (this.config.enabled) {
+    console.log('🌤️ Weather system enabled');
+    this.loadWeatherData();
+    if (this.config.autoRefresh) {
+      this.startAutoRefresh();
     }
-    
-    // Check temperature
-    if (reading.temperature > 35) { // Heat alert
-        alerts.push(this.createAlert(stationName, 'heat', 'high', reading.temperature));
-    }
-    
-    // Check precipitation
-    if (reading.precipitation > 5) { // Heavy rain
-        alerts.push(this.createAlert(stationName, 'rain', 'high', reading.precipitation));
-    }
-    
-    return alerts;
+  } else {
+    console.log('🌤️ Weather system disabled');
+    this.stopAutoRefresh();
+    this.state.weatherData = null;
+    this.state.activeAlerts = [];
+    this.updateDisplay();
+    this.updateStatus('creteApiStatus', '❌ Disabled');
+  }
+},
+
+toggleAutoRefresh: function() {
+  if (this.config.autoRefresh) {
+    this.startAutoRefresh();
+  } else {
+    this.stopAutoRefresh();
+  }
 },
 
   // Create alert object
@@ -3064,9 +3203,29 @@ stopAutoRefresh: function() {
     }
   },
 
-  // Update settings UI
 updateSettingsUI: function() {
-  // Set checkboxes
+  // Provider selection - ADD THIS
+  document.querySelectorAll('input[name="weatherProvider"]').forEach(radio => {
+    radio.checked = radio.value === this.config.provider;
+  });
+
+  // Risk thresholds
+  ['wind', 'rain', 'heat', 'cold'].forEach(type => {
+    const slider = document.getElementById(`${type}Threshold`);
+    const valueSpan = document.getElementById(`${type}ThresholdValue`);
+    if (slider && valueSpan) {
+      slider.value = this.config.riskThresholds[type];
+      valueSpan.textContent = this.config.riskThresholds[type];
+    }
+  });
+
+  // System toggles
+  const enabledToggle = document.getElementById('weatherEnabled');
+  const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+  if (enabledToggle) enabledToggle.checked = this.config.enabled;
+  if (autoRefreshToggle) autoRefreshToggle.checked = this.config.autoRefresh;
+
+  // Alert toggles
   ['enableWindAlerts', 'enableRainAlerts', 'enableHeatAlerts', 'enableColdAlerts']
     .forEach(id => {
       const element = document.getElementById(id);
@@ -3075,16 +3234,6 @@ updateSettingsUI: function() {
         element.checked = this.config.alerts[alertType];
       }
     });
-  
-  // Set select values
-  const languageSelect = document.getElementById('creteLanguage');
-  const refreshSelect = document.getElementById('refreshInterval');
-  
-  if (languageSelect) languageSelect.value = this.config.language;
-  if (refreshSelect) refreshSelect.value = this.config.refreshInterval.toString();
-  
-  // Update auto refresh display
-  this.updateStatus('creteAutoRefresh', this.config.autoRefresh ? 'ON' : 'OFF');
 },
 
   // Utility methods

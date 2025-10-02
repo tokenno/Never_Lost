@@ -3325,39 +3325,71 @@ resetStatisticsDisplay: function() {
 },
 
 exportAllStatistics: function() {
-  const stats = this.calculateGeneralStatistics();
-  const data = {
-    generalStatistics: stats,
-    totalSessions: this.sessionHistory.length,
-    sessions: this.sessionHistory,
-    exportedAt: new Date().toISOString()
-  };
-  
-  const dataStr = JSON.stringify(data, null, 2);
-  const dataBlob = new Blob([dataStr], { type: 'application/json' });
-  
-  const url = URL.createObjectURL(dataBlob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `motorcycle_stats_${new Date().toISOString().split('T')[0]}.json`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-  
-  this.log("All statistics exported");
+    const currentStats = this.calculateAllSessionsStatistics();
+    const generalStats = this.calculateGeneralStatistics();
+    
+    const data = {
+        exportInfo: {
+            exportedAt: new Date().toLocaleString(),
+            appVersion: "Spin Motorcycle GPS v1.0",
+            totalSessions: this.sessionHistory.length
+        },
+        summaryStatistics: {
+            allSessions: currentStats,
+            general: generalStats,
+            currentRide: {
+                distance: this.todayDistance,
+                maxSpeed: this.maxSpeed,
+                currentSpeed: this.currentSpeed * 3.6,
+                accelerationTime: this.calculateAccelerationTime(),
+                elevationGain: this.elevationGain,
+                corners: this.corners.length
+            }
+        },
+        sessionHistory: this.sessionHistory.map(session => ({
+            id: session.id,
+            name: session.name,
+            startTime: this.formatTimestamp(session.startTime),
+            endTime: this.formatTimestamp(session.endTime),
+            duration: this.formatDuration(session.duration),
+            distance: session.distance || 0,
+            maxSpeed: session.maxSpeed || 0,
+            avgSpeed: session.avgSpeed || 0,
+            elevationGain: session.elevationGain || 0,
+            corners: session.corners || 0,
+            notes: session.notes || '',
+            // Keep raw timestamps for developers
+            rawStartTime: session.startTime,
+            rawEndTime: session.endTime,
+            rawDuration: session.duration
+        })),
+        maintenanceData: {
+            items: this.maintenanceItems,
+            lastUpdated: new Date().toLocaleString()
+        },
+        calibrationData: {
+            leanOffset: this.leanOffset,
+            normalBeta: this.normalBeta,
+            crashThreshold: this.crashThreshold,
+            calibratedAt: this.formatTimestamp(localStorage.getItem('sensorCalibration') ? JSON.parse(localStorage.getItem('sensorCalibration')).calibratedAt : null)
+        }
+    };
+    
+    const dataStr = JSON.stringify(data, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `motorcycle_data_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    this.log("All data exported with formatted timestamps");
 },
 
-clearAllStatistics: function() {
-  if (confirm('Are you sure you want to clear ALL statistics and session data? This cannot be undone!')) {
-    this.sessionHistory = [];
-    this.saveSessionsToStorage();
-    this.updateGeneralStatistics();
-    this.updateSessionHistoryDisplay();
-    this.log("All statistics cleared");
-  }
-},
-  
   // Add this debug method
 debugLockPosition: function() {
   console.log('=== LOCK POSITION DEBUG ===');
@@ -5269,6 +5301,25 @@ stop: function() {
     this.log("Metrics reset");
   },
 
+  formatTimestamp: function(timestamp) {
+    if (!timestamp) return '--';
+    return new Date(timestamp).toLocaleString();
+},
+
+formatDuration: function(milliseconds) {
+    const seconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    
+    if (hours > 0) {
+        return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+    } else if (minutes > 0) {
+        return `${minutes}m ${seconds % 60}s`;
+    } else {
+        return `${seconds}s`;
+    }
+},
+
   exportMetrics: function() {
     const data = {
       totalDistance: this.totalDistance,
@@ -5904,3 +5955,4 @@ MotoFindBack.init();
 </script> </div> </div>
   </body>
 </html>
+yui

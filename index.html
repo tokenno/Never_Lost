@@ -401,21 +401,26 @@
       color: var(--accent-color);
     }
     
-    .tabs {
-      display: flex;
-      margin-bottom: 10px;
-      border-bottom: 1px solid #444;
-    }
-    
-    .tab {
-      padding: 10px 20px;
-      cursor: pointer;
-      border: 1px solid transparent;
-      border-bottom: none;
-      border-radius: 5px 5px 0 0;
-      margin-right: 5px;
-      background: rgba(50, 50, 50, 0.7);
-    }
+.tabs {
+  display: flex;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #444;
+  flex-wrap: nowrap;
+  overflow-x: auto; /* Allows horizontal scrolling if needed */
+}
+
+.tab {
+  padding: 8px 12px; /* Reduced padding */
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 5px 5px 0 0;
+  margin-right: 3px; /* Reduced margin */
+  background: rgba(50, 50, 50, 0.7);
+  font-size: 0.85em; /* Smaller font */
+  white-space: nowrap; /* Prevents text wrapping */
+  flex-shrink: 0; /* Prevents tabs from shrinking */
+}
     
     .tab.active {
       background: rgba(30, 30, 30, 0.9);
